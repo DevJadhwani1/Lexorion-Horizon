@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+.pill{font:400 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;border:1px solid #e3e0da;color:#5c5852;cursor:pointer}
+.subtab{padding:7px 12px;font:500 12.5px 'Public Sans',sans-serif;border-radius:7px;cursor:pointer}
+a{color:#2a78d6}
+a:hover{color:#1f5aa8}
+</style>
+</helmet>
+
+<div style="max-width:1520px;margin:0 auto;padding:24px 24px 100px">
+<div style="border:1px solid #e3e0da;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fdfdfc">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:920px">
+
+  <div style="background:#f7f6f3;border-right:1px solid #e3e0da;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 16px">
+      <div style="width:22px;height:22px;border-radius:6px;background:#1f1e1c"></div>
+      <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c">Lexorion</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:9px 10px;margin-bottom:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+      <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;flex:1">Search or ask Lex…</span>
+      <span class="mono" style="font-size:10px;color:#8c8781;border:1px solid #e3e0da;border-radius:4px;padding:1px 5px">⌘K</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:7px;background:#1f1e1c;color:#f0eee9;border-radius:9px;padding:9px;font:500 13.5px 'Public Sans',sans-serif;margin-bottom:16px">+ Invite user</div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:4px 6px 6px">WORKSPACE</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733">Overview</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733;display:flex;justify-content:space-between">Approvals <span class="mono" style="font-size:10px;background:#1f1e1c;color:#f0eee9;padding:1px 6px;border-radius:9px">7</span></div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:16px 6px 6px">WORKSPACES</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Recruitment</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">People</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Finance</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Clients</div>
+    <div onClick="{{ goHome }}" style="cursor:pointer;padding:8px 10px;border-radius:7px;font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;background:#e8e5e0">Administration</div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px">
+      <div class="mono" style="font-size:10.5px;color:#a8a39a;line-height:1.8">/ search · g a administration<br/>g u users · g r roles<br/>g i integrations · g s security<br/>shift+a ask lex</div>
+      <div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div><div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c">Anita Rao · Org Owner</div></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:16px;min-width:0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2">
+          <span onClick="{{ cr.go }}" style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cr.color }};cursor:{{ cr.cursor }}">{{ cr.label }}</span>
+          <span style="color:#cdc8c0;font-size:12px">/</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <sc-for list="{{ demoChips }}" as="dcp" hint-placeholder-count="7">
+          <div onClick="{{ dcp.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:4px 8px;border-radius:6px;background:{{ dcp.bg }};color:{{ dcp.fg }};border:1px solid #e3e0da">{{ dcp.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="19">
+        <div onClick="{{ sec.go }}" class="subtab" style="background:{{ sec.bg }};color:{{ sec.fg }}">{{ sec.label }}</div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:60px 20px;text-align:center;margin-top:6px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#eeece7;margin:0 auto 12px"></div>
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">{{ emptyTitle }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:10px">{{ emptyBody }}</div>
+        <a href="#" style="font:400 12.5px 'Public Sans',sans-serif">View documentation</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <sc-for list="{{ skeletonRows }}" as="sr" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:9px;background:#eeece7;width:{{ sr }}"></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:11px;padding:24px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:5px">Couldn't load {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:12px">Check your connection and retry.</div>
+        <div onClick="{{ toSuccess }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Retry</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showDenied }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">You don't have access to {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">Ask an Org Owner to grant Administration access.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showUpgrade }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:5px">{{ screenLabel }} needs a higher edition</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:12px">Included on Enterprise — request an upgrade from your Org Owner.</div>
+        <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Request upgrade</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 14px;margin-top:2px;background:#f7f6f3;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Viewing in read-only mode — you can see {{ screenLabel }} but not change it.</div>
+    </sc-if>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font:600 24px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Administration</div>
+        <div style="font:400 13.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">Business edition · 52 of 60 seats used · all systems operational</div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Tenant lifecycle</div>
+        <div style="display:flex;gap:0;margin-bottom:18px;overflow-x:auto">
+          <sc-for list="{{ tenantLifecycle }}" as="j" hint-placeholder-count="8">
+            <div style="flex:1;min-width:110px;padding:0 8px 0 0">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <span style="width:16px;height:16px;border-radius:8px;background:{{ j.dotBg }};display:flex;align-items:center;justify-content:center;font:600 8.5px 'Public Sans',sans-serif;color:#fff;flex:none">{{ j.mark }}</span>
+                <span style="height:1.5px;flex:1;background:#e3e0da"></span>
+              </div>
+              <div style="font:500 12px 'Public Sans',sans-serif;color:#1f1e1c">{{ j.name }}</div>
+              <div style="font:400 10.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">{{ j.time }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">System status</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px">
+          <sc-for list="{{ systemStatus }}" as="sy" hint-placeholder-count="7">
+            <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px;text-align:center">
+              <div style="font:400 10.5px 'Public Sans',sans-serif;color:#8c8781">{{ sy.label }}</div>
+              <div style="font:500 12px 'Public Sans',sans-serif;color:{{ sy.color }};margin-top:3px">{{ sy.status }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Needs attention</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:18px">
+          <sc-for list="{{ needsAttention }}" as="na" hint-placeholder-count="6">
+            <div onClick="{{ na.go }}" style="cursor:pointer;padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;align-items:center;gap:12px">
+              <span style="width:7px;height:7px;border-radius:4px;background:{{ na.dot }};flex:none"></span>
+              <div style="flex:1"><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ na.title }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ na.meta }}</div></div>
+              <div class="pill">{{ na.action }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ dashStats }}" as="s" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ s.label }}</div><div style="font:600 20px 'Public Sans',sans-serif;color:{{ s.color }}">{{ s.value }}</div></div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Lex recommendations</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+          <sc-for list="{{ aiActions }}" as="ai" hint-placeholder-count="5">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;background:#f7f6f3;display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ ai }}</div>
+              <div style="display:flex;gap:7px;flex:none"><div class="pill">Review</div><div class="pill">Approve</div><div class="pill">Dismiss</div><div class="pill">Explain</div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recent audit events</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ recentAudit }}" as="ev" hint-placeholder-count="4">
+            <div style="display:flex;gap:9px;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span class="mono" style="color:#8c8781;flex:none;width:100px">{{ ev.time }}</span><span>{{ ev.actor }} — {{ ev.action }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOrganization }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Organization profile</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ orgFields }}" as="f" hint-placeholder-count="9">
+            <div style="padding:12px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ f.label }}</div><div style="font:400 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-top:2px">{{ f.value }}</div></div>
+              <div class="pill">Edit</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDepartments }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Departments</div><div class="pill">+ New department</div></div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ departments }}" as="d" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ d.name }}</span><span style="color:#8c8781">{{ d.head }} · {{ d.count }} people</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLocations }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Locations</div><div class="pill">+ New location</div></div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ locations }}" as="l" hint-placeholder-count="3">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ l.name }}</span><span style="color:#8c8781">{{ l.country }} · {{ l.tz }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBusinessUnits }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Business units</div><div class="pill">+ New unit</div></div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ businessUnits }}" as="b" hint-placeholder-count="3">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ b.name }}</span><span style="color:#8c8781">Lead: {{ b.lead }} · {{ b.region }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+          <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Users</div>
+          <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:8px;padding:7px 11px;width:220px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg><span style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Search users…</span></div>
+        </div>
+        <div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap">
+          <sc-for list="{{ userFilters }}" as="f" hint-placeholder-count="5">
+            <div class="pill">{{ f }} ▾</div>
+          </sc-for>
+          <div class="pill" style="margin-left:auto">Export</div>
+          <div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">+ Invite</div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:28px 1.4fr 1fr 1fr 0.8fr 0.9fr 0.7fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div></div><div>Name</div><div>Role</div><div>Department</div><div>Status</div><div>Last login</div><div>License</div></div>
+          <sc-for list="{{ users }}" as="u" hint-placeholder-count="6">
+            <div onClick="{{ u.go }}" style="cursor:pointer;display:grid;grid-template-columns:28px 1.4fr 1fr 1fr 0.8fr 0.9fr 0.7fr;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <div onClick="{{ toggleSelection }}" style="cursor:pointer;width:16px;height:16px;border:1.5px solid {{ selBorder }};background:{{ selBg }};border-radius:5px"></div>
+              <div style="color:#1f1e1c;font-weight:500">{{ u.name }}</div>
+              <div style="color:#6b6660">{{ u.role }}</div>
+              <div style="color:#6b6660">{{ u.dept }}</div>
+              <div><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ u.statusBg }};color:{{ u.statusFg }}">{{ u.status }}</span></div>
+              <div class="mono" style="color:#8c8781;font-size:12px">{{ u.lastLogin }}</div>
+              <div style="color:#6b6660">{{ u.license }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ anySelected }}" hint-placeholder-val="{{ false }}">
+          <div style="position:sticky;bottom:16px;margin-top:14px;background:#1f1e1c;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:12px;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.2)">
+            <span style="font:400 13px 'Public Sans',sans-serif">1 selected</span>
+            <div style="display:flex;gap:8px;margin-left:auto">
+              <sc-for list="{{ userBulk }}" as="ba" hint-placeholder-count="4">
+                <span style="font:500 12.5px 'Public Sans',sans-serif;padding:5px 10px;border:1px solid rgba(255,255,255,.25);border-radius:7px;cursor:pointer">{{ ba }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ showDrawer }}" hint-placeholder-val="{{ false }}">
+          <div style="position:fixed;top:100px;right:34px;width:340px;max-height:75vh;overflow-y:auto;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:40">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+              <div><div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">{{ drawerUser.name }}</div><div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781">{{ drawerUser.role }} · {{ drawerUser.dept }}</div></div>
+              <span onClick="{{ closeDrawer }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+            </div>
+            <sc-for list="{{ drawerUser.sections }}" as="ds" hint-placeholder-count="9">
+              <div style="margin-bottom:10px">
+                <div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:4px">{{ ds.label }}</div>
+                <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ ds.value }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRoles }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Roles &amp; permissions</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">Visual RBAC editor — inheritance, effective permissions and temporary access in one place.</div>
+        <div style="display:grid;grid-template-columns:220px 1fr;gap:16px">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ roleList }}" as="r" hint-placeholder-count="7">
+              <div onClick="{{ r.go }}" style="cursor:pointer;padding:9px 11px;border-radius:8px;background:{{ r.bg }}">
+                <div style="font:500 13px 'Public Sans',sans-serif;color:{{ r.fg }}">{{ r.name }}</div>
+                <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781">{{ r.count }} users</div>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:15px 16px;margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+                <div>
+                  <div style="font:600 16px 'Public Sans',sans-serif;color:#1f1e1c">{{ selectedRole.name }}</div>
+                  <div style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">{{ selectedRole.desc }}</div>
+                </div>
+                <div style="display:flex;gap:7px"><div class="pill">Preview access</div><div class="pill">Duplicate role</div></div>
+              </div>
+              <sc-if value="{{ selectedRole.hasInherit }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 11.5px 'Public Sans',sans-serif;color:#3a5a76;background:#eef2f6;display:inline-block;padding:3px 9px;border-radius:6px;margin-top:4px">Inherits from {{ selectedRole.inheritsFrom }}</div>
+              </sc-if>
+            </div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+              <div style="display:grid;grid-template-columns:1.3fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div>Module</div><div>Effective access</div></div>
+              <sc-for list="{{ selectedRole.matrix }}" as="m" hint-placeholder-count="7">
+                <div style="display:grid;grid-template-columns:1.3fr 1fr;padding:10px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+                  <span>{{ m.module }}</span>
+                  <span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ m.bg }};color:{{ m.fg }};width:fit-content">{{ m.level }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Temporary access requests</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ tempAccess }}" as="t" hint-placeholder-count="2">
+                <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13px 'Public Sans',sans-serif;color:#3a3733">
+                  <span>{{ t.requester }} → {{ t.role }} <span style="color:#8c8781">for {{ t.duration }}</span></span>
+                  <span style="display:flex;gap:8px;align-items:center"><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ t.badgeBg }};color:{{ t.badgeFg }}">{{ t.status }}</span><div class="pill">Approve</div><div class="pill">Deny</div></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Approval center</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">Every pending decision across the organization, in one queue.</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ approvalItems }}" as="ap" hint-placeholder-count="7">
+            <div style="padding:12px 15px;border-bottom:1px solid #e8e5e0;display:flex;align-items:center;gap:12px">
+              <span style="font:500 10.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ ap.catBg }};color:{{ ap.catFg }};flex:none">{{ ap.category }}</span>
+              <div style="flex:1"><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ ap.title }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ ap.meta }}</div></div>
+              <div style="display:flex;gap:7px;flex:none"><div class="pill">Approve</div><div class="pill">Deny</div><div class="pill">Details</div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isLicensing }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Module licensing</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">What's purchased, what's available, and what your team can see.</div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Purchased modules</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ purchasedModules }}" as="m" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">{{ m.edition }}</span></div>
+              <div style="height:5px;border-radius:3px;background:#eeece7;overflow:hidden;margin-bottom:5px"><div style="height:100%;width:{{ m.usagePct }}%;background:#1f1e1c"></div></div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.usage }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Available modules &amp; trials</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+          <sc-for list="{{ availableModules }}" as="m" hint-placeholder-count="2">
+            <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.name }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.note }}</div></div>
+              <div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">{{ m.cta }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Industry packs</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ industryPacks }}" as="p" hint-placeholder-count="2">
+                <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ p.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ p.bg }};color:{{ p.fg }}">{{ p.status }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Feature flags</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ featureFlags }}" as="f" hint-placeholder-count="3">
+                <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ f.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ f.bg }};color:{{ f.fg }}">{{ f.state }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSubscription }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Subscription</div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Plan lifecycle</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <sc-for list="{{ subLifecycle }}" as="pl" hint-placeholder-count="5">
+            <div style="flex:1;border:1px solid {{ pl.border }};background:{{ pl.bg }};border-radius:9px;padding:10px 12px;text-align:center">
+              <div style="font:500 12.5px 'Public Sans',sans-serif;color:{{ pl.fg }}">{{ pl.label }}</div>
+              <div style="font:400 11px 'Public Sans',sans-serif;color:{{ pl.subFg }};margin-top:2px">{{ pl.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font:600 18px 'Public Sans',sans-serif;color:#1f1e1c">Business plan · Annual billing</div>
+            <div style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">52 of 60 seats used · renews 14 Mar 2027 · Visa •••• 4821</div>
+          </div>
+          <div style="display:flex;gap:8px"><div class="pill">Downgrade</div><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Upgrade to Enterprise</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Seat history</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ seatHistory }}" as="sh" hint-placeholder-count="3">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ sh }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Module purchases &amp; add-ons</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ modulePurchases }}" as="mp" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ mp }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Billing history &amp; plan changes</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ subInvoices }}" as="i" hint-placeholder-count="3">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ i.label }}</span><span class="mono" style="color:#8c8781">{{ i.value }}</span></div>
+          </sc-for>
+          <sc-for list="{{ planChanges }}" as="pc" hint-placeholder-count="1">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#8c8781">{{ pc }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOrgHealth }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Organization health</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">A composite score across security, licensing, usage and compliance.</div>
+        <div style="display:flex;gap:20px;align-items:center;border:1px solid #e3e0da;border-radius:11px;padding:16px;margin-bottom:12px">
+          <div style="font:600 40px 'Public Sans',sans-serif;color:#8a6d1f;flex:none">{{ orgHealthScore }}</div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
+            <sc-for list="{{ orgHealthFactors }}" as="f" hint-placeholder-count="7">
+              <div style="display:flex;justify-content:space-between;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ f.label }}</span><span class="mono" style="color:{{ f.color }}">{{ f.value }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;background:#f7f6f3;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span style="font:500 12px 'Public Sans',sans-serif;color:#1f1e1c">Why: </span>{{ orgHealthExplain }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Usage &amp; limits</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <sc-for list="{{ usageMetrics }}" as="u" hint-placeholder-count="9">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;font:400 12px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:6px"><span>{{ u.label }}</span><span class="mono" style="color:#8c8781">{{ u.current }} / {{ u.limit }}</span></div>
+              <div style="height:6px;border-radius:3px;background:#eeece7;overflow:hidden"><div style="height:100%;width:{{ u.pct }}%;background:{{ u.barColor }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBranding }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Branding</div>
+        <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:13px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font:400 13px 'Public Sans',sans-serif;color:#8a6d1f">Branding is an Enterprise feature. You're on Business — this preview shows what's included.</div>
+          <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer;flex:none">Upgrade to Enterprise</div>
+        </div>
+        <div style="opacity:.5;pointer-events:none;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px"><div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:6px">Company logo</div><div style="height:50px;border-radius:8px;background:#eeece7"></div></div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px"><div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:6px">Accent color</div><div style="display:flex;gap:8px"><div style="width:24px;height:24px;border-radius:6px;background:#1f1e1c"></div><div style="width:24px;height:24px;border-radius:6px;background:#3a5a76"></div><div style="width:24px;height:24px;border-radius:6px;background:#4a6b3d"></div></div></div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px"><div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Custom domain</div><div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781">admin.lexorion-clients.com</div></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Login screen preview</div>
+            <div style="border-radius:9px;background:#f7f6f3;height:180px;display:flex;align-items:center;justify-content:center"><div style="width:120px;height:34px;border-radius:8px;background:#eeece7"></div></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isIntegrations }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Integrations</div><div class="pill">+ Add integration</div></div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px">
+          <sc-for list="{{ integrationHealth }}" as="ih" hint-placeholder-count="7">
+            <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px;text-align:center">
+              <div style="font:400 10.5px 'Public Sans',sans-serif;color:#8c8781">{{ ih.label }}</div>
+              <div style="font:500 13px 'Public Sans',sans-serif;color:{{ ih.color }};margin-top:3px">{{ ih.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ integrations }}" as="i" hint-placeholder-count="10">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ i.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ i.statusBg }};color:{{ i.statusFg }}">{{ i.status }}</span></div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:8px">{{ i.detail }}</div>
+              <div style="display:flex;gap:6px"><div class="pill" style="padding:3px 8px;font-size:11px">{{ i.action }}</div><div class="pill" style="padding:3px 8px;font-size:11px">Logs</div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isEnvironments }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Environments</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <sc-for list="{{ environments }}" as="e" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ e.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ e.bg }};color:{{ e.fg }}">{{ e.health }}</span></div>
+              <div style="font:400 12px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:3px">{{ e.status }} · {{ e.version }}</div>
+              <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781">Restore point: {{ e.restorePoint }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+          <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Audit logs</div>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:8px;padding:7px 11px;width:200px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg><span style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Search events…</span></div>
+            <div class="pill">Export</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+          <sc-for list="{{ auditFilterChips }}" as="af" hint-placeholder-count="6">
+            <div onClick="{{ af.go }}" class="pill" style="background:{{ af.bg }};color:{{ af.fg }}">{{ af.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <sc-for list="{{ filteredAudit }}" as="ev" hint-placeholder-count="6">
+            <div>
+              <div onClick="{{ ev.toggle }}" style="cursor:pointer;display:grid;grid-template-columns:1.6fr 0.8fr 0.9fr 1fr 0.6fr;padding:11px 0;border-bottom:1px solid #e8e5e0;align-items:center;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">
+                <span>{{ ev.actor }} — {{ ev.action }}</span>
+                <span class="mono" style="color:#8c8781">{{ ev.time }}</span>
+                <span class="mono" style="color:#8c8781">{{ ev.ip }}</span>
+                <span style="color:#8c8781">{{ ev.device }}</span>
+                <span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ ev.resultBg }};color:{{ ev.resultFg }};width:fit-content">{{ ev.result }}</span>
+              </div>
+              <sc-if value="{{ ev.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#f7f6f3;border-bottom:1px solid #e8e5e0;padding:12px 15px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                  <div><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:4px">Before</div>
+                    <sc-for list="{{ ev.diff }}" as="df" hint-placeholder-count="2"><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:3px">{{ df.field }}: <span class="mono" style="color:#8a3527">{{ df.before }}</span></div></sc-for>
+                  </div>
+                  <div><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:4px">After</div>
+                    <sc-for list="{{ ev.diff }}" as="df" hint-placeholder-count="2"><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:3px">{{ df.field }}: <span class="mono" style="color:#4a6b3d">{{ df.after }}</span></div></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSecurity }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Security</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ securityItems }}" as="s" hint-placeholder-count="7">
+            <div style="padding:12px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ s.label }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ s.detail }}</div></div>
+              <span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ s.bg }};color:{{ s.fg }}">{{ s.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSecurityCenter }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Security center</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+          <sc-for list="{{ securityCenterStats }}" as="sc2" hint-placeholder-count="7">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ sc2.label }}</div><div style="font:600 20px 'Public Sans',sans-serif;color:{{ sc2.color }}">{{ sc2.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span style="font:500 12px 'Public Sans',sans-serif;color:#1f1e1c">Lex security summary: </span>{{ securitySummary }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isApiKeys }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">API keys</div><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">+ Generate key</div></div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.2fr 1.6fr 0.9fr 0.9fr 1fr 0.9fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div>Name</div><div>Scopes</div><div>Last used</div><div>Expires</div><div>Usage</div><div>Status</div></div>
+          <sc-for list="{{ apiKeys }}" as="k" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1.2fr 1.6fr 0.9fr 0.9fr 1fr 0.9fr;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">
+              <span class="mono" style="color:#1f1e1c">{{ k.name }}</span>
+              <span style="color:#8c8781">{{ k.scopes }}</span>
+              <span class="mono" style="color:#8c8781">{{ k.lastUsed }}</span>
+              <span class="mono" style="color:#8c8781">{{ k.expiration }}</span>
+              <span style="color:#8c8781">{{ k.usage }}</span>
+              <span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ k.bg }};color:{{ k.fg }};width:fit-content">{{ k.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNotifications }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Notifications</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ notifSettings }}" as="n" hint-placeholder-count="4">
+            <div style="padding:12px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ n.label }}</span><span style="display:flex;gap:6px">
+              <sc-for list="{{ n.channels }}" as="c" hint-placeholder-count="2"><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eef2f6;color:#3a5a76">{{ c }}</span></sc-for>
+            </span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDataIO }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Data import &amp; export</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <sc-for list="{{ dataJobs }}" as="j" hint-placeholder-count="5">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ j.name }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ j.detail }}</div></div>
+              <div style="display:flex;gap:7px;align-items:center"><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ j.bg }};color:{{ j.fg }}">{{ j.status }}</span><div class="pill">{{ j.action }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Import history</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ importHistory }}" as="h" hint-placeholder-count="3">
+            <div style="padding:10px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ h.label }}</span><span class="mono" style="color:#8c8781">{{ h.time }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBackup }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Backup &amp; recovery</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ backupStats }}" as="s" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ s.label }}</div><div style="font:600 18px 'Public Sans',sans-serif;color:#1f1e1c">{{ s.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Restore points</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ restorePoints }}" as="r" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ r }}</span><div class="pill">Restore</div></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSupport }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Support</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Open tickets</div>
+            <sc-for list="{{ tickets }}" as="t" hint-placeholder-count="2">
+              <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:6px"><span>{{ t.subject }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ t.bg }};color:{{ t.fg }}">{{ t.status }}</span></div>
+            </sc-for>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Implementation progress</div>
+            <sc-for list="{{ implementationProgress }}" as="ip" hint-placeholder-count="7">
+              <div style="margin-bottom:7px">
+                <div style="display:flex;justify-content:space-between;font:400 11.5px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:2px"><span>{{ ip.label }}</span><span class="mono" style="color:#8c8781">{{ ip.pct }}%</span></div>
+                <div style="height:5px;border-radius:3px;background:#eeece7;overflow:hidden"><div style="height:100%;width:{{ ip.pct }}%;background:{{ ip.color }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:6px">Customer success</div>
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">Priya Nambiar · priya@lexorion.com</div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">Next check-in: 14 Aug</div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:6px">System health</div>
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#4a6b3d">● All systems operational</div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">Release notes: v4.2 — 1 Aug 2026</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1520,&quot;height&quot;:1000}}">
+const SECTIONS = ["overview","organization","users","departments","locations","businessunits","roles","approvals","licensing","subscription","usage","orghealth","branding","integrations","environments","audit","security","securitycenter","apikeys","notifications","dataio","backup","support"];
+const LABELS = { overview:"Overview", organization:"Organization", users:"Users", departments:"Departments", locations:"Locations", businessunits:"Business Units", roles:"Roles & Permissions", approvals:"Approval Center", licensing:"Module Licensing", subscription:"Subscription", usage:"Usage & Limits", orghealth:"Organization Health", branding:"Branding", integrations:"Integrations", environments:"Environments", audit:"Audit Logs", security:"Security", securitycenter:"Security Center", apikeys:"API Keys", notifications:"Notifications", dataio:"Data Import & Export", backup:"Backup & Recovery", support:"Support" };
+const EMPTY_COPY = {
+  overview: "Nothing needs your attention right now.", organization: "Organization profile hasn't been set up yet.",
+  users: "No users match this filter.", departments: "No departments yet — add your first one.",
+  locations: "No locations added yet.", businessunits: "No business units yet.",
+  roles: "No custom roles yet — start from a system role.", approvals: "Nothing pending approval.",
+  licensing: "No modules to show.", subscription: "No subscription data available.", usage: "No usage data yet.",
+  orghealth: "Not enough history yet to compute a health score.", branding: "Branding hasn't been configured.",
+  integrations: "No integrations connected yet.", environments: "No environments provisioned yet.",
+  audit: "No audit events match these filters.", security: "No security settings configured.",
+  securitycenter: "No security signals to show.", apikeys: "No API keys yet — generate one to get started.",
+  notifications: "No notification rules configured.", dataio: "No import or export jobs yet.",
+  backup: "No backups yet.", support: "No open tickets."
+};
+const ROLES = [
+  { key: "owner", name: "Org Owner", desc: "Full, unrestricted access to every module and setting.", count: 1, inheritsFrom: "", matrix: [["Users","Full"],["Recruitment","Full"],["People","Full"],["Finance","Full"],["Clients","Full"],["Settings","Full"],["Billing","Full"]] },
+  { key: "superadmin", name: "Super Admin", desc: "Full administrative access, excluding billing changes.", count: 2, inheritsFrom: "Org Owner", matrix: [["Users","Full"],["Recruitment","Full"],["People","Full"],["Finance","Full"],["Clients","Full"],["Settings","Full"],["Billing","View"]] },
+  { key: "hradmin", name: "HR Admin", desc: "Full control of the People module, view access elsewhere.", count: 4, inheritsFrom: "", matrix: [["Users","View"],["Recruitment","View"],["People","Full"],["Finance","None"],["Clients","None"],["Settings","View"],["Billing","None"]] },
+  { key: "financeadmin", name: "Finance Admin", desc: "Full control of invoicing, payroll and revenue reporting.", count: 3, inheritsFrom: "", matrix: [["Users","None"],["Recruitment","None"],["People","View"],["Finance","Full"],["Clients","View"],["Settings","None"],["Billing","Full"]] },
+  { key: "itadmin", name: "IT Administrator", desc: "Owns security, integrations, API keys and access control.", count: 2, inheritsFrom: "", matrix: [["Users","Edit"],["Recruitment","None"],["People","None"],["Finance","None"],["Clients","None"],["Settings","Full"],["Billing","None"]] },
+  { key: "recruiter", name: "Recruiter", desc: "Edit access to recruitment, view access to clients.", count: 28, inheritsFrom: "", matrix: [["Users","None"],["Recruitment","Edit"],["People","None"],["Finance","None"],["Clients","View"],["Settings","None"],["Billing","None"]] },
+  { key: "employee", name: "Employee", desc: "Self-service access only — profile, payslips, requests.", count: 480, inheritsFrom: "", matrix: [["Users","None"],["Recruitment","None"],["People","None"],["Finance","None"],["Clients","None"],["Settings","None"],["Billing","None"]] }
+];
+const LEVEL_COLOR = { Full: ["#eaf0e6","#4a6b3d"], Edit: ["#eef2f6","#3a5a76"], View: ["#eeece7","#5c5852"], None: ["#f7f6f3","#a8a39a"] };
+const AUDIT_EVENTS = [
+  { id: "a1", actor: "Anita Rao", action: "Reset MFA for K. Iyer", category: "Security", time: "6 Aug, 10:12am", ip: "49.32.11.4", device: "Chrome / macOS", result: "Success", diff: [{ field: "MFA status", before: "Enrolled (SMS)", after: "Not enrolled" }] },
+  { id: "a2", actor: "System", action: "Slack integration sync failed", category: "Integration", time: "6 Aug, 6:00am", ip: "—", device: "Server", result: "Failed", diff: [{ field: "Sync status", before: "Healthy", after: "Failed — auth token expired" }] },
+  { id: "a3", actor: "R. Iyer", action: "Invited 2 new users", category: "User", time: "5 Aug, 4:20pm", ip: "103.21.9.5", device: "Chrome / Windows", result: "Success", diff: [{ field: "Seats used", before: "50", after: "52" }, { field: "Pending invites", before: "1", after: "3" }] },
+  { id: "a4", actor: "Finance Admin", action: "Downgraded seats from 60 to 52", category: "Billing", time: "4 Aug, 11:00am", ip: "103.21.9.5", device: "Safari / macOS", result: "Success", diff: [{ field: "Seats purchased", before: "60", after: "52" }] },
+  { id: "a5", actor: "IT Administrator", action: "Rotated API key 'prod-integrations'", category: "Security", time: "3 Aug, 9:45am", ip: "49.32.11.4", device: "Chrome / macOS", result: "Success", diff: [{ field: "Key secret", before: "sk_live_••••8f2a", after: "sk_live_••••c910" }] },
+  { id: "a6", actor: "System", action: "Bulk employee import — 240 records", category: "Data", time: "1 Aug, 2:00pm", ip: "—", device: "Server", result: "Success", diff: [{ field: "Employees", before: "240", after: "480" }] }
+];
+const AUDIT_CATEGORIES = ["User","Security","Billing","Integration","Data"];
+const USER_DETAILS = {
+  "Anita Rao": [{ label: "Roles", value: "Org Owner" }, { label: "Departments", value: "Leadership" }, { label: "Licenses", value: "Full — all modules" }, { label: "Devices", value: "MacBook Pro, iPhone 15" }, { label: "Sessions", value: "2 active sessions" }, { label: "API tokens", value: "1 personal token" }, { label: "Login history", value: "Just now · 6 Aug, 8:02am" }, { label: "MFA", value: "Enrolled (App)" }, { label: "Recent activity", value: "Approved 2 role changes, viewed billing" }],
+  "R. Iyer": [{ label: "Roles", value: "Super Admin" }, { label: "Departments", value: "Recruitment Ops" }, { label: "Licenses", value: "Full — all modules" }, { label: "Devices", value: "Windows laptop" }, { label: "Sessions", value: "1 active session" }, { label: "API tokens", value: "0" }, { label: "Login history", value: "2 hrs ago · 5 Aug, 9:00am" }, { label: "MFA", value: "Enrolled (SMS)" }, { label: "Recent activity", value: "Invited 2 users, updated client contract" }],
+  "K. Shah": [{ label: "Roles", value: "Account Manager" }, { label: "Departments", value: "Enterprise Accounts" }, { label: "Licenses", value: "Standard" }, { label: "Devices", value: "MacBook Air" }, { label: "Sessions", value: "1 active session" }, { label: "API tokens", value: "0" }, { label: "Login history", value: "1 day ago" }, { label: "MFA", value: "Not enrolled" }, { label: "Recent activity", value: "Updated Vertex Retail renewal terms" }],
+  "N. Bhatt": [{ label: "Roles", value: "Finance Admin" }, { label: "Departments", value: "Finance" }, { label: "Licenses", value: "Full — Finance module" }, { label: "Devices", value: "Windows desktop" }, { label: "Sessions", value: "1 active session" }, { label: "API tokens", value: "1 service token" }, { label: "Login history", value: "3 hrs ago" }, { label: "MFA", value: "Enrolled (App)" }, { label: "Recent activity", value: "Downgraded seats, generated 3 invoices" }],
+  "T. Kulkarni": [{ label: "Roles", value: "Recruiter (pending)" }, { label: "Departments", value: "Recruitment Ops" }, { label: "Licenses", value: "Pending assignment" }, { label: "Devices", value: "—" }, { label: "Sessions", value: "None" }, { label: "API tokens", value: "0" }, { label: "Login history", value: "Never logged in" }, { label: "MFA", value: "Not set up" }, { label: "Recent activity", value: "Awaiting approval since 5 Aug" }],
+  "S. Menon": [{ label: "Roles", value: "IT Administrator" }, { label: "Departments", value: "Engineering" }, { label: "Licenses", value: "Full — Settings, Security" }, { label: "Devices", value: "2 devices (1 flagged)" }, { label: "Sessions", value: "Suspended — 0 active" }, { label: "API tokens", value: "2 tokens (1 expiring)" }, { label: "Login history", value: "14 days ago" }, { label: "MFA", value: "Enrolled (App)" }, { label: "Recent activity", value: "Account suspended pending review" }]
+};
+const TENANT_LIFECYCLE_DEFS = [
+  ["Trial", "Completed 12 Feb 2024"], ["Workspace Created", "14 Feb 2024"], ["Users Invited", "20 Feb 2024"],
+  ["Modules Activated", "1 Mar 2024"], ["Go Live", "15 Mar 2024"], ["Production", "since 15 Mar 2024"],
+  ["Expansion", "in progress"], ["Renewal", "14 Mar 2027"]
+];
+const SYSTEM_STATUS_DEFS = [["API","Operational","#4a6b3d"],["Database","Operational","#4a6b3d"],["Queues","Degraded","#8a6d1f"],["Email","Operational","#4a6b3d"],["Integrations","Degraded","#8a6d1f"],["Background jobs","Operational","#4a6b3d"],["Incidents","0 active","#4a6b3d"]];
+const ENVIRONMENTS = [
+  { name: "Production", status: "Live", version: "v4.2.1", health: "Healthy", bg: "#eaf0e6", fg: "#4a6b3d", restorePoint: "6 Aug, 3:00am" },
+  { name: "Sandbox", status: "Active", version: "v4.3.0-beta", health: "Healthy", bg: "#eaf0e6", fg: "#4a6b3d", restorePoint: "5 Aug, 3:00am" },
+  { name: "UAT", status: "Active", version: "v4.2.1", health: "Warning", bg: "#f5efdd", fg: "#8a6d1f", restorePoint: "4 Aug, 3:00am" },
+  { name: "Development", status: "Active", version: "v4.3.0-dev", health: "Healthy", bg: "#eaf0e6", fg: "#4a6b3d", restorePoint: "—" }
+];
+const APPROVAL_ITEMS = [
+  { category: "User", catBg: "#eef2f6", catFg: "#3a5a76", title: "3 user invites awaiting approval", meta: "Requested by R. Iyer, Recruitment Ops" },
+  { category: "Role", catBg: "#f5efdd", catFg: "#8a6d1f", title: "T. Kulkarni requesting Finance Admin (view) for 7 days", meta: "Temporary access" },
+  { category: "Module", catBg: "#eaf0e6", catFg: "#4a6b3d", title: "Payroll module upgrade request", meta: "Requested by N. Bhatt, Finance" },
+  { category: "Subscription", catBg: "#fbf2f0", catFg: "#8a3527", title: "Upgrade to Enterprise plan", meta: "Requested by Anita Rao — unlocks Branding" },
+  { category: "API", catBg: "#eef2f6", catFg: "#3a5a76", title: "New API key request — reporting integration", meta: "Requested by S. Menon, Engineering" },
+  { category: "Access", catBg: "#f5efdd", catFg: "#8a6d1f", title: "S. Bose requesting Super Admin for 24 hours", meta: "Temporary access" },
+  { category: "Data", catBg: "#eaf0e6", catFg: "#4a6b3d", title: "Data export request — full employee dataset", meta: "Requested by N. Bhatt, for audit purposes" }
+];
+const SUB_LIFECYCLE_DEFS = ["Trial","Professional","Business","Enterprise","Renewal"];
+const ORG_HEALTH_FACTORS = [
+  { label: "Security", value: "62 — SSO missing", color: "#b5493a" }, { label: "Licensing", value: "88 — well utilized", color: "#4a6b3d" },
+  { label: "Usage", value: "74 — steady", color: "#8a6d1f" }, { label: "Integrations", value: "55 — 2 failing", color: "#b5493a" },
+  { label: "Storage", value: "70 — 82% used", color: "#8a6d1f" }, { label: "Compliance", value: "90 — up to date", color: "#4a6b3d" },
+  { label: "Inactive users", value: "80 — 3 dormant", color: "#8a6d1f" }
+];
+const SECURITY_CENTER_STATS = [
+  { label: "Risk score", value: "Medium", color: "#8a6d1f" }, { label: "Failed logins (7d)", value: "14", color: "#8a6d1f" },
+  { label: "Dormant accounts", value: "3", color: "#8a6d1f" }, { label: "API abuse flags", value: "0", color: "#4a6b3d" },
+  { label: "Geo anomalies", value: "1", color: "#b5493a" }, { label: "MFA adoption", value: "84%", color: "#4a6b3d" },
+  { label: "Expiring credentials", value: "2", color: "#8a6d1f" }
+];
+const IMPLEMENTATION_PROGRESS = [
+  { label: "Users", pct: 100, color: "#4a6b3d" }, { label: "Recruitment", pct: 90, color: "#4a6b3d" },
+  { label: "Clients", pct: 75, color: "#8a6d1f" }, { label: "Finance", pct: 60, color: "#8a6d1f" },
+  { label: "Payroll", pct: 20, color: "#b5493a" }, { label: "Branding", pct: 0, color: "#b5493a" }, { label: "SSO", pct: 0, color: "#b5493a" }
+];
+
+class Component extends DCLogic {
+  state = { section: "overview", demo: "success", anySelected: false, selectedRoleKey: "owner", auditFilters: { User: true, Security: true, Billing: true, Integration: true, Data: true }, selectedUserName: null, expandedAuditId: null };
+  nav(section) { return () => this.setState({ section, demo: "success", anySelected: false }); }
+  toggleAuditFilter(cat) { this.setState(s => ({ auditFilters: { ...s.auditFilters, [cat]: !s.auditFilters[cat] } })); }
+  toggleAuditExpand(id) { this.setState(s => ({ expandedAuditId: s.expandedAuditId === id ? null : id })); }
+
+  renderVals() {
+    const s = this.state;
+    const screenLabel = LABELS[s.section];
+    const crumbs = [["Administration","overview"],[screenLabel,s.section]].map(([label,key],i,arr) => { const isLast = i === arr.length - 1; return { label, color: isLast ? "#1f1e1c" : "#8c8781", cursor: isLast ? "default" : "pointer", go: isLast ? () => {} : this.nav(key) }; });
+    const sections = SECTIONS.map(k => ({ label: LABELS[k], go: this.nav(k), bg: s.section === k ? "#e8e5e0" : "transparent", fg: s.section === k ? "#1f1e1c" : "#8c8781" }));
+    const demoChips = [["success","Success"],["empty","Empty"],["loading","Loading"],["error","Error"],["denied","No access"],["upgrade","Upgrade"],["readonly","Read-only"]]
+      .map(([key,label]) => ({ label, go: () => this.setState({ demo: key }), bg: s.demo === key ? "#1f1e1c" : "transparent", fg: s.demo === key ? "#fff" : "#8c8781" }));
+
+    const selRole = ROLES.find(r => r.key === s.selectedRoleKey) || ROLES[0];
+    const selectedRole = { name: selRole.name, desc: selRole.desc, hasInherit: !!selRole.inheritsFrom, inheritsFrom: selRole.inheritsFrom,
+      matrix: selRole.matrix.map(([module,level]) => ({ module, level, bg: LEVEL_COLOR[level][0], fg: LEVEL_COLOR[level][1] })) };
+    const roleList = ROLES.map(r => ({ name: r.name, count: r.count, go: () => this.setState({ selectedRoleKey: r.key }), bg: r.key === s.selectedRoleKey ? "#e8e5e0" : "transparent", fg: "#1f1e1c" }));
+
+    return {
+      goHome: this.nav("overview"), toSuccess: () => this.setState({ demo: "success" }),
+      emptyTitle: s.demo === "empty" ? "Nothing here yet" : "", emptyBody: EMPTY_COPY[s.section] || "No records for this view.",
+      toggleSelection: (e) => { e.stopPropagation(); this.setState(s2 => ({ anySelected: !s2.anySelected })); },
+      anySelected: s.anySelected, selBorder: s.anySelected ? "#1f1e1c" : "#cdc8c0", selBg: s.anySelected ? "#1f1e1c" : "transparent",
+      crumbs, demoChips, sections, screenLabel,
+      showEmpty: s.demo === "empty", showLoading: s.demo === "loading", showError: s.demo === "error",
+      showDenied: s.demo === "denied", showUpgrade: s.demo === "upgrade", showReadonly: s.demo === "readonly", showSuccess: s.demo === "success",
+      skeletonRows: ["95%","88%","70%","92%","60%"],
+      isOverview: s.section === "overview", isOrganization: s.section === "organization", isUsers: s.section === "users",
+      isDepartments: s.section === "departments", isLocations: s.section === "locations", isBusinessUnits: s.section === "businessunits",
+      isRoles: s.section === "roles", isApprovals: s.section === "approvals", isLicensing: s.section === "licensing", isSubscription: s.section === "subscription",
+      isUsage: s.section === "usage", isOrgHealth: s.section === "orghealth", isBranding: s.section === "branding", isIntegrations: s.section === "integrations",
+      isEnvironments: s.section === "environments", isAudit: s.section === "audit", isSecurity: s.section === "security", isSecurityCenter: s.section === "securitycenter", isApiKeys: s.section === "apikeys",
+      isNotifications: s.section === "notifications", isDataIO: s.section === "dataio", isBackup: s.section === "backup", isSupport: s.section === "support",
+
+      tenantLifecycle: (() => { const currentIdx = 5; return TENANT_LIFECYCLE_DEFS.map(([name,time],i) => ({ name, time,
+        status: i < currentIdx ? "Done" : i === currentIdx ? "Current" : "Upcoming",
+        mark: i < currentIdx ? "✓" : String(i+1),
+        dotBg: i < currentIdx ? "#4a6b3d" : i === currentIdx ? "#1f1e1c" : "#cdc8c0" })); })(),
+      systemStatus: SYSTEM_STATUS_DEFS.map(([label,status,color]) => ({ label, status, color })),
+      environments: ENVIRONMENTS,
+      approvalItems: APPROVAL_ITEMS,
+      integrationHealth: [
+        { label: "Healthy", value: "7", color: "#4a6b3d" }, { label: "Warning", value: "1", color: "#8a6d1f" },
+        { label: "Offline", value: "0", color: "#4a6b3d" }, { label: "Deprecated", value: "0", color: "#4a6b3d" },
+        { label: "Avg sync time", value: "1.8s", color: "#1f1e1c" }, { label: "Failed jobs (24h)", value: "3", color: "#b5493a" },
+        { label: "Retry queue", value: "2", color: "#8a6d1f" }
+      ],
+      subLifecycle: (() => { const idx = SUB_LIFECYCLE_DEFS.indexOf("Business"); return SUB_LIFECYCLE_DEFS.map((label,i) => ({ label,
+        sub: i < idx ? "Completed" : i === idx ? "Current" : "Upcoming",
+        border: i === idx ? "#1f1e1c" : "#e3e0da", bg: i < idx ? "#eaf0e6" : i === idx ? "#f7f6f3" : "#fdfdfc",
+        fg: i < idx ? "#4a6b3d" : i === idx ? "#1f1e1c" : "#8c8781", subFg: i === idx ? "#5c5852" : "#a8a39a" })); })(),
+      seatHistory: ["60 seats purchased — 1 Jun 2025", "8 seats added — 12 Nov 2025", "Downgraded to 52 active — 4 Aug 2026"],
+      modulePurchases: ["Recruitment — Professional, 1 Jun 2025", "Clients — Professional, 3 Sep 2025", "People — Business, 1 Jan 2026", "Payroll — Trial started, 2 Aug 2026"],
+      planChanges: ["Upgraded Professional → Business — 1 Jan 2026"],
+      orgHealthScore: 74,
+      orgHealthFactors: ORG_HEALTH_FACTORS,
+      orgHealthExplain: "Licensing and compliance are strong, but a missing SSO setup and 2 failing integrations are dragging the score down — resolving those would move the org from 74 to an estimated 85+.",
+      securityCenterStats: SECURITY_CENTER_STATS,
+      securitySummary: "Overall risk is medium. The geo anomaly (login from an unrecognized region) and 3 dormant accounts are the top items — recommend reviewing both this week alongside enabling SSO.",
+      implementationProgress: IMPLEMENTATION_PROGRESS,
+
+      needsAttention: [
+        { title: "3 users awaiting approval", meta: "Invited from Recruitment Ops", action: "Review", dot: "#8a6d1f", go: this.nav("users") },
+        { title: "Payroll module trial expires in 5 days", meta: "Business edition required to continue", action: "Upgrade", dot: "#8a6d1f", go: this.nav("licensing") },
+        { title: "SSO not configured", meta: "Recommended before onboarding more users", action: "Set up", dot: "#b5493a", go: this.nav("security") },
+        { title: "API key 'legacy-payroll-sync' expiring", meta: "Expires 9 Aug 2026", action: "Rotate", dot: "#8a6d1f", go: this.nav("apikeys") },
+        { title: "Storage nearing limit", meta: "412GB of 500GB used (82%)", action: "Review", dot: "#8a6d1f", go: this.nav("usage") },
+        { title: "2 failed integrations", meta: "Slack, Accounting (Tally)", action: "View", dot: "#b5493a", go: this.nav("integrations") }
+      ],
+      dashStats: [
+        { label: "Active users", value: "52 / 60", color: "#1f1e1c" }, { label: "Modules licensed", value: "4 + 1 trial", color: "#1f1e1c" },
+        { label: "Storage used", value: "82%", color: "#8a6d1f" }, { label: "Open audit alerts", value: "2", color: "#b5493a" }
+      ],
+      aiActions: [
+        "License optimization: 3 users haven't logged in for 60+ days — reclaim their licenses to save 3 seats.",
+        "Permission cleanup: IT Administrator grants Settings:Full to 2 users who haven't used it in 90 days — review for risk.",
+        "Storage forecasting: at current growth, you'll hit your 500GB storage limit in about 6 weeks.",
+        "Integration recovery: Slack and Tally have been failing for 3+ days — reconnect to avoid missed notifications.",
+        "Security recommendation: SSO is not yet configured — enabling it is the top security improvement available.",
+        "Compliance reminder: your data processing agreement renewal is due in 21 days."
+      ],
+      recentAudit: AUDIT_EVENTS.slice(0,4).map(e => ({ time: e.time, actor: e.actor, action: e.action })),
+
+      orgFields: [
+        { label: "Legal entity", value: "Lexorion Technologies Pvt Ltd" }, { label: "Tax ID (GSTIN)", value: "27AAAPL1234C1Z5" },
+        { label: "Registered address", value: "14th Floor, BKC, Mumbai, Maharashtra 400051" }, { label: "Business units", value: "3 units" },
+        { label: "Time zone", value: "Asia/Kolkata (IST)" }, { label: "Currency", value: "INR (₹)" },
+        { label: "Languages", value: "English, Hindi" }, { label: "Industry pack", value: "Staffing & Recruiting" },
+        { label: "Primary contact", value: "Anita Rao, COO" }
+      ],
+      departments: [
+        { name: "Engineering", head: "S. Menon", count: 34 }, { name: "Recruitment Ops", head: "R. Iyer", count: 18 },
+        { name: "Finance", head: "N. Bhatt", count: 9 }, { name: "People Ops", head: "K. Iyer", count: 6 }
+      ],
+      locations: [
+        { name: "Mumbai HQ", country: "India", tz: "IST" }, { name: "Bengaluru Office", country: "India", tz: "IST" },
+        { name: "Remote — APAC", country: "Various", tz: "Mixed" }
+      ],
+      businessUnits: [
+        { name: "Staffing Services", lead: "R. Iyer", region: "India" }, { name: "Enterprise Accounts", lead: "K. Shah", region: "India" },
+        { name: "Shared Services", lead: "N. Bhatt", region: "India" }
+      ],
+
+      userFilters: ["Role", "Department", "Status", "License"],
+      users: [
+        { name: "Anita Rao", role: "Org Owner", dept: "Leadership", status: "Active", statusBg: "#eaf0e6", statusFg: "#4a6b3d", lastLogin: "Just now", license: "Full" },
+        { name: "R. Iyer", role: "Super Admin", dept: "Recruitment Ops", status: "Active", statusBg: "#eaf0e6", statusFg: "#4a6b3d", lastLogin: "2 hrs ago", license: "Full" },
+        { name: "K. Shah", role: "Account Manager", dept: "Enterprise Accounts", status: "Active", statusBg: "#eaf0e6", statusFg: "#4a6b3d", lastLogin: "1 day ago", license: "Standard" },
+        { name: "N. Bhatt", role: "Finance Admin", dept: "Finance", status: "Active", statusBg: "#eaf0e6", statusFg: "#4a6b3d", lastLogin: "3 hrs ago", license: "Full" },
+        { name: "T. Kulkarni", role: "Recruiter", dept: "Recruitment Ops", status: "Pending approval", statusBg: "#f5efdd", statusFg: "#8a6d1f", lastLogin: "—", license: "Pending" },
+        { name: "S. Menon", role: "IT Administrator", dept: "Engineering", status: "Suspended", statusBg: "#fbf2f0", statusFg: "#8a3527", lastLogin: "14 days ago", license: "Full" }
+      ].map(u => ({ ...u, go: () => this.setState({ selectedUserName: u.name }) })),
+      userBulk: ["Assign role", "Reset MFA", "Suspend", "Deactivate"],
+      showDrawer: !!s.selectedUserName,
+      closeDrawer: () => this.setState({ selectedUserName: null }),
+      drawerUser: (() => { const list = USER_DETAILS[s.selectedUserName] || []; const roleVal = (list.find(x => x.label === "Roles") || {}).value || ""; const deptVal = (list.find(x => x.label === "Departments") || {}).value || ""; return { name: s.selectedUserName || "", role: roleVal, dept: deptVal, sections: list }; })(),
+
+      roleList, selectedRole,
+      tempAccess: [
+        { requester: "T. Kulkarni", role: "Finance Admin (view)", duration: "7 days", status: "Pending", badgeBg: "#f5efdd", badgeFg: "#8a6d1f" },
+        { requester: "S. Bose", role: "Super Admin", duration: "24 hours", status: "Approved", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d" }
+      ],
+
+      purchasedModules: [
+        { name: "Recruitment", edition: "Professional", usagePct: 82, usage: "82% of purchased seats used" },
+        { name: "People", edition: "Business", usagePct: 60, usage: "60% of purchased seats used" },
+        { name: "Finance", edition: "Business", usagePct: 45, usage: "45% of purchased seats used" },
+        { name: "Clients", edition: "Professional", usagePct: 70, usage: "70% of purchased seats used" }
+      ],
+      availableModules: [
+        { name: "Payroll", note: "Trial — 5 days left, requires Business edition", cta: "Upgrade" },
+        { name: "Compliance Pack", note: "Not purchased", cta: "Request access" }
+      ],
+      industryPacks: [
+        { name: "Staffing & Recruiting Pack", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { name: "Healthcare Compliance Pack", status: "Requires Enterprise", bg: "#f5efdd", fg: "#8a6d1f" }
+      ],
+      featureFlags: [
+        { name: "AI Resume Parsing (Beta)", state: "On", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { name: "New Invoice Builder (Beta)", state: "Off", bg: "#eeece7", fg: "#8c8781" },
+        { name: "Lex Proactive Alerts", state: "On", bg: "#eaf0e6", fg: "#4a6b3d" }
+      ],
+
+      subInvoices: [
+        { label: "INV-ORG-0142 — Aug 2026", value: "₹4.8L paid" }, { label: "INV-ORG-0119 — Jul 2026", value: "₹4.8L paid" },
+        { label: "INV-ORG-0098 — Jun 2026", value: "₹4.6L paid" }
+      ],
+
+      usageMetrics: [
+        { label: "Users", current: "52", limit: "60", pct: 87, barColor: "#8a6d1f" }, { label: "Storage", current: "412GB", limit: "500GB", pct: 82, barColor: "#8a6d1f" },
+        { label: "API requests (mo.)", current: "1.2M", limit: "2M", pct: 60, barColor: "#1f1e1c" }, { label: "Documents", current: "8,400", limit: "Unlimited", pct: 20, barColor: "#1f1e1c" },
+        { label: "Candidates", current: "3,200", limit: "Unlimited", pct: 25, barColor: "#1f1e1c" }, { label: "Employees", current: "480", limit: "600", pct: 80, barColor: "#8a6d1f" },
+        { label: "Invoices (mo.)", current: "1,100", limit: "Unlimited", pct: 15, barColor: "#1f1e1c" }, { label: "Notifications (mo.)", current: "22k", limit: "50k", pct: 44, barColor: "#1f1e1c" },
+        { label: "Integrations", current: "6", limit: "10", pct: 60, barColor: "#1f1e1c" }
+      ],
+
+      integrations: [
+        { name: "Microsoft 365", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · synced 4 min ago", action: "Reconnect" },
+        { name: "Google Workspace", status: "Not connected", statusBg: "#eeece7", statusFg: "#8c8781", detail: "Connect to enable SSO and calendar sync", action: "Connect" },
+        { name: "Slack", status: "Degraded", statusBg: "#f5efdd", statusFg: "#8a6d1f", detail: "3 errors · last synced 6 hrs ago", action: "Reconnect" },
+        { name: "Teams", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · synced 12 min ago", action: "Reconnect" },
+        { name: "Sentry", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · synced 1 min ago", action: "Reconnect" },
+        { name: "Webhook (custom)", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · 0 errors", action: "Manage" },
+        { name: "HRMS (Darwinbox)", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · synced overnight", action: "Reconnect" },
+        { name: "Payroll (Zoho)", status: "Trial", statusBg: "#f5efdd", statusFg: "#8a6d1f", detail: "5 days left in trial", action: "Upgrade" },
+        { name: "Accounting (Tally)", status: "Not connected", statusBg: "#eeece7", statusFg: "#8c8781", detail: "Connect to sync invoices automatically", action: "Connect" },
+        { name: "Job Boards (Naukri, LinkedIn)", status: "Connected", statusBg: "#eaf0e6", statusFg: "#4a6b3d", detail: "Healthy · synced 30 min ago", action: "Reconnect" }
+      ],
+
+      auditFilterChips: AUDIT_CATEGORIES.map(cat => ({ label: cat, go: () => this.toggleAuditFilter(cat), bg: s.auditFilters[cat] ? "#1f1e1c" : "transparent", fg: s.auditFilters[cat] ? "#fff" : "#8c8781" })),
+      filteredAudit: AUDIT_EVENTS.filter(e => s.auditFilters[e.category]).map(e => ({ ...e, resultBg: e.result === "Success" ? "#eaf0e6" : "#fbf2f0", resultFg: e.result === "Success" ? "#4a6b3d" : "#8a3527", expanded: s.expandedAuditId === e.id, toggle: () => this.toggleAuditExpand(e.id) })),
+
+      securityItems: [
+        { label: "Single sign-on (SSO)", detail: "Not configured", status: "Action needed", bg: "#fbf2f0", fg: "#8a3527" },
+        { label: "Multi-factor authentication", detail: "Required for all admins", status: "Enforced", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { label: "Password policy", detail: "Min 12 characters, rotation every 90 days", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { label: "Session management", detail: "Auto-logout after 30 min idle", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { label: "Trusted devices", detail: "14 devices registered", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { label: "Trusted IP ranges", detail: "2 office IP ranges allow-listed", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { label: "Security alerts", detail: "1 new sign-in from unrecognized device", status: "1 alert", bg: "#f5efdd", fg: "#8a6d1f" }
+      ],
+
+      apiKeys: [
+        { name: "prod-integrations", scopes: "read:employees, write:invoices", lastUsed: "2 hrs ago", expiration: "12 Nov 2026", usage: "14.2k calls/mo", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { name: "reporting-readonly", scopes: "read:reports", lastUsed: "6 Aug", expiration: "—", usage: "3.1k calls/mo", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d" },
+        { name: "legacy-payroll-sync", scopes: "read:payroll, write:payroll", lastUsed: "41 days ago", expiration: "9 Aug 2026", usage: "0 calls/mo", status: "Expiring soon", bg: "#f5efdd", fg: "#8a6d1f" }
+      ],
+
+      notifSettings: [
+        { label: "Security alerts", channels: ["Email","In-app"] }, { label: "Billing & subscription", channels: ["Email"] },
+        { label: "Integration failures", channels: ["Email","Slack"] }, { label: "Audit digest (weekly)", channels: ["Email"] }
+      ],
+
+      dataJobs: [
+        { name: "Employee import", detail: "Last run 1 Aug · 240 records", status: "Success", bg: "#eaf0e6", fg: "#4a6b3d", action: "Run again" },
+        { name: "Client import", detail: "Last run 28 Jul · 24 records, 2 flagged", status: "Needs review", bg: "#f5efdd", fg: "#8a6d1f", action: "Validate" },
+        { name: "Candidate import", detail: "Last run 20 Jul · 1,140 records", status: "Success", bg: "#eaf0e6", fg: "#4a6b3d", action: "Run again" },
+        { name: "CSV import (custom)", detail: "No jobs run yet", status: "Ready", bg: "#eeece7", fg: "#8c8781", action: "Start import" },
+        { name: "Backup export", detail: "Last export 6 Aug, 3:00am · 12GB", status: "Success", bg: "#eaf0e6", fg: "#4a6b3d", action: "Download" }
+      ],
+      importHistory: [
+        { label: "Employee import — 240 records, 0 errors", time: "1 Aug, 2:00pm" }, { label: "Client import — 24 records, 2 flagged", time: "28 Jul, 10:15am" },
+        { label: "Candidate import — 1,140 records, 0 errors", time: "20 Jul, 9:00am" }
+      ],
+
+      backupStats: [
+        { label: "Last backup", value: "Today, 3:00am" }, { label: "Schedule", value: "Daily" },
+        { label: "Retention", value: "30 days" }, { label: "Storage used", value: "12GB" }
+      ],
+      restorePoints: ["6 Aug, 3:00am", "5 Aug, 3:00am", "4 Aug, 3:00am", "3 Aug, 3:00am"],
+
+      tickets: [
+        { subject: "SSO setup guidance", status: "Open", bg: "#f5efdd", fg: "#8a6d1f" }, { subject: "Bulk import validation error", status: "In progress", bg: "#eef2f6", fg: "#3a5a76" }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+package com.lexorion.workforce.api;public class WorkforceException extends RuntimeException{private final int status;public WorkforceException(int status,String message){super(message);this.status=status;}public int status(){return status;}}

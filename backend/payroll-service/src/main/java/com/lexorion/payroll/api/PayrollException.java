@@ -1,0 +1,1 @@
+package com.lexorion.payroll.api;public class PayrollException extends RuntimeException{private final int status;public PayrollException(int status,String message){super(message);this.status=status;}public int status(){return status;}}

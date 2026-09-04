@@ -1,0 +1,1 @@
+package com.lexorion.workforce.repository;import com.lexorion.workforce.domain.OrganizationChangeEvent;import java.util.UUID;import org.springframework.data.jpa.repository.JpaRepository;public interface OrganizationChangeEventRepository extends JpaRepository<OrganizationChangeEvent,UUID>{long countByWorkspaceId(UUID workspaceId);}

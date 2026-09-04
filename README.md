@@ -1,6 +1,6 @@
 # Lexorion Horizon
 
-Lexorion Horizon is an Enterprise Human Resource Management System (HRMS) developed using a Microservices Architecture. The platform integrates recruitment, workforce management, finance, client management, notifications, and reporting into a modular and scalable ecosystem.
+Lexorion Horizon is an academic enterprise HRMS project built with a microservices architecture. The current implementation includes platform and tenant administration, Workforce functionality, foundational Payroll workflows, a Finance service shell, service discovery, an API Gateway, and a React frontend.
 
 ## Project Members
 
@@ -13,21 +13,20 @@ Lexorion Horizon is an Enterprise Human Resource Management System (HRMS) develo
 
 Lexorion Horizon is designed to simplify Human Resource Management by separating business capabilities into independent microservices. Each service owns its own data and communicates with other services through REST APIs, providing scalability, maintainability, and flexibility.
 
-## Core Microservices
+## Current Services
 
-- Authentication Service
-- Organization Service
-- Recruitment Service
+- Platform Service
 - Workforce Service
+- Payroll Service
 - Finance Service
-- Client Service
-- Notification Service
-- Reporting Service
+- API Gateway
+- Eureka Server
+- React/Vite Frontend
 
 ## Technology Stack
 
 - Java 21
-- Spring Boot 3.x
+- Spring Boot 4.1
 - Spring Cloud
 - React.js
 - TypeScript
@@ -35,23 +34,35 @@ Lexorion Horizon is designed to simplify Human Resource Management by separating
 - Spring Data JPA
 - Spring Security
 - JWT
-- Redis
-- Apache Kafka
 - Maven
+- Docker Compose
+- Jenkins Pipeline
 
 ## Repository Structure
 
 ```text
-docs/
-└── Phase-1/
-    ├── Synopsis/
-    └── ERD/
+Horizon/
+├── backend/
+│   ├── api-gateway/
+│   ├── eureka-server/
+│   ├── finance-service/
+│   ├── payroll-service/
+│   ├── platform-service/
+│   └── workforce-service/
+├── frontend/
+├── docs/
+├── design/
+├── docker-compose.yml
+└── Jenkinsfile
 ```
 
-## Phase 1 Deliverables
+## Documentation
 
-- Synopsis Document (Word & PDF)
-- Entity Relationship Diagrams (PNG)
+- Phase 1 synopsis and ERD material is under `docs/Phase-1/`.
+- Docker instructions are in `docs/docker.md`.
+- Jenkins CI information is in `docs/ci-cd.md`.
+
+PostgreSQL is an external dependency and is not included in Docker Compose. See the Docker documentation for required environment variables and known local database prerequisites.
 
 ## License
 

@@ -1,0 +1,1 @@
+import type{ReactNode}from"react";import{Page}from"../../components/ui/Page";export function AdminScreen({title,children}:{sectionKey:string;title:string;children:ReactNode}){return <Page title={title}>{children}</Page>}

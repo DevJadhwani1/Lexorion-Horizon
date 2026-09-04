@@ -1,0 +1,1 @@
+package com.lexorion.workforce.api;public final class InactiveDesignationException extends WorkforceException{public InactiveDesignationException(){super(400,"Designation is inactive or unavailable in this workspace");}}

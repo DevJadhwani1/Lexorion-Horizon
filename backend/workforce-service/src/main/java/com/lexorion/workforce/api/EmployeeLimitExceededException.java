@@ -1,0 +1,1 @@
+package com.lexorion.workforce.api;public final class EmployeeLimitExceededException extends WorkforceException{public EmployeeLimitExceededException(){super(403,"Employee limit entitlement denied");}}

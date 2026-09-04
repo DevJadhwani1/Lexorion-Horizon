@@ -1,0 +1,122 @@
+name: lexorion-horizon
+
+x-backend-healthcheck: &backend-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 30s
+
+x-database-environment: &database-environment
+  DB_HOST: ${DB_HOST:-host.docker.internal}
+  DB_PORT: ${DB_PORT:-5432}
+  DB_USERNAME:
+  DB_PASSWORD:
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
+
+services:
+  eureka:
+    build: ./backend/eureka-server
+    environment:
+      EUREKA_PORT: 9003
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
+    ports: ["9003:9003"]
+    networks: [horizon]
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9003/actuator/health"]
+
+  platform:
+    build: ./backend/platform-service
+    environment:
+      <<: *database-environment
+      PLATFORM_PORT: 9002
+      DB_NAME: ${PLATFORM_DB_NAME:-platform_db}
+      JWT_SECRET:
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["9002:9002"]
+    networks: [horizon]
+    depends_on:
+      eureka: {condition: service_healthy}
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9002/actuator/health"]
+
+  workforce:
+    build: ./backend/workforce-service
+    environment:
+      <<: *database-environment
+      WORKFORCE_PORT: 9004
+      DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
+      LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["9004:9004"]
+    networks: [horizon]
+    depends_on:
+      eureka: {condition: service_healthy}
+      platform: {condition: service_healthy}
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9004/actuator/health"]
+
+  payroll:
+    build: ./backend/payroll-service
+    environment:
+      <<: *database-environment
+      PAYROLL_PORT: 9005
+      DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
+      LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
+      LEXORION_WORKFORCE_SERVICE_URL: http://workforce:9004
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["9005:9005"]
+    networks: [horizon]
+    depends_on:
+      eureka: {condition: service_healthy}
+      platform: {condition: service_healthy}
+      workforce: {condition: service_healthy}
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9005/actuator/health"]
+
+  finance:
+    build: ./backend/finance-service
+    environment:
+      <<: *database-environment
+      FINANCE_PORT: 9006
+      DB_NAME: ${FINANCE_DB_NAME:-lexorion_finance}
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["9006:9006"]
+    networks: [horizon]
+    depends_on:
+      eureka: {condition: service_healthy}
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9006/actuator/health"]
+
+  gateway:
+    build: ./backend/api-gateway
+    environment:
+      GATEWAY_PORT: 9001
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
+    ports: ["9001:9001"]
+    networks: [horizon]
+    depends_on:
+      eureka: {condition: service_healthy}
+    healthcheck:
+      <<: *backend-healthcheck
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9001/actuator/health"]
+
+  frontend:
+    build: ./frontend
+    ports: ["9000:9000"]
+    networks: [horizon]
+    depends_on:
+      gateway: {condition: service_healthy}
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/"]
+
+networks:
+  horizon:
+    driver: bridge

@@ -1,0 +1,1 @@
+package com.lexorion.workforce.api;public final class InactiveDepartmentException extends WorkforceException{public InactiveDepartmentException(){super(400,"Department is inactive or unavailable in this workspace");}}

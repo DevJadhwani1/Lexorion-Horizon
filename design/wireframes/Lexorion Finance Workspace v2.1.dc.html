@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+.pill{font:400 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;border:1px solid #e3e0da;color:#5c5852;cursor:pointer}
+.subtab{padding:7px 12px;font:500 12.5px 'Public Sans',sans-serif;border-radius:7px;cursor:pointer}
+</style>
+</helmet>
+
+<div style="max-width:1520px;margin:0 auto;padding:24px 24px 100px">
+<div style="border:1px solid #e3e0da;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fdfdfc">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:920px">
+
+  <div style="background:#f7f6f3;border-right:1px solid #e3e0da;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 16px">
+      <div style="width:22px;height:22px;border-radius:6px;background:#1f1e1c"></div>
+      <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c">Lexorion</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:9px 10px;margin-bottom:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+      <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;flex:1">Search or ask Lex…</span>
+      <span class="mono" style="font-size:10px;color:#8c8781;border:1px solid #e3e0da;border-radius:4px;padding:1px 5px">⌘K</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:7px;background:#1f1e1c;color:#f0eee9;border-radius:9px;padding:9px;font:500 13.5px 'Public Sans',sans-serif;margin-bottom:16px">+ Create</div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:4px 6px 6px">WORKSPACE</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733">Overview</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733;display:flex;justify-content:space-between">Approvals <span class="mono" style="font-size:10px;background:#1f1e1c;color:#f0eee9;padding:1px 6px;border-radius:9px">7</span></div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:16px 6px 6px">WORKSPACES</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Recruitment</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">People</div>
+    <div onClick="{{ goDashboard }}" style="cursor:pointer;padding:8px 10px;border-radius:7px;font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;background:#e8e5e0">Finance</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Clients</div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px">
+      <div class="mono" style="font-size:10.5px;color:#a8a39a;line-height:1.8">/ search · g i invoices<br/>g b billing · g p payments<br/>g r reports · g c cashflow<br/>n i new invoice · shift+a ask lex</div>
+      <div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div><div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c">Anita Rao</div></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:16px;min-width:0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2">
+          <span onClick="{{ cr.go }}" style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cr.color }};cursor:{{ cr.cursor }}">{{ cr.label }}</span>
+          <span style="color:#cdc8c0;font-size:12px">/</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <sc-for list="{{ demoChips }}" as="dcp" hint-placeholder-count="7">
+          <div onClick="{{ dcp.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:4px 8px;border-radius:6px;background:{{ dcp.bg }};color:{{ dcp.fg }};border:1px solid #e3e0da">{{ dcp.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="8">
+        <div onClick="{{ sec.go }}" class="subtab" style="background:{{ sec.bg }};color:{{ sec.fg }}">{{ sec.label }}</div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:60px 20px;text-align:center;margin-top:6px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#eeece7;margin:0 auto 12px"></div>
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">{{ emptyTitle }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">{{ emptyBody }}</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <sc-for list="{{ skeletonRows }}" as="sr" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:9px;background:#eeece7;width:{{ sr }}"></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:11px;padding:24px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:5px">Couldn't load {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:12px">Check your connection and retry.</div>
+        <div onClick="{{ toSuccess }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Retry</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showDenied }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">You don't have access to {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">Ask an Org Admin to grant Finance access.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showUpgrade }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:5px">{{ screenLabel }} needs Payroll Premium</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:12px">Included as an OmegaHires add-on — request access from your Org Admin.</div>
+        <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Request upgrade</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 14px;margin-top:2px;background:#f7f6f3;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Viewing in read-only mode — you can see {{ screenLabel }} but not edit it.</div>
+    </sc-if>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font:600 24px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Finance</div>
+        <div style="font:400 13.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">OmegaHires · Business Edition · Payroll Premium</div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Needs attention</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:18px">
+          <sc-for list="{{ needsAttention }}" as="na" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;align-items:center;gap:12px">
+              <span style="width:7px;height:7px;border-radius:4px;background:{{ na.dot }};flex:none"></span>
+              <div style="flex:1"><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ na.title }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ na.meta }}</div></div>
+              <div class="pill">{{ na.action }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 15px">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Payroll runs</div>
+            <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:5px"><span>August — 285 employees</span><span style="font:500 11.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#f5efdd;color:#8a6d1f">In review</span></div>
+            <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>July — 281 employees</span><span style="font:500 11.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">Processed</span></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 15px">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Upcoming payments</div>
+            <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:5px"><span>Vendor — office lease</span><span class="mono">12 Aug</span></div>
+            <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>Payroll disbursement</span><span class="mono">31 Aug</span></div>
+          </div>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">AI recommendations</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+          <sc-for list="{{ aiActions }}" as="ai" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;background:#f7f6f3;display:flex;justify-content:space-between;align-items:center">
+              <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ ai }}</div>
+              <div style="display:flex;gap:7px;flex:none"><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Approve</div><div class="pill">Review</div><div class="pill">Explain</div><div class="pill">Dismiss</div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #dbe6d4;background:#eaf0e6;border-radius:10px;padding:11px 15px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center">
+            <span style="font:400 13px 'Public Sans',sans-serif;color:#4a6b3d">✓ {{ toastText }}</span>
+            <span onClick="{{ dismissToast }}" style="cursor:pointer;color:#4a6b3d;font-size:12px">Dismiss</span>
+          </div>
+        </sc-if>
+
+        <details style="border:1px solid #e3e0da;border-radius:11px;padding:13px 15px">
+          <summary style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;cursor:pointer">Revenue metrics</summary>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px">
+            <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+              <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ s.label }}</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">{{ s.value }}</div></div>
+            </sc-for>
+          </div>
+        </details>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBilling }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Billing lifecycle — Meridian Logistics placement</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">One billable event, tracked contract to revenue.</div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <sc-for list="{{ billingStages }}" as="bs" hint-placeholder-count="10">
+            <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #e8e5e0">
+              <div style="display:flex;flex-direction:column;align-items:center;flex:none;width:18px">
+                <div style="width:16px;height:16px;border-radius:8px;background:{{ bs.dotBg }};display:flex;align-items:center;justify-content:center;font:600 9px 'Public Sans',sans-serif;color:#fff">{{ bs.mark }}</div>
+                <div style="width:1.5px;flex:1;background:#e3e0da;margin-top:2px"></div>
+              </div>
+              <div style="flex:1;padding-bottom:4px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                  <span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ bs.name }}</span>
+                  <span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ bs.badgeBg }};color:{{ bs.badgeFg }}">{{ bs.status }}</span>
+                </div>
+                <div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">{{ bs.owner }} · {{ bs.time }}</div>
+                <sc-if value="{{ bs.hasBlock }}" hint-placeholder-val="{{ false }}"><div style="font:400 12.5px 'Public Sans',sans-serif;color:#8a3527;margin-top:4px">Blocked: {{ bs.block }}</div></sc-if>
+                <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733;margin-top:4px">Next: {{ bs.next }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-top:16px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI: Invoice Approved stage has been idle 2 days — Finance approver hasn't acted. Escalate to K. Shah?</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInvoices }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+          <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Invoices</div>
+          <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:8px;padding:7px 11px;width:220px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg><span style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Search invoices…</span></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <sc-for list="{{ savedViews }}" as="v" hint-placeholder-count="4">
+            <div style="font:500 12.5px 'Public Sans',sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer;background:{{ v.bg }};color:{{ v.fg }}">{{ v.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:7px;margin-bottom:14px">
+          <sc-for list="{{ invFilters }}" as="f" hint-placeholder-count="3">
+            <div class="pill">{{ f }} ▾</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:28px 1.2fr 2fr 1fr 1fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div></div><div>Invoice</div><div>Client</div><div>Amount</div><div>Due</div><div>Status</div></div>
+          <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:28px 1.2fr 2fr 1fr 1fr 1fr;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <div onClick="{{ toggleSelection }}" style="cursor:pointer;width:16px;height:16px;border:1.5px solid {{ selBorder }};background:{{ selBg }};border-radius:5px"></div>
+              <div onClick="{{ i.go }}" style="cursor:pointer;color:#1f1e1c;font-weight:500">{{ i.id }}</div>
+              <div style="color:#6b6660">{{ i.client }}</div>
+              <div class="mono">{{ i.amount }}</div>
+              <div class="mono" style="color:#8c8781">{{ i.due }}</div>
+              <div><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ i.badgeBg }};color:{{ i.badgeFg }}">{{ i.status }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ anySelected }}" hint-placeholder-val="{{ false }}">
+          <div style="position:sticky;bottom:16px;margin-top:14px;background:#1f1e1c;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:12px;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.2)">
+            <span style="font:400 13px 'Public Sans',sans-serif">1 selected</span>
+            <div style="display:flex;gap:8px;margin-left:auto">
+              <sc-for list="{{ invoiceBulk }}" as="ba" hint-placeholder-count="4">
+                <span style="font:500 12.5px 'Public Sans',sans-serif;padding:5px 10px;border:1px solid rgba(255,255,255,.25);border-radius:7px;cursor:pointer">{{ ba }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInvoiceDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:720px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">
+          <div><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ ctxInvId }}</div><div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-top:3px">{{ ctxInvClient }} · {{ ctxInvAmount }}</div></div>
+          <span style="font:500 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;background:{{ ctxInvBadgeBg }};color:{{ ctxInvBadgeFg }}">{{ ctxInvStatus }}</span>
+        </div>
+        <div style="display:flex;align-items:center;margin-bottom:8px;overflow-x:auto">
+          <sc-for list="{{ invSteps }}" as="st" hint-placeholder-count="9">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:64px">
+              <div style="width:20px;height:20px;border-radius:10px;background:{{ st.bg }};color:{{ st.fg }};display:flex;align-items:center;justify-content:center;font:600 10px 'Public Sans',sans-serif">{{ st.mark }}</div>
+              <div style="font:400 10px 'Public Sans',sans-serif;color:#8c8781;margin-top:5px;text-align:center">{{ st.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+          <sc-for list="{{ invTimelineEvents }}" as="ev" hint-placeholder-count="4">
+            <div style="display:flex;gap:9px;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span class="mono" style="color:#8c8781;flex:none;width:120px">{{ ev.time }}</span><span>{{ ev.text }}</span></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:14px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI: this invoice is 6 days overdue and 18% above the client's average invoice — flagged for review before the next reminder.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:34px;text-align:center;font:300 12.5px 'Public Sans',sans-serif;color:#8c8781">PDF preview</div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Email history</div>
+            <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:5px">Sent — 3 Aug, 9:02am</div>
+            <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">Reminder — 6 Aug, 10:15am</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Send reminder</div>
+          <div class="pill">Export PDF</div>
+          <div class="pill">View timeline</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCashflow }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">Cashflow</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Incoming (30d)</div><div style="font:600 20px 'Public Sans',sans-serif;color:#4a6b3d">₹94L</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Outgoing (30d)</div><div style="font:600 20px 'Public Sans',sans-serif;color:#8a3527">₹78L</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Projected position</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">₹1.4Cr</div></div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+          <sc-for list="{{ cashflowRows }}" as="c" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ c.label }}</span><span class="mono" style="color:{{ c.color }}">{{ c.value }}</span></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:14px 16px;font:400 13.5px 'Public Sans',sans-serif;color:#8a6d1f">Lex AI: payroll (₹39L, 31 Aug) plus the lease payment (12 Aug) will bring the buffer below your ₹50L threshold for 3 days. Consider delaying the Atlas Manufacturing vendor payment.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayments }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">Payments</div>
+        <div style="display:flex;gap:4px;border-bottom:1px solid #e3e0da;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ paymentTabs }}" as="t" hint-placeholder-count="5">
+            <div onClick="{{ t.go }}" style="padding:9px 13px;font:500 13px 'Public Sans',sans-serif;color:{{ t.fg }};border-bottom:2px solid {{ t.border }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ paymentRows }}" as="p" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ p.label }}</span><span class="mono" style="color:#8c8781">{{ p.value }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayrollRun }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Payroll run — August 2026</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">285 employees · currently in Review</div>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px;margin-bottom:16px;display:flex;gap:20px;align-items:center">
+          <div style="font:600 30px 'Public Sans',sans-serif;color:#1f1e1c;flex:none">98%</div>
+          <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+            <sc-for list="{{ confidenceChecks }}" as="cc" hint-placeholder-count="6">
+              <div style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cc.color }}">{{ cc.mark }} {{ cc.text }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;margin-bottom:20px">
+          <sc-for list="{{ payrollSteps }}" as="st" hint-placeholder-count="7">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+              <div style="width:22px;height:22px;border-radius:11px;background:{{ st.bg }};color:{{ st.fg }};display:flex;align-items:center;justify-content:center;font:600 11px 'Public Sans',sans-serif">{{ st.mark }}</div>
+              <div style="font:400 10.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:5px;text-align:center">{{ st.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Gross payroll</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">₹3.9Cr</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Exceptions</div><div style="font:600 20px 'Public Sans',sans-serif;color:#8a3527">3</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Ready to process</div><div style="font:600 20px 'Public Sans',sans-serif;color:#4a6b3d">282 / 285</div></div>
+        </div>
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Exceptions to resolve</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+          <sc-for list="{{ payrollExceptions }}" as="ex" hint-placeholder-count="3">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ ex }}</span><div class="pill">Resolve</div></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div onClick="{{ triggerToast }}" class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Send for approval</div>
+          <div class="pill">Download preview</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayrollApproval }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">Payroll approval — August 2026</div>
+        <div style="display:flex;gap:4px;border-bottom:1px solid #e3e0da;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ paApprovalTabs }}" as="t" hint-placeholder-count="5">
+            <div onClick="{{ t.go }}" style="padding:9px 13px;font:500 13px 'Public Sans',sans-serif;color:{{ t.fg }};border-bottom:2px solid {{ t.border }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">Approval chain</span>
+            <span class="mono" style="font-size:11px;color:#8a6d1f">SLA: 4h remaining</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <sc-for list="{{ approvalChain }}" as="ac" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ ac.name }} · {{ ac.role }}</span><span style="color:{{ ac.color }}">{{ ac.state }}</span></div>
+            </sc-for>
+          </div>
+          <div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781;margin-top:8px">Escalates to CEO Dashboard if not actioned by 6pm today.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ payrollApprovalItems }}" as="p" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px 15px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">{{ p }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isExpenses }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">Expenses</div>
+        <div style="display:flex;gap:4px;border-bottom:1px solid #e3e0da;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ expenseTabs }}" as="t" hint-placeholder-count="5">
+            <div onClick="{{ t.go }}" style="padding:9px 13px;font:500 13px 'Public Sans',sans-serif;color:{{ t.fg }};border-bottom:2px solid {{ t.border }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ expenseRows }}" as="e" hint-placeholder-count="4">
+            <div>
+              <div onClick="{{ e.toggle }}" style="cursor:pointer;padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ e.label }}</span><span style="display:flex;gap:10px;align-items:center"><span class="mono" style="color:#8c8781">{{ e.value }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ e.badgeBg }};color:{{ e.badgeFg }}">{{ e.status }}</span></span></div>
+              <sc-if value="{{ e.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:14px 15px;border-bottom:1px solid #e8e5e0;background:#f7f6f3;display:grid;grid-template-columns:120px 1fr;gap:16px">
+                  <div style="border:1px dashed #cdc8c0;border-radius:9px;height:70px;display:flex;align-items:center;justify-content:center;font:300 11px 'Public Sans',sans-serif;color:#8c8781">receipt</div>
+                  <div style="display:flex;flex-direction:column;gap:5px">
+                    <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">OCR: merchant, amount and date match the claim.</div>
+                    <div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">Policy: within per-diem limit for role.</div>
+                    <div style="font:400 12.5px 'Public Sans',sans-serif;color:{{ e.riskColor }}">{{ e.riskNote }}</div>
+                    <div style="display:flex;gap:8px;margin-top:5px"><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Approve</div><div class="pill">Request clarification</div><div class="pill" style="color:#b5493a">Reject</div></div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">Reports</div>
+        <div style="display:flex;gap:4px;border-bottom:1px solid #e3e0da;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ reportTabs }}" as="t" hint-placeholder-count="7">
+            <div onClick="{{ t.go }}" style="padding:9px 13px;font:500 13px 'Public Sans',sans-serif;color:{{ t.fg }};border-bottom:2px solid {{ t.border }};cursor:pointer;margin-bottom:-1px">{{ t.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:10px 13px;margin-bottom:12px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+          <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781">Ask Lex — "Why did collections decrease?"</span>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:16px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Collections dropped 12% because Vertex Retail's two largest invoices (₹8.4L, ₹4.0L) are both over 6 days overdue. Excluding Vertex Retail, collections are up 4% month over month.</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px;display:flex;align-items:flex-end;gap:8px;height:160px;margin-bottom:14px">
+          <sc-for list="{{ reportBars }}" as="b" hint-placeholder-count="8">
+            <div style="flex:1;background:#cdc8c0;border-radius:4px 4px 0 0;height:{{ b }}%"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px"><div class="pill">Export CSV</div><div class="pill">Export PDF</div></div>
+      </div>
+    </sc-if>
+
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1520,&quot;height&quot;:1000}}">
+const INVOICES = [
+  { key: "4471", id: "INV-4471", client: "Vertex Retail", amount: "₹8.4L", due: "3 Aug", status: "Overdue", badgeBg: "#fbf2f0", badgeFg: "#8a3527" },
+  { key: "4502", id: "INV-4502", client: "Meridian Logistics", amount: "₹3.2L", due: "14 Aug", status: "Pending approval", badgeBg: "#f5efdd", badgeFg: "#8a6d1f" },
+  { key: "4498", id: "INV-4498", client: "Solace Health", amount: "₹5.6L", due: "1 Aug", status: "Paid", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d" },
+  { key: "4510", id: "INV-4510", client: "Atlas Manufacturing", amount: "₹2.1L", due: "20 Aug", status: "Draft", badgeBg: "#eeece7", badgeFg: "#5c5852" },
+  { key: "4488", id: "INV-4488", client: "Vertex Retail", amount: "₹4.0L", due: "28 Jul", status: "Overdue", badgeBg: "#fbf2f0", badgeFg: "#8a3527" }
+];
+const SECTIONS = ["dashboard", "billing", "invoices", "payments", "cashflow", "payrollRun", "payrollApproval", "expenses", "reports"];
+const SECTION_LABELS = { dashboard: "Dashboard", billing: "Billing", invoices: "Invoices", payments: "Payments", cashflow: "Cashflow", payrollRun: "Payroll Run", payrollApproval: "Payroll Approval", expenses: "Expenses", reports: "Reports" };
+const EMPTY_COPY = {
+  dashboard: "Nothing needs your attention right now.", billing: "No billing events yet. They're created automatically when a placement is confirmed.",
+  invoices: "No invoices awaiting approval. Generate invoices from completed placements.", payments: "No payments recorded yet this period.",
+  cashflow: "Not enough transaction history to project cash position.", payrollRun: "No payroll run in progress. Start one from the Payroll Run tab.",
+  payrollApproval: "No payroll runs are waiting on your approval.", expenses: "No expense claims submitted this period.", reports: "Ask Lex a question to generate a report."
+};
+
+class Component extends DCLogic {
+  state = { screen: "dashboard", invKey: "4471", demo: "success", anySelected: false, billingTab: "client", paymentTab: "incoming", paApprovalTab: "timeline", expenseTab: "claims", reportTab: "revenue", showToast: false, expandedExpense: null };
+  invByKey(k) { return INVOICES.find(i => i.key === k) || INVOICES[0]; }
+  nav(screen, patch) { return () => this.setState(s => ({ screen, demo: "success", anySelected: false, ...(patch || {}) })); }
+
+  renderVals() {
+    const s = this.state;
+    const inv = this.invByKey(s.invKey);
+    const screenLabel = s.screen === "invoiceDetail" ? inv.id : SECTION_LABELS[s.screen];
+    const crumbTrail = s.screen === "invoiceDetail" ? [["Finance", "dashboard"], ["Invoices", "invoices"], [inv.id, "invoiceDetail"]] : [["Finance", "dashboard"], [SECTION_LABELS[s.screen], s.screen]];
+    const crumbs = crumbTrail.map(([label, key], i) => { const isLast = i === crumbTrail.length - 1; return { label, color: isLast ? "#1f1e1c" : "#8c8781", cursor: isLast ? "default" : "pointer", go: isLast ? () => {} : this.nav(key) }; });
+
+    const sections = SECTIONS.map(k => ({ label: SECTION_LABELS[k], go: this.nav(k), bg: s.screen === k || (s.screen === "invoiceDetail" && k === "invoices") ? "#e8e5e0" : "transparent", fg: s.screen === k || (s.screen === "invoiceDetail" && k === "invoices") ? "#1f1e1c" : "#8c8781" }));
+
+    const demoChips = [["success", "Success"], ["empty", "Empty"], ["loading", "Loading"], ["error", "Error"], ["denied", "No access"], ["upgrade", "Upgrade"], ["readonly", "Read-only"]]
+      .map(([key, label]) => ({ label, go: () => this.setState({ demo: key }), bg: s.demo === key ? "#1f1e1c" : "transparent", fg: s.demo === key ? "#fff" : "#8c8781" }));
+
+    const tabRow = (defs, activeKey, setter) => defs.map(([k, label]) => ({ label, go: () => this.setState({ [setter]: k }), fg: activeKey === k ? "#1f1e1c" : "#8c8781", border: activeKey === k ? "#1f1e1c" : "transparent" }));
+
+    return {
+      goDashboard: this.nav("dashboard"),
+      toSuccess: () => this.setState({ demo: "success" }),
+      showToast: s.showToast, toastText: "Payroll sent for approval — HR will be notified.",
+      triggerToast: () => this.setState({ showToast: true }), dismissToast: () => this.setState({ showToast: false }),
+      emptyTitle: s.demo === "empty" ? "Nothing here yet" : "", emptyBody: EMPTY_COPY[s.screen] || "No records for this view.",
+      toggleSelection: (e) => { e.stopPropagation(); this.setState(s2 => ({ anySelected: !s2.anySelected })); },
+      anySelected: s.anySelected, selBorder: s.anySelected ? "#1f1e1c" : "#cdc8c0", selBg: s.anySelected ? "#1f1e1c" : "transparent",
+      crumbs, demoChips, sections, screenLabel,
+      showEmpty: s.demo === "empty", showLoading: s.demo === "loading", showError: s.demo === "error",
+      showDenied: s.demo === "denied", showUpgrade: s.demo === "upgrade", showReadonly: s.demo === "readonly", showSuccess: s.demo === "success",
+      skeletonRows: ["95%", "88%", "70%", "92%", "60%"],
+      isDashboard: s.screen === "dashboard", isBilling: s.screen === "billing", isInvoices: s.screen === "invoices",
+      isInvoiceDetail: s.screen === "invoiceDetail", isPayments: s.screen === "payments", isCashflow: s.screen === "cashflow", isPayrollRun: s.screen === "payrollRun",
+      isPayrollApproval: s.screen === "payrollApproval", isExpenses: s.screen === "expenses", isReports: s.screen === "reports",
+      needsAttention: [
+        { title: "3 invoices awaiting your approval", meta: "Totaling ₹12.6L", action: "Review", dot: "#8a6d1f" },
+        { title: "2 invoices overdue", meta: "Vertex Retail — 6 and 9 days", action: "Send reminder", dot: "#b5493a" },
+        { title: "August payroll has 3 exceptions", meta: "Blocking final processing", action: "Resolve", dot: "#8a6d1f" },
+        { title: "Vendor payment due in 2 days", meta: "Office lease — ₹1.8L", action: "Schedule", dot: "#8c8781" }
+      ],
+      aiActions: [
+        { }, { }, { }, { }
+      ].map((_, i) => [
+        "2 invoices to Vertex Retail this month look like duplicate billing — review before sending.",
+        "Cash flow risk: collections are trending 12% behind last month.",
+        "Payroll anomaly: 1 employee's gross pay changed by more than 20% with no logged reason.",
+        "Revenue forecast: August is tracking 8% ahead of plan."
+      ][i]),
+      stats: [
+        { label: "MTD revenue", value: "₹1.2Cr" }, { label: "Outstanding", value: "₹62L" },
+        { label: "Collected this month", value: "₹94L" }, { label: "Avg. days to pay", value: "27" }
+      ],
+      billingStages: [
+        { name: "Client contract", status: "Signed", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "K. Shah", time: "12 Jun", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Rate card", status: "Approved", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "K. Shah", time: "14 Jun", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Requirement filled", status: "Done", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "R. Iyer", time: "22 Jul", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Placement confirmed", status: "Done", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "R. Iyer", time: "1 Aug", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Billable event created", status: "Done", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "System", time: "1 Aug", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Invoice generated", status: "Done", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", owner: "System", time: "2 Aug", next: "—", mark: "✓", dotBg: "#4a6b3d", hasBlock: false },
+        { name: "Invoice approved", status: "Stalled", badgeBg: "#fbf2f0", badgeFg: "#8a3527", owner: "K. Shah", time: "pending 2 days", next: "K. Shah to approve", mark: "!", dotBg: "#b5493a", hasBlock: true, block: "Finance approver hasn't reviewed" },
+        { name: "Invoice sent", status: "Waiting", badgeBg: "#eeece7", badgeFg: "#8c8781", owner: "—", time: "—", next: "Awaiting approval", mark: "7", dotBg: "#cdc8c0", hasBlock: false },
+        { name: "Payment received", status: "Waiting", badgeBg: "#eeece7", badgeFg: "#8c8781", owner: "—", time: "—", next: "Awaiting invoice send", mark: "8", dotBg: "#cdc8c0", hasBlock: false },
+        { name: "Revenue recognized", status: "Waiting", badgeBg: "#eeece7", badgeFg: "#8c8781", owner: "System", time: "—", next: "Auto on payment", mark: "9", dotBg: "#cdc8c0", hasBlock: false }
+      ],
+      savedViews: [
+        { label: "All", bg: "#e8e5e0", fg: "#1f1e1c" }, { label: "Overdue", bg: "transparent", fg: "#8c8781" },
+        { label: "Pending approval", bg: "transparent", fg: "#8c8781" }, { label: "Paid this month", bg: "transparent", fg: "#8c8781" }
+      ],
+      invFilters: ["Client", "Status", "Due date"],
+      invoices: INVOICES.map(i => ({ ...i, go: this.nav("invoiceDetail", { invKey: i.key }) })),
+      invoiceBulk: ["Send reminder", "Approve", "Export", "Write off"],
+      ctxInvId: inv.id, ctxInvClient: inv.client, ctxInvAmount: inv.amount, ctxInvStatus: inv.status, ctxInvBadgeBg: inv.badgeBg, ctxInvBadgeFg: inv.badgeFg,
+      invSteps: [
+        { label: "Draft", mark: "✓", bg: "#4a6b3d", fg: "#fff" }, { label: "Pending approval", mark: "✓", bg: "#4a6b3d", fg: "#fff" },
+        { label: "Approved", mark: "✓", bg: "#4a6b3d", fg: "#fff" }, { label: "Generated", mark: "✓", bg: "#4a6b3d", fg: "#fff" },
+        { label: "Sent", mark: "✓", bg: "#4a6b3d", fg: "#fff" }, { label: "Viewed", mark: "✓", bg: "#4a6b3d", fg: "#fff" },
+        { label: "Reminder sent", mark: "!", bg: "#b5493a", fg: "#fff" }, { label: "Paid", mark: "8", bg: "#eeece7", fg: "#8c8781" },
+        { label: "Closed", mark: "9", bg: "#eeece7", fg: "#8c8781" }
+      ],
+      invTimelineEvents: [
+        { time: "3 Aug, 9:02am", text: "Sent to client — R. Iyer" }, { time: "3 Aug, 4:40pm", text: "Viewed by client" },
+        { time: "6 Aug, 10:15am", text: "Reminder sent — attached to email #3391" }, { time: "6 Aug, 10:16am", text: "Comment — R. Iyer: \"Following up by phone tomorrow.\"" }
+      ],
+      paymentTabs: tabRow([["incoming", "Incoming"], ["allocation", "Allocation"], ["outstanding", "Outstanding"], ["timeline", "Timeline"], ["refunds", "Refunds"]], s.paymentTab, "paymentTab"),
+      paymentRows: [
+        { label: "Solace Health — INV-4498", value: "₹5.6L received 1 Aug" },
+        { label: "Meridian Logistics — partial", value: "₹1.5L / ₹3.2L allocated" },
+        { label: "Vertex Retail — outstanding", value: "₹12.4L across 2 invoices" },
+        { label: "Refund — Atlas Manufacturing", value: "₹40,000 processed 28 Jul" }
+      ],
+      payrollSteps: [
+        { label: "Employee selection", mark: "✓", bg: "#4a6b3d", fg: "#fff" }, { label: "Summary", mark: "✓", bg: "#4a6b3d", fg: "#fff" },
+        { label: "Validation", mark: "✓", bg: "#4a6b3d", fg: "#fff" }, { label: "Exceptions", mark: "4", bg: "#1f1e1c", fg: "#fff" },
+        { label: "Review", mark: "5", bg: "#eeece7", fg: "#8c8781" }, { label: "Approval", mark: "6", bg: "#eeece7", fg: "#8c8781" },
+        { label: "Processing", mark: "7", bg: "#eeece7", fg: "#8c8781" }
+      ],
+      payrollExceptions: ["S. Bose — missing attendance for 2 days", "M. Osei — leave balance mismatch", "New joiner K. Patel — bank details incomplete"],
+      confidenceChecks: [
+        { mark: "✓", text: "Attendance synced", color: "#4a6b3d" }, { mark: "✓", text: "Leave validated", color: "#4a6b3d" },
+        { mark: "✓", text: "Salary structure valid", color: "#4a6b3d" }, { mark: "✓", text: "Compliance passed", color: "#4a6b3d" },
+        { mark: "⚠", text: "Missing bank details — K. Patel", color: "#8a6d1f" }, { mark: "⚠", text: "Duplicate bonus flagged — M. Osei", color: "#8a6d1f" }
+      ],
+      paApprovalTabs: tabRow([["timeline", "Approval Timeline"], ["compliance", "Compliance Checks"], ["salary", "Salary Changes"], ["audit", "Audit Trail"], ["ai", "AI Validation"]], s.paApprovalTab, "paApprovalTab"),
+      payrollApprovalItems: [
+        "Submitted by S. Bose — 8 Aug, 4:12pm", "PF and TDS compliance checks passed", "1 salary revision: Priya Nair, +8% post-probation", "Lex AI: no anomalies outside the 3 flagged exceptions"
+      ],
+      approvalChain: [
+        { name: "S. Bose", role: "Finance Manager", state: "Submitted", color: "#4a6b3d" },
+        { name: "K. Shah", role: "Finance Director", state: "Reviewing", color: "#8a6d1f" },
+        { name: "Anita Rao", role: "Org Admin", state: "Not started", color: "#8c8781" }
+      ],
+      cashflowRows: [
+        { label: "Client payments expected (30d)", value: "+₹94L", color: "#4a6b3d" }, { label: "Payroll disbursement — 31 Aug", value: "−₹39L", color: "#8a3527" },
+        { label: "Vendor obligations", value: "−₹1.8L", color: "#8a3527" }, { label: "Current buffer", value: "₹52L", color: "#1f1e1c" }
+      ],
+      expenseTabs: tabRow([["claims", "Claims"], ["approvals", "Approvals"], ["reimbursements", "Reimbursements"], ["policy", "Policy Validation"], ["receipts", "Receipts"]], s.expenseTab, "expenseTab"),
+      expenseRows: [
+        { key: "e1", label: "R. Iyer — client visit travel", value: "₹4,200", status: "Pending", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", riskNote: "No duplicate or fraud signals.", riskColor: "#4a6b3d" },
+        { key: "e2", label: "M. Osei — branch supplies", value: "₹1,850", status: "Approved", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", riskNote: "No duplicate or fraud signals.", riskColor: "#4a6b3d" },
+        { key: "e3", label: "S. Bose — software subscription", value: "₹6,000", status: "Policy flag", badgeBg: "#fbf2f0", badgeFg: "#8a3527", riskNote: "Fraud risk: similar claim submitted twice in 30 days.", riskColor: "#8a3527" },
+        { key: "e4", label: "N. Verma — team lunch", value: "₹3,100", status: "Reimbursed", badgeBg: "#eeece7", badgeFg: "#5c5852", riskNote: "No duplicate or fraud signals.", riskColor: "#4a6b3d" }
+      ].map(e => ({ ...e, expanded: s.expandedExpense === e.key, toggle: () => this.setState(s2 => ({ expandedExpense: s2.expandedExpense === e.key ? null : e.key })) })),
+      reportTabs: tabRow([["revenue", "Revenue"], ["collections", "Collections"], ["trends", "Billing Trends"], ["payroll", "Payroll Costs"], ["dept", "Department Costs"], ["cashflow", "Cash Flow"], ["exports", "Exports"]], s.reportTab, "reportTab"),
+      reportBars: [40, 55, 48, 62, 58, 70, 65, 74]
+    };
+  }
+}
+</script>
+</body>
+</html>

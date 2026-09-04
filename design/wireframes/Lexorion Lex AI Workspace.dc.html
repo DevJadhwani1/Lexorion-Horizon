@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+.pill{font:400 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;border:1px solid #e3e0da;color:#5c5852;cursor:pointer}
+.subtab{padding:7px 12px;font:500 12.5px 'Public Sans',sans-serif;border-radius:7px;cursor:pointer}
+a{color:#2a78d6}
+a:hover{color:#1f5aa8}
+</style>
+</helmet>
+
+<div style="max-width:1520px;margin:0 auto;padding:24px 24px 100px">
+<div style="border:1px solid #e3e0da;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fdfdfc">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:920px">
+
+  <div style="background:#f7f6f3;border-right:1px solid #e3e0da;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 16px">
+      <div style="width:22px;height:22px;border-radius:6px;background:#1f1e1c"></div>
+      <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c">Lexorion</div>
+    </div>
+    <div style="position:relative;margin-bottom:12px">
+      <div onClick="{{ toggleSearch }}" style="cursor:pointer;display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:9px 10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+        <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;flex:1">Search everything…</span>
+        <span class="mono" style="font-size:10px;color:#8c8781;border:1px solid #e3e0da;border-radius:4px;padding:1px 5px">⌘K</span>
+      </div>
+      <sc-if value="{{ searchOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:calc(100% + 4px);left:0;width:340px;max-height:360px;overflow-y:auto;background:#fdfdfc;border:1px solid #e3e0da;border-radius:10px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:8px;z-index:60">
+          <div class="mono" style="font-size:10px;color:#a8a39a;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px 6px">Results respect your entitlements</div>
+          <sc-for list="{{ searchResults }}" as="sr" hint-placeholder-count="6">
+            <div onClick="{{ sr.go }}" style="cursor:pointer;padding:8px;border-radius:7px" style-hover="background:#f7f6f3">
+              <div style="display:flex;justify-content:space-between;gap:8px"><span style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ sr.label }}</span><span style="font:500 10px 'Public Sans',sans-serif;padding:1px 7px;border-radius:6px;background:#eeece7;color:#5c5852;flex:none">{{ sr.type }}</span></div>
+              <sc-if value="{{ sr.readOnlyNote }}" hint-placeholder-val="{{ false }}"><div style="font:400 11px 'Public Sans',sans-serif;color:#8a6d1f;margin-top:2px">{{ sr.readOnlyNote }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div onClick="{{ navAsk }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;background:#1f1e1c;color:#f0eee9;border-radius:9px;padding:9px;font:500 13.5px 'Public Sans',sans-serif;margin-bottom:16px">+ Ask Lex</div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:4px 6px 6px">WORKSPACES</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Recruitment</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">People</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Finance</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Clients</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Administration</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Analytics</div>
+    <div onClick="{{ goHome }}" style="cursor:pointer;padding:8px 10px;border-radius:7px;font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;background:#e8e5e0;display:flex;justify-content:space-between">Lex AI <span class="mono" style="font-size:10px;background:#1f1e1c;color:#f0eee9;padding:1px 6px;border-radius:9px">{{ pendingCount }}</span></div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px">
+      <div class="mono" style="font-size:10.5px;color:#a8a39a;line-height:1.8">/ search · g l lex ai<br/>g h home · shift+a ask lex<br/>g t tasks · g w workflows</div>
+      <div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div><div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c">Anita Rao · Org Owner</div></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:16px;min-width:0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2">
+          <span onClick="{{ cr.go }}" style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cr.color }};cursor:{{ cr.cursor }}">{{ cr.label }}</span>
+          <span style="color:#cdc8c0;font-size:12px">/</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center">
+        <span class="mono" style="font-size:10px;color:#8c8781;letter-spacing:.05em;text-transform:uppercase;margin-right:2px">Viewing as</span>
+        <sc-for list="{{ roleChips }}" as="rc" hint-placeholder-count="2">
+          <div onClick="{{ rc.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:4px 8px;border-radius:6px;background:{{ rc.bg }};color:{{ rc.fg }};border:1px solid #e3e0da">{{ rc.label }}</div>
+        </sc-for>
+        <span style="width:1px;height:14px;background:#e3e0da;margin:0 2px"></span>
+        <sc-for list="{{ demoChips }}" as="dcp" hint-placeholder-count="7">
+          <div onClick="{{ dcp.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:4px 8px;border-radius:6px;background:{{ dcp.bg }};color:{{ dcp.fg }};border:1px solid #e3e0da">{{ dcp.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="15">
+        <div onClick="{{ sec.go }}" class="subtab" style="background:{{ sec.bg }};color:{{ sec.fg }}">{{ sec.label }}</div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:60px 20px;text-align:center;margin-top:6px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#eeece7;margin:0 auto 12px"></div>
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">{{ emptyTitle }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:10px">{{ emptyBody }}</div>
+        <a href="#" style="font:400 12.5px 'Public Sans',sans-serif">View documentation</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <sc-for list="{{ skeletonRows }}" as="sr" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:9px;background:#eeece7;width:{{ sr }}"></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:11px;padding:24px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:5px">Couldn't load {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:12px">Lex couldn't reach the underlying data. Check your connection and retry.</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <div onClick="{{ toSuccess }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Retry</div>
+          <div style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Explain</div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showDenied }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">You don't have access to {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">Ask an Org Owner to grant Lex AI access.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showUpgrade }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:5px">{{ screenLabel }} needs a higher edition</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:12px">Custom agents, unlimited automations and enterprise data connectors are Enterprise-only.</div>
+        <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Request upgrade</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 14px;margin-top:2px;background:#f7f6f3;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Viewing in read-only mode — you can see {{ screenLabel }} but not approve, run or edit anything.</div>
+    </sc-if>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font:600 24px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Good morning, Anita</div>
+        <div style="font:400 13.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">OmegaHires · Lex is watching 6 modules, updated just now</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Today's priorities</div>
+            <sc-for list="{{ priorities }}" as="p" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eeece7">
+                <div style="display:flex;gap:9px;align-items:center"><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ p.bg }};color:{{ p.fg }};flex:none">{{ p.tag }}</span><span style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ p.text }}</span></div>
+                <div onClick="{{ p.go }}" class="pill">{{ p.action }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Organization health</div>
+            <sc-for list="{{ orgHealth }}" as="h" hint-placeholder-count="5">
+              <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733;padding:5px 0;border-bottom:1px solid #eeece7"><span>{{ h.label }}</span><span style="color:{{ h.color }}">{{ h.value }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Quick actions</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+          <sc-for list="{{ quickActions }}" as="q" hint-placeholder-count="6">
+            <div onClick="{{ q.go }}" class="pill">{{ q.label }}</div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recent AI activity</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ recentActivity }}" as="a" hint-placeholder-count="4">
+                <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ a.text }}</span><span class="mono" style="color:#8c8781;font-size:11px">{{ a.time }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recently completed automations</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ recentAutomations }}" as="a" hint-placeholder-count="4">
+                <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ a.text }}</span><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">Done</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAsk }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Ask Lex</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:14px">Searches and reasons across People, Recruitment, Finance, Clients, Administration, Analytics and Operations.</div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+          <sc-for list="{{ contextChips }}" as="cc" hint-placeholder-count="7">
+            <span style="font:500 10.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:#eef2f6;color:#3a5a76">{{ cc }}</span>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px">
+          <sc-for list="{{ conversation }}" as="turn" hint-placeholder-count="6">
+            <div>
+              <sc-if value="{{ turn.isUser }}" hint-placeholder-val="{{ false }}">
+                <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:6px">{{ turn.text }}</div>
+              </sc-if>
+              <sc-if value="{{ turn.isLex }}" hint-placeholder-val="{{ false }}">
+                <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px 15px;background:#f7f6f3">
+                  <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:8px;white-space:pre-line">{{ turn.text }}</div>
+
+                  <sc-if value="{{ turn.evidenceChips }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+                      <sc-for list="{{ turn.evidenceChips }}" as="ec" hint-placeholder-count="3"><span onClick="{{ ec.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:#eef2f6;color:#3a5a76">{{ ec.label }}</span></sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ turn.hasConfidence }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-bottom:8px">
+                      <div style="display:flex;gap:8px;align-items:center;margin-bottom:5px"><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">Confidence {{ turn.confidence }}</span><span style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ turn.evidence }}</span></div>
+                      <sc-for list="{{ turn.confidenceFactors }}" as="cf" hint-placeholder-count="4"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#5c5852;padding-left:2px">• {{ cf }}</div></sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ turn.hasClientCards }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
+                      <sc-for list="{{ turn.clientCards }}" as="cc2" hint-placeholder-count="3">
+                        <div style="border:1px solid #e3e0da;border-radius:9px;padding:10px 12px;background:#fdfdfc">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px"><span style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c">{{ cc2.name }}</span><span style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Health Score {{ cc2.health }}</span></div>
+                          <sc-for list="{{ cc2.reasons }}" as="rz" hint-placeholder-count="3"><div style="font:400 12px 'Public Sans',sans-serif;color:#5c5852">• {{ rz }}</div></sc-for>
+                          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                            <sc-for list="{{ cc2.evidenceChips }}" as="ec2" hint-placeholder-count="2"><span onClick="{{ ec2.go }}" style="cursor:pointer;font:500 10px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eef2f6;color:#3a5a76">{{ ec2.label }}</span></sc-for>
+                          </div>
+                          <div style="display:flex;gap:7px;margin-top:7px">
+                            <div onClick="{{ cc2.viewClient }}" class="pill">View client</div>
+                            <div onClick="{{ cc2.viewEvidence }}" class="pill">View evidence</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <div style="display:flex;gap:7px;flex-wrap:wrap">
+                    <sc-for list="{{ turn.actions }}" as="ac" hint-placeholder-count="2"><div onClick="{{ ac.go }}" class="pill">{{ ac.label }}</div></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:9px;margin-bottom:14px">
+          <span style="font:400 13.5px 'Public Sans',sans-serif;color:#a8a39a;flex:1">Ask about any workspace, or type / for commands…</span>
+          <span class="pill" style="padding:4px 8px">📎</span>
+          <span class="pill" style="padding:4px 8px">🎙</span>
+          <div style="padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Send</div>
+        </div>
+
+        <div style="font:500 12px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Suggested prompts</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <sc-for list="{{ suggestedPrompts }}" as="sp" hint-placeholder-count="6"><div class="pill">{{ sp }}</div></sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTasks }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">AI tasks</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <sc-for list="{{ taskFilterChips }}" as="tf" hint-placeholder-count="5">
+            <div onClick="{{ tf.go }}" class="pill" style="background:{{ tf.bg }};color:{{ tf.fg }}">{{ tf.label }}</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ filteredTasks }}" as="t" hint-placeholder-count="6">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div style="display:flex;gap:10px;align-items:center">
+                <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ t.bg }};color:{{ t.fg }};flex:none">{{ t.status }}</span>
+                <div><div style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">{{ t.text }}</div><div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781">{{ t.meta }}</div></div>
+              </div>
+              <div style="display:flex;gap:7px;flex:none;align-items:center">
+                <sc-if value="{{ t.isPending }}" hint-placeholder-val="{{ false }}"><div onClick="{{ t.approve }}" class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">{{ t.pendingLabel }}</div></sc-if>
+                <sc-if value="{{ t.isDone }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#4a6b3d">✓ Completed</span>
+                  <div onClick="{{ t.viewActivity }}" class="pill">View Activity</div>
+                  <sc-if value="{{ t.reversible }}" hint-placeholder-val="{{ false }}"><div onClick="{{ t.undo }}" class="pill">Undo</div></sc-if>
+                </sc-if>
+                <sc-if value="{{ t.isUndone }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#8c8781">↺ Undone</span>
+                  <div onClick="{{ t.viewActivity }}" class="pill">View Activity</div>
+                </sc-if>
+                <sc-if value="{{ t.isRejected }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#8a3527">✕ Rejected</span>
+                  <div onClick="{{ t.viewActivity }}" class="pill">View Activity</div>
+                </sc-if>
+                <sc-if value="{{ t.isGeneric }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ t.actionsGeneric }}" as="ta" hint-placeholder-count="1"><div class="pill">{{ ta }}</div></sc-for>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRecs }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Recommendations</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <sc-for list="{{ recommendations }}" as="r" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+                <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ r.catBg }};color:{{ r.catFg }}">{{ r.category }}</span>
+                <span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ r.confBg }};color:{{ r.confFg }}">{{ r.confidence }}</span>
+              </div>
+              <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:6px">{{ r.text }}</div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px"><span style="color:#5c5852;font-weight:500">Reason: </span>{{ r.reason }}</div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:10px"><span style="color:#5c5852;font-weight:500">Impact: </span>{{ r.impact }}</div>
+              <sc-if value="{{ r.isBlocked }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:10px">{{ r.blockedNote }}</div>
+              </sc-if>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+                <div onClick="{{ r.explain }}" class="pill">Explain</div>
+                <sc-if value="{{ r.hasEvidence }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.viewEvidence }}" class="pill">View evidence</div></sc-if>
+                <sc-if value="{{ r.isBlocked }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ r.viewData }}" class="pill">View data</div>
+                  <sc-if value="{{ r.canManage }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.manage }}" class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Upgrade / Restore access</div></sc-if>
+                  <sc-if value="{{ r.canRequest }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.manage }}" class="pill">Request access</div></sc-if>
+                </sc-if>
+                <sc-if value="{{ r.isPending }}" hint-placeholder-val="{{ true }}">
+                  <div class="pill">Dismiss</div>
+                  <div onClick="{{ r.go }}" class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">{{ r.primaryAction }}</div>
+                </sc-if>
+                <sc-if value="{{ r.isDone }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#4a6b3d">✓ Completed</span>
+                  <div onClick="{{ r.viewActivity }}" class="pill">View Activity</div>
+                  <sc-if value="{{ r.reversible }}" hint-placeholder-val="{{ false }}"><div onClick="{{ r.undo }}" class="pill">Undo</div></sc-if>
+                </sc-if>
+                <sc-if value="{{ r.isUndone }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#8c8781">↺ Undone</span>
+                  <div onClick="{{ r.viewActivity }}" class="pill">View Activity</div>
+                </sc-if>
+                <sc-if value="{{ r.isRejected }}" hint-placeholder-val="{{ false }}">
+                  <span style="font:500 12px 'Public Sans',sans-serif;color:#8a3527">✕ Rejected</span>
+                  <div onClick="{{ r.viewActivity }}" class="pill">View Activity</div>
+                </sc-if>
+                <sc-if value="{{ r.isPlain }}" hint-placeholder-val="{{ false }}">
+                  <div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">{{ r.primaryAction }}</div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isWorkflows }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Workflows</div><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">+ Create workflow</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ workflowTypes }}" as="wt" hint-placeholder-count="4"><div class="pill">{{ wt }}</div></sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Active workflows</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:20px">
+          <sc-for list="{{ workflows }}" as="w" hint-placeholder-count="5">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ w.name }} <span style="color:#8c8781">· {{ w.type }}</span></span>
+              <span style="display:flex;gap:8px;align-items:center"><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ w.bg }};color:{{ w.fg }}">{{ w.status }}</span><span style="color:#8c8781">{{ w.runs }}</span>
+                <sc-if value="{{ w.isPaused }}" hint-placeholder-val="{{ false }}"><div onClick="{{ w.activate }}" class="pill">Activate</div></sc-if>
+                <sc-if value="{{ w.isDone }}" hint-placeholder-val="{{ false }}"><div onClick="{{ w.viewActivity }}" class="pill">View Activity</div><sc-if value="{{ w.reversible }}" hint-placeholder-val="{{ false }}"><div onClick="{{ w.undo }}" class="pill">Undo</div></sc-if></sc-if>
+                <sc-if value="{{ w.isUndone }}" hint-placeholder-val="{{ false }}"><div onClick="{{ w.viewActivity }}" class="pill">View Activity</div></sc-if>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Examples</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ workflowExamples }}" as="ex" hint-placeholder-count="3">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;background:#f7f6f3;font:400 13px 'Public Sans',sans-serif;color:#3a3733">“{{ ex }}”</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Approvals</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <sc-for list="{{ approvalFilterChips }}" as="af" hint-placeholder-count="4">
+            <div onClick="{{ af.go }}" class="pill" style="background:{{ af.bg }};color:{{ af.fg }}">{{ af.label }}</div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ filteredApprovals }}" as="a" hint-placeholder-count="6">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div>
+                <div style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">{{ a.text }}</div>
+                <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781">Generated by Lex · {{ a.meta }} · links to {{ a.module }}</div>
+              </div>
+              <div style="display:flex;gap:7px;flex:none;align-items:center">
+                <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ a.bg }};color:{{ a.fg }};flex:none">{{ a.status }}</span>
+                <sc-if value="{{ a.isPending }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ a.approve }}" class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">Approve</div>
+                  <div onClick="{{ a.reject }}" class="pill">Reject</div>
+                </sc-if>
+                <sc-if value="{{ a.isDone }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ a.viewActivity }}" class="pill">View Activity</div>
+                  <sc-if value="{{ a.reversible }}" hint-placeholder-val="{{ false }}"><div onClick="{{ a.undo }}" class="pill">Undo</div></sc-if>
+                </sc-if>
+                <sc-if value="{{ a.isUndone }}" hint-placeholder-val="{{ false }}"><div onClick="{{ a.viewActivity }}" class="pill">View Activity</div></sc-if>
+                <sc-if value="{{ a.isRejected }}" hint-placeholder-val="{{ false }}"><div onClick="{{ a.viewActivity }}" class="pill">View Activity</div></sc-if>
+                <sc-if value="{{ a.isPlain }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ a.actions }}" as="aa" hint-placeholder-count="1"><div class="pill">{{ aa }}</div></sc-for>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isKnowledge }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Knowledge</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">Company documents, indexed and searchable by Lex.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ knowledgeDocs }}" as="d" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ d.name }}</span><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eeece7;color:#5c5852">{{ d.category }}</span></div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Indexed · updated {{ d.updated }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Agents</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <sc-for list="{{ agents }}" as="ag" hint-placeholder-count="7">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ ag.name }}</span><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ ag.bg }};color:{{ ag.fg }}">{{ ag.status }}</span></div>
+              <div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:8px">{{ ag.capabilities }}</div>
+              <div style="font:400 11px 'Public Sans',sans-serif;color:#a8a39a">Permissions: {{ ag.permissions }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSkills }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Skills</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ skills }}" as="sk" hint-placeholder-count="9">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">{{ sk.name }}</div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ sk.module }} · used {{ sk.uses }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMemory }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Memory</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Pinned context</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+              <sc-for list="{{ pinnedMemory }}" as="m" hint-placeholder-count="3">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#3a3733">★ {{ m }}</div>
+              </sc-for>
+            </div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Organization memory</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ orgMemory }}" as="m" hint-placeholder-count="3">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ m }}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recent context</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+              <sc-for list="{{ recentMemory }}" as="m" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ m }}</div>
+              </sc-for>
+            </div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Temporary context</div>
+            <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:12px;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">{{ tempMemoryNote }}</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isActivity }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">AI activity</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ activityLog }}" as="a" hint-placeholder-count="10">
+            <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#3a3733">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="display:flex;gap:10px;align-items:center"><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eeece7;color:#5c5852;flex:none">{{ a.type }}</span><span>{{ a.text }}</span></div>
+                <span class="mono" style="color:#8c8781;font-size:11px">{{ a.time }}</span>
+              </div>
+              <sc-if value="{{ a.hasEvidence }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+                  <span style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Evidence: {{ a.sourceCount }} sources</span>
+                  <span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">Confidence {{ a.confidence }}</span>
+                  <div onClick="{{ a.viewEvidence }}" class="pill">View evidence</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPromptLibrary }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Prompt library</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <sc-for list="{{ promptCatChips }}" as="pc" hint-placeholder-count="6">
+            <div onClick="{{ pc.go }}" class="pill" style="background:{{ pc.bg }};color:{{ pc.fg }}">{{ pc.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ filteredPrompts }}" as="p" hint-placeholder-count="6">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ p.text }}</span>
+              <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eef2f6;color:#3a5a76;flex:none">{{ p.cat }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAutomationCenter }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Automation center</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ automationMetrics }}" as="m" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:{{ m.color }}">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Running &amp; scheduled</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:18px">
+          <sc-for list="{{ automations }}" as="a" hint-placeholder-count="5">
+            <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ a.name }}</span>
+              <span style="display:flex;gap:8px;align-items:center"><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ a.bg }};color:{{ a.fg }}">{{ a.status }}</span><span style="color:#8c8781">{{ a.detail }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Logs</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ automationLogs }}" as="l" hint-placeholder-count="4">
+            <div class="mono" style="padding:8px 14px;border-bottom:1px solid #e8e5e0;font-size:11.5px;color:#5c5852">{{ l }}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Analytics</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:14px">OmegaHires · organization-wide</div>
+
+        <sc-if value="{{ analyticsReadOnly }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:13px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#8a6d1f">Analytics add-on inactive — existing dashboards are preserved and read-only.</div>
+            <sc-if value="{{ analyticsCanManage }}" hint-placeholder-val="{{ false }}"><div onClick="{{ analyticsManage }}" style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer;flex:none">Upgrade / Restore access</div></sc-if>
+            <sc-if value="{{ analyticsShowRequest }}" hint-placeholder-val="{{ false }}"><div onClick="{{ analyticsRequest }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a6d1f;cursor:pointer;flex:none">Request access</div></sc-if>
+          </div>
+          <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">{{ analyticsRetentionNote }}</div>
+        </sc-if>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+            <span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ analyticsDashboard.name }}</span>
+            <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eeece7;color:#5c5852">Read-only — Analytics add-on inactive</span>
+          </div>
+          <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ analyticsDashboard.owner }} · {{ analyticsDashboard.scope }} · last updated {{ analyticsDashboard.lastUpdated }}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Hiring funnel</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ analyticsHiringFunnel }}" as="f" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font:400 12px 'Public Sans',sans-serif;color:#5c5852;width:90px;flex:none">{{ f.label }}</span>
+                  <div style="flex:1;height:18px;border-radius:5px;background:#eeece7;overflow:hidden"><div style="height:100%;width:{{ f.pct }}%;background:#cdc8c0;border-radius:5px"></div></div>
+                  <span class="mono" style="font-size:11px;color:#8c8781;width:50px;text-align:right">{{ f.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Revenue &amp; collections trend</div>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:80px">
+              <sc-for list="{{ analyticsRevenueTrend }}" as="b" hint-placeholder-count="6"><div style="flex:1;background:#cdc8c0;border-radius:3px 3px 0 0;height:{{ b }}%"></div></sc-for>
+            </div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:4px">Time to fill</div><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ analyticsTimeToFill }}</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:4px">Attrition</div><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ analyticsAttrition }}</div></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPayroll }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Payroll</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:14px">OmegaHires · payroll history</div>
+
+        <sc-if value="{{ payrollReadOnly }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:13px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#8a6d1f">Payroll module inactive — existing records are preserved and read-only.</div>
+            <sc-if value="{{ payrollCanManage }}" hint-placeholder-val="{{ false }}"><div onClick="{{ payrollManage }}" style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer;flex:none">Upgrade / Restore access</div></sc-if>
+            <sc-if value="{{ payrollShowRequest }}" hint-placeholder-val="{{ false }}"><div onClick="{{ payrollRequest }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a6d1f;cursor:pointer;flex:none">Request access</div></sc-if>
+          </div>
+        </sc-if>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+            <span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">Payroll run — {{ payrollRun.date }}</span>
+            <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eeece7;color:#5c5852">Read-only</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Employees</div><div style="font:600 17px 'Public Sans',sans-serif;color:#1f1e1c">{{ payrollRun.employees }}</div></div>
+            <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Gross payroll</div><div style="font:600 17px 'Public Sans',sans-serif;color:#1f1e1c">{{ payrollRun.gross }}</div></div>
+            <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Deductions</div><div style="font:600 17px 'Public Sans',sans-serif;color:#1f1e1c">{{ payrollRun.deductions }}</div></div>
+            <div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Net payroll</div><div style="font:600 17px 'Public Sans',sans-serif;color:#1f1e1c">{{ payrollRun.net }}</div></div>
+          </div>
+        </div>
+
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Payroll history</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div>Run date</div><div>Employees</div><div>Net payroll</div></div>
+          <sc-for list="{{ payrollHistory }}" as="p" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:10px 15px;border-top:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ p.date }}</span><span class="mono" style="color:#8c8781">{{ p.employees }}</span><span class="mono" style="color:#1f1e1c">{{ p.net }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Settings</div>
+
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Modules &amp; entitlements</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:20px">
+          <sc-for list="{{ entitlementRows }}" as="e" hint-placeholder-count="7">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ e.label }}</span>
+                <span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:{{ e.bg }};color:{{ e.fg }};flex:none">{{ e.stateLabel }}</span>
+              </div>
+              <sc-if value="{{ e.note }}" hint-placeholder-val="{{ false }}"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">{{ e.note }}</div></sc-if>
+              <sc-if value="{{ e.retentionNote }}" hint-placeholder-val="{{ false }}"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">{{ e.retentionNote }}</div></sc-if>
+              <sc-if value="{{ e.showManageAction }}" hint-placeholder-val="{{ false }}"><div onClick="{{ e.manage }}" class="pill" style="display:inline-block;background:#1f1e1c;color:#fff;border-color:#1f1e1c">{{ e.actionLabel }}</div></sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ settingsRows }}" as="r" hint-placeholder-count="8">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ r.label }}</span><span style="color:#8c8781" class="mono">{{ r.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsage }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Usage</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ usageMetrics }}" as="m" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Usage trend</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:80px;border:1px solid #e3e0da;border-radius:11px;padding:14px;margin-bottom:18px">
+          <sc-for list="{{ usageTrend }}" as="b" hint-placeholder-count="6"><div style="flex:1;background:#cdc8c0;border-radius:3px 3px 0 0;height:{{ b }}%"></div></sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">By department</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ usageByDept }}" as="d" hint-placeholder-count="5">
+            <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ d.label }}</span><span class="mono" style="color:#8c8781">{{ d.value }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showExplainDrawer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:100px;right:34px;width:340px;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:40">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">Explain reasoning</div>
+          <span onClick="{{ closeExplainDrawer }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+        </div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Reason</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainRec.reason }}</div></div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Impact</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainRec.impact }}</div></div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Confidence</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainRec.confidence }}</div></div>
+        <div><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Data source</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainRec.source }}</div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showEvidenceDrawer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:100px;right:34px;width:360px;max-height:75vh;overflow-y:auto;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:55">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Lex conclusion</div>
+          <span onClick="{{ closeEvidence }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+        </div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:14px">{{ evidenceView.conclusion }}</div>
+
+        <div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:6px">Supporting evidence</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+          <sc-for list="{{ evidenceRows }}" as="ev" hint-placeholder-count="3">
+            <div onClick="{{ ev.go }}" style="border:1px solid #e3e0da;border-radius:9px;padding:9px 11px;cursor:pointer">
+              <sc-if value="{{ ev.masked }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 12px 'Public Sans',sans-serif;color:#8a6d1f">{{ ev.text }}</div>
+              </sc-if>
+              <sc-if value="{{ ev.masked }}" hint-placeholder-val="{{ true }}"></sc-if>
+              <sc-if value="{{ ev.record }}" hint-placeholder-val="{{ true }}">
+                <div style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eeece7;color:#5c5852;display:inline-block;margin-bottom:4px">{{ ev.module }}</div>
+                <div style="display:flex;justify-content:space-between;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ ev.record }}</span><span class="mono" style="color:#1f1e1c">{{ ev.value }}</span></div>
+                <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781">{{ ev.note }}</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Last updated</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ evidenceView.lastUpdated }}</div></div>
+        <sc-if value="{{ evidenceView.hasFreshnessWarning }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:8px;padding:6px 9px;margin-bottom:8px;font:400 11.5px 'Public Sans',sans-serif;color:#8a6d1f">Sync warning — {{ evidenceView.freshness }}</div>
+        </sc-if>
+
+        <div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Confidence</div>
+        <div style="margin-bottom:6px"><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">{{ evidenceView.confidence }}</span></div>
+        <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:3px">Why:</div>
+        <sc-for list="{{ evidenceView.factors }}" as="fc" hint-placeholder-count="4"><div style="font:400 12px 'Public Sans',sans-serif;color:#5c5852">• {{ fc }}</div></sc-for>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:14px"><div onClick="{{ closeEvidence }}" style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Close</div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showActionPreview }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:100px;right:34px;width:360px;max-height:75vh;overflow-y:auto;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:50">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Lex wants to</div>
+          <span onClick="{{ closeActionPreview }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+        </div>
+        <div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:12px">{{ previewAction.action }}</div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">What will happen</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ previewAction.whatWillHappen }}</div></div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:3px">Records</div>
+          <sc-for list="{{ previewAction.records }}" as="rec" hint-placeholder-count="2"><div class="mono" style="font-size:12px;color:#3a3733;padding:2px 0">{{ rec }}</div></sc-for>
+        </div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">User / department affected</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ previewAction.affected }}</div></div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Data source</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ previewAction.source }}</div></div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Permissions Lex will use</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ previewAction.permission }}</div></div>
+
+        <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Expected impact</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ previewAction.impact }}</div></div>
+
+        <sc-if value="{{ previewAction.hasConfidence }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:9px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">AI confidence</div><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 8px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">{{ previewAction.confidence }}</span></div>
+        </sc-if>
+
+        <div style="margin-bottom:14px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Reversible</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:{{ previewAction.reversibleColor }}">{{ previewAction.reversibleLabel }}</div></div>
+
+        <sc-if value="{{ previewAction.isPending }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <div onClick="{{ closeActionPreview }}" style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Cancel</div>
+            <div onClick="{{ confirmActionPreview }}" style="padding:7px 13px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Approve &amp; Execute</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ previewAction.isDone }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 12px;margin-bottom:10px;font:400 12.5px 'Public Sans',sans-serif;color:#4a6b3d">✓ Executed — {{ previewAction.stateNote }}</div>
+          <div style="display:flex;justify-content:flex-end"><div onClick="{{ closeActionPreview }}" style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Close</div></div>
+        </sc-if>
+        <sc-if value="{{ previewAction.isUndone }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 12px;margin-bottom:10px;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">↺ Undone — {{ previewAction.stateNote }}</div>
+          <div style="display:flex;justify-content:flex-end"><div onClick="{{ closeActionPreview }}" style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Close</div></div>
+        </sc-if>
+        <sc-if value="{{ previewAction.isRejected }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:9px;padding:9px 12px;margin-bottom:10px;font:400 12.5px 'Public Sans',sans-serif;color:#8a3527">✕ Rejected — {{ previewAction.stateNote }}</div>
+          <div style="display:flex;justify-content:flex-end"><div onClick="{{ closeActionPreview }}" style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Close</div></div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1520,&quot;height&quot;:1000}}">
+const SECTIONS = ["home","ask","tasks","recs","workflows","approvals","knowledge","agents","skills","memory","activity","prompts","automation","analytics","payroll","settings","usage"];
+const LABELS = { home:"Home", ask:"Ask Lex", tasks:"AI Tasks", recs:"Recommendations", workflows:"Workflows", approvals:"Approvals", knowledge:"Knowledge", agents:"Agents", skills:"Skills", memory:"Memory", activity:"AI Activity", prompts:"Prompt Library", automation:"Automation Center", analytics:"Analytics", payroll:"Payroll", settings:"Settings", usage:"Usage" };
+const EMPTY_COPY = {
+  home: "Nothing for Lex to surface yet.", ask: "Ask Lex a question to get started.", tasks: "No AI tasks yet.",
+  recs: "No recommendations right now — check back after Lex finishes its next pass.", workflows: "No workflows yet. Create one to automate a routine action.",
+  approvals: "Nothing awaiting approval.", knowledge: "No documents indexed yet.", agents: "No agents configured.",
+  skills: "No skills available in this plan.", memory: "Lex has no context stored yet.", activity: "No AI activity recorded yet.",
+  prompts: "No prompts saved yet.", automation: "No automations running or scheduled.", analytics: "No dashboards saved yet.", payroll: "No payroll records yet.", settings: "Settings unavailable.", usage: "No usage recorded yet."
+};
+// Evidence sets — cross-module support behind an AI conclusion. Each item declares the module it came from so evidence
+// can be masked per-item by canViewEvidence() without touching the entitlement model.
+const EVIDENCE_SETS = {
+  "revenue-lower": {
+    conclusion: "Revenue decreased primarily because collections slowed and two large client invoices remain overdue.",
+    lastUpdated: "08 Aug 2026 · 09:42", freshness: "",
+    confidence: "92%", confidenceFactors: ["4 weeks of consistent Finance data", "18 overdue invoices", "Revenue trend confirmed by Finance", "Recruitment volume declined 11%"],
+    items: [
+      { moduleKey: "finance", module: "Finance", record: "INV-4471", value: "₹8.4L", note: "41 days overdue", target: "approvals" },
+      { moduleKey: "finance", module: "Finance", record: "Collection rate", value: "89%", note: "↓ 5.2%", target: null },
+      { moduleKey: "clients", module: "Clients", record: "Vertex Retail", value: "", note: "Renewal in 14 days", target: "recs" },
+      { moduleKey: "recruitment", module: "Recruitment", record: "Placements", value: "", note: "↓ 11%", target: null }
+    ]
+  },
+  "vertex-retail-risk": {
+    conclusion: "Vertex Retail is at elevated churn risk: placement volume has dropped, an invoice is significantly overdue, and the contract renews soon.",
+    lastUpdated: "08 Aug 2026 · 09:42", freshness: "",
+    confidence: "88%", confidenceFactors: ["Placement volume down 24% over 90 days", "Invoice overdue 41 days", "Renewal window inside 14 days"],
+    items: [
+      { moduleKey: "recruitment", module: "Recruitment", record: "Placements at Vertex Retail", value: "↓ 24%", note: "trailing 90 days", target: null },
+      { moduleKey: "finance", module: "Finance", record: "INV-4471", value: "₹8.4L", note: "41 days overdue", target: "approvals" },
+      { moduleKey: "clients", module: "Clients", record: "Vertex Retail", value: "Health Score 42", note: "Renewal in 14 days", target: "recs" }
+    ]
+  },
+  "technova-risk": {
+    conclusion: "TechNova shows early churn signals: support ticket volume is up and platform usage has declined.",
+    lastUpdated: "08 Aug 2026 · 09:42", freshness: "",
+    confidence: "74%", confidenceFactors: ["Support tickets up 30% this month", "Login activity down 18%"],
+    items: [
+      { moduleKey: "clients", module: "Clients", record: "TechNova", value: "Health Score 57", note: "Support tickets ↑ 30%", target: "recs" },
+      { moduleKey: "finance", module: "Finance", record: "Invoices", value: "On time", note: "No overdue balance", target: null }
+    ]
+  },
+  "bluegrid-risk": {
+    conclusion: "BlueGrid's risk is moderate — a recent onboarding delay and a single overdue invoice are worth monitoring.",
+    lastUpdated: "08 Aug 2026 · 09:42", freshness: "Clients data sync delayed ~1 hour.",
+    confidence: "61%", confidenceFactors: ["Onboarding delayed 2 weeks", "1 invoice overdue 12 days"],
+    items: [
+      { moduleKey: "clients", module: "Clients", record: "BlueGrid Manufacturing", value: "Health Score 61", note: "Onboarding delayed", target: "recs" },
+      { moduleKey: "finance", module: "Finance", record: "Invoice", value: "₹2.1L", note: "12 days overdue", target: null }
+    ]
+  }
+};
+// Search index — every entry declares the module it belongs to; Search filters/labels purely from ENTITLEMENTS via the shared helpers.
+const SEARCH_INDEX = [
+  { label: "Weekly Executive Snapshot dashboard", moduleKey: "analytics", type: "Analytics", target: "analytics" },
+  { label: "July 2026 payroll run", moduleKey: "payroll", type: "Payroll", target: "payroll" },
+  { label: "Run payroll summary — action", moduleKey: "payroll", type: "Payroll", target: "payroll", executable: true },
+  { label: "Generate narrative report — action", moduleKey: "analytics", type: "Analytics", target: "analytics", executable: true },
+  { label: "Senior QA Engineer requirement", moduleKey: "recruitment", type: "Recruitment", target: null },
+  { label: "Custom Agents marketplace", moduleKey: "customAgents", type: "Add-on", target: null },
+  { label: "Advanced Forecasting model", moduleKey: "forecasting", type: "Higher edition", target: null },
+  { label: "Security & Compliance audit log", moduleKey: "security", type: "Security", target: null }
+];
+
+// ACTION TYPE — reusable definition of what a kind of action does, independent of any specific generated instance.
+const ACTION_CATALOG = {
+  notifyFinance: { whatWillHappen: "Send the approved payment reminder to the Finance contact associated with the client.", source: "Finance → Invoices; Clients → Contract", permission: "Finance → Invoice Reminder", reversible: false },
+  reclaimLicenses: { whatWillHappen: "Revoke module license assignment for the inactive users and return the seats to the available pool.", source: "Administration → License usage", permission: "Administration → License Management", reversible: true },
+  enforceMFA: { whatWillHappen: "Require multi-factor authentication at next login for the affected accounts.", source: "Administration → Security & Access", permission: "Administration → Security Policy", reversible: true },
+  scheduleReview: { whatWillHappen: "Create a calendar invite and task for the Account Manager to review the account within 5 business days.", source: "Clients → Health Score model", permission: "Clients → Schedule Review", reversible: true },
+  reassignReq: { whatWillHappen: "Move ownership of the open requirements to balance recruiter workload.", source: "Recruitment → Requirement ownership", permission: "Recruitment → Reassign Requirement", reversible: true },
+  notifyHR: { whatWillHappen: "Send a notification to HR listing the affected employees.", source: "People → Compliance records", permission: "People → Compliance Notification", reversible: false },
+  draftProposal: { whatWillHappen: "Generate a draft proposal and save it to the account file for review.", source: "Finance + Clients modules", permission: "Clients → Draft Proposal", reversible: true },
+  createEmployee: { whatWillHappen: "Create a new employee record in People using offer and joining details from Recruitment, and trigger onboarding tasks.", source: "Recruitment → Placements; People → Employees", permission: "People → Create Employee", reversible: true },
+  retryOpsSync: { whatWillHappen: "Reattempt the connector sync that failed, pulling the latest data.", source: "Operations → Data connector", permission: "Administration → Data Sync", reversible: true },
+  activateLeaveWorkflow: { whatWillHappen: "Resume automatic approval of leave requests that fall within policy, without manual review.", source: "Workflows → Leave request auto-approval", permission: "People → Approve Leave", reversible: true },
+  notifyAM: { whatWillHappen: "Send a message to the Account Manager summarizing the risk and timeline.", source: "Clients → Health Score model", permission: "Clients → Notify Account Manager", reversible: false },
+  offerDiscount: { whatWillHappen: "Draft a renewal offer with a discount and send it to the contract owner for review.", source: "Clients → Contract", permission: "Clients → Send Offer", reversible: true },
+  activateOnboarding: { whatWillHappen: "Turn on the workflow: when a candidate joins, automatically create an employee record and assign onboarding tasks.", source: "Workflows → Draft workflow", permission: "Workflows → Activate", reversible: true }
+};
+// ACTION INSTANCES — one per generated action. Several surfaces can reference the same actionInstanceId.
+const ACTION_INSTANCES = {
+  "notifyFinance-vertex-retail-invoice-4471": { catalogKey: "notifyFinance", action: "Send overdue invoice notice to Vertex Retail", records: ["INV-4471", "₹8.4L", "41 days overdue"], affected: "Finance contact at Vertex Retail", impact: "May accelerate collection before renewal.", confidence: null },
+  "reclaimLicenses-recruitment-q3": { catalogKey: "reclaimLicenses", action: "Reclaim 3 unused Recruitment licenses", records: ["S. Rane — no login 62 days", "V. Kapoor — no login 71 days", "D. Shah — no login 65 days"], affected: "3 Recruitment users · Administration license pool", impact: "Saves an estimated ₹18,000/year.", confidence: "High" },
+  "enforceMFA-org-owners": { catalogKey: "enforceMFA", action: "Enforce MFA for 2 Org Owner accounts", records: ["K. Iyer — Org Owner, MFA off", "N. Bhatt — Org Owner, MFA off"], affected: "2 Org Owner accounts", impact: "Closes the highest-severity open security gap.", confidence: "High" },
+  "scheduleReview-vertex-retail": { catalogKey: "scheduleReview", action: "Schedule health review with Vertex Retail", records: ["Vertex Retail — Health Score 41", "Renewal in 14 days"], affected: "Account Manager · Vertex Retail", impact: "Reduces churn risk on a ₹43L account.", confidence: "High" },
+  "reassignReq-iyer-kulkarni": { catalogKey: "reassignReq", action: "Reassign 2 requirements from R. Iyer to T. Kulkarni", records: ["REQ-1042 — Senior QA Engineer", "REQ-1039 — Ops Analyst"], affected: "R. Iyer · T. Kulkarni", impact: "Could cut time-to-fill by roughly 6 days.", confidence: "Medium" },
+  "notifyHR-lapsed-checks": { catalogKey: "notifyHR", action: "Notify HR of 3 lapsed background checks", records: ["A. Verma — lapsed 6 days", "M. Osei — lapsed 4 days", "P. Shetty — lapsed 9 days"], affected: "HR team", impact: "Reduces compliance exposure ahead of audit.", confidence: "High" },
+  "draftProposal-solace-health-payroll": { catalogKey: "draftProposal", action: "Draft Payroll module proposal for Solace Health", records: ["Solace Health — no Payroll usage", "Headcount growth +22% QoQ"], affected: "Solace Health account · Account team", impact: "Estimated ₹6L additional ARR if adopted.", confidence: "Medium" },
+  "createEmployee-r-menon": { catalogKey: "createEmployee", action: "Create employee record for R. Menon", records: ["R. Menon — Ops Analyst, joined today", "Offer ID OFR-2291"], affected: "R. Menon · People module", impact: "Enables payroll, benefits and onboarding to start.", confidence: null },
+  "retryOpsSync-operations-connector": { catalogKey: "retryOpsSync", action: "Retry Operations data sync", records: ["Connector: Operations API", "Last failure: timeout after 30s"], affected: "Operations data pipeline", impact: "Restores up-to-date utilization figures for Analytics and Operations.", confidence: null },
+  "activateLeaveWorkflow-leave-autoapprove": { catalogKey: "activateLeaveWorkflow", action: "Activate \"Leave request auto-approval\" workflow", records: ["Workflow: Leave request auto-approval", "Last run: paused by Anita Rao"], affected: "People module · all employees submitting leave", impact: "Leave requests within policy will be approved automatically going forward.", confidence: null },
+  "notifyAM-vertex-retail": { catalogKey: "notifyAM", action: "Notify Account Manager about Vertex Retail", records: ["Vertex Retail — Health Score 41", "Renewal in 14 days"], affected: "Account Manager (K. Shah)", impact: "Ensures the Account Manager acts before renewal.", confidence: null },
+  "offerDiscount-vertex-retail-renewal": { catalogKey: "offerDiscount", action: "Offer renewal discount to Vertex Retail", records: ["Vertex Retail — Contract renews in 14 days", "Proposed discount: 10%"], affected: "Vertex Retail · Contract owner", impact: "May improve renewal odds but reduces margin on the account.", confidence: "Medium" },
+  "activateOnboarding-candidate-join": { catalogKey: "activateOnboarding", action: "Activate onboarding workflow", records: ["Workflow: Candidate joins → Create employee + assign onboarding tasks"], affected: "All new hires · People + Recruitment modules", impact: "Automates onboarding record creation going forward.", confidence: null }
+};
+// Reusable entitlement-state model. One of: available · higherEdition · addon · downgraded · noPermission · readonly.
+const ENTITLEMENTS = {
+  analytics: { label: "Analytics", state: "downgraded", note: "Analytics add-on was active until 15 Jul 2026 — the current plan does not include it.", retentionNote: "Existing dashboards and historical data are retained per your 12-month retention policy." },
+  payroll: { label: "Payroll", state: "downgraded", note: "Payroll module was included until 1 Jun 2026 — the current plan does not include it.", retentionNote: "Existing payroll records remain visible in read-only mode." },
+  forecasting: { label: "Advanced Forecasting", state: "higherEdition", note: "Available on the Enterprise edition." },
+  customAgents: { label: "Custom Agents", state: "addon", note: "Available as an optional add-on." },
+  recruitment: { label: "Recruitment", state: "available", note: "" },
+  customReports: { label: "Custom Reports", state: "readonly", note: "You have view-only access to this module." },
+  security: { label: "Security & Compliance", state: "noPermission", note: "You don't have permission to view this module." }
+};
+const ENTITLEMENT_META = {
+  available: { label: "Available", bg: "#eaf0e6", fg: "#4a6b3d" },
+  higherEdition: { label: "Higher edition", bg: "#eef2f6", fg: "#3a5a76" },
+  addon: { label: "Add-on available", bg: "#f5efdd", fg: "#8a6d1f" },
+  downgraded: { label: "Downgraded — data preserved", bg: "#eeece7", fg: "#5c5852" },
+  noPermission: { label: "No permission", bg: "#fbf2f0", fg: "#8a3527" },
+  readonly: { label: "Read-only access", bg: "#eef2f6", fg: "#3a5a76" }
+};
+const ACTIVITY_STATIC = [
+  { type: "Search", text: "Searched \"clients at risk\" across Clients + Finance", time: "2 min ago" },
+  { type: "Summary", text: "Summarized this week's placements for Recruitment leads", time: "18 min ago" },
+  { type: "Created", text: "Lex generated: Send overdue invoice notice to Vertex Retail (notifyFinance-vertex-retail-invoice-4471)", time: "20 min ago" },
+  { type: "Report", text: "Generated AI narrative report for August", time: "1 hr ago" },
+  { type: "Created", text: "Lex generated: Create employee record for R. Menon (createEmployee-r-menon)", time: "1 hr ago" },
+  { type: "Recommendation", text: "Flagged Vertex Retail payment risk", time: "40 min ago" },
+  { type: "Insight", text: "Lex identified: Vertex Retail renewal risk", time: "40 min ago", evidenceKey: "vertex-retail-risk", confidence: "88%" },
+  { type: "Created", text: "Lex generated: Reclaim 3 unused Recruitment licenses (reclaimLicenses-recruitment-q3)", time: "3 hr ago" },
+  { type: "Search", text: "Searched \"unused licenses\" across Administration", time: "3 hr ago" },
+  { type: "Summary", text: "Summarized payroll run for July", time: "5 hr ago" },
+  { type: "Action", text: "Reassigned REQ-1042 to T. Kulkarni", time: "yesterday" },
+  { type: "Report", text: "Generated Quarterly Board Deck", time: "3 days ago" }
+];
+
+class Component extends DCLogic {
+  state = { section: "home", demo: "success", taskFilter: "all", approvalFilter: "all", promptCat: "all", explainRecId: null, previewKey: null, actionState: {}, actionActivity: [], currentRole: "orgOwner", searchOpen: false, evidenceKey: null };
+  nav(section) { return () => this.setState({ section, demo: "success", searchOpen: false }); }
+  toggleSearch = () => this.setState(s => ({ searchOpen: !s.searchOpen }));
+  openEvidence(key) { return (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ evidenceKey: key }); }; }
+  closeEvidence = () => this.setState({ evidenceKey: null });
+  // Permission layer on top of entitlements — a user can lack Finance access independent of any module's edition/add-on state.
+  canViewEvidence(moduleKey) { if (moduleKey === "finance" && this.state.currentRole === "noFinance") return false; return this.canView(moduleKey); }
+  openExplain(id, e) { e.stopPropagation(); this.setState({ explainRecId: id }); }
+
+  // Entitlement helpers — single source of truth for view/edit/execute/manage rights per module.
+  entitlementState(moduleKey) { const e = ENTITLEMENTS[moduleKey]; return e ? e.state : "available"; }
+  canView(moduleKey) { return this.entitlementState(moduleKey) !== "noPermission"; }
+  canEdit(moduleKey) { return this.entitlementState(moduleKey) === "available"; }
+  canExecute(moduleKey) { return this.entitlementState(moduleKey) === "available"; }
+  canManageEntitlement(moduleKey) {
+    const st = this.entitlementState(moduleKey);
+    return this.state.currentRole === "orgOwner" && (st === "higherEdition" || st === "addon" || st === "downgraded");
+  }
+  // Single source of truth for every generated action, keyed by actionInstanceId — shared across every surface that references it.
+  stateOf(instanceId) { return this.state.actionState[instanceId] || "pending"; }
+  instanceLabel(instanceId) { return ACTION_INSTANCES[instanceId] ? ACTION_INSTANCES[instanceId].action : instanceId; }
+  openPreview(instanceId) { return (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ previewKey: instanceId }); }; }
+  closeActionPreview = () => this.setState({ previewKey: null });
+  confirmActionPreview = () => {
+    const id = this.state.previewKey; if (!id) return;
+    if (this.stateOf(id) !== "pending") return; // reject invalid transition — already resolved
+    const label = this.instanceLabel(id);
+    this.setState(s => ({
+      actionState: { ...s.actionState, [id]: "executed" },
+      actionActivity: [
+        { type: "Executed", text: "Executed: " + label, time: "just now" },
+        { type: "Approved", text: "Approved: " + label, time: "just now" },
+        ...s.actionActivity
+      ],
+      previewKey: null
+    }));
+  };
+  genericUndo(instanceId) {
+    return () => {
+      if (this.stateOf(instanceId) !== "executed") return; // only an executed instance can be undone
+      const label = this.instanceLabel(instanceId);
+      this.setState(s => ({
+        actionState: { ...s.actionState, [instanceId]: "undone" },
+        actionActivity: [{ type: "Undone", text: "Undone: " + label, time: "just now" }, ...s.actionActivity]
+      }));
+    };
+  }
+  rejectApproval(instanceId) {
+    return () => {
+      if (this.stateOf(instanceId) !== "pending") return; // only a pending instance can be rejected
+      const label = this.instanceLabel(instanceId);
+      this.setState(s => ({
+        actionState: { ...s.actionState, [instanceId]: "rejected" },
+        actionActivity: [{ type: "Rejected", text: "Rejected: " + label, time: "just now" }, ...s.actionActivity]
+      }));
+    };
+  }
+  conversationAction(label, instanceId) {
+    if (!instanceId) return { label, go: () => {} };
+    const st2 = this.stateOf(instanceId);
+    if (st2 === "pending") return { label, go: this.openPreview(instanceId) };
+    const prefix = st2 === "executed" ? "✓ " : st2 === "undone" ? "↺ " : "✕ ";
+    return { label: prefix + label, go: this.nav("activity") };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const screenLabel = LABELS[s.section];
+    const crumbs = [["Lex AI","home"],[screenLabel,s.section]].map(([label,key],i,arr) => { const isLast = i === arr.length - 1; return { label, color: isLast ? "#1f1e1c" : "#8c8781", cursor: isLast ? "default" : "pointer", go: isLast ? () => {} : this.nav(key) }; });
+    const sections = SECTIONS.map(k => ({ label: LABELS[k], go: this.nav(k), bg: s.section === k ? "#e8e5e0" : "transparent", fg: s.section === k ? "#1f1e1c" : "#8c8781" }));
+    const demoChips = [["success","Success"],["empty","Empty"],["loading","Loading"],["error","Error"],["denied","No access"],["upgrade","Upgrade"],["readonly","Read-only"]]
+      .map(([key,label]) => ({ label, go: () => this.setState({ demo: key }), bg: s.demo === key ? "#1f1e1c" : "transparent", fg: s.demo === key ? "#fff" : "#8c8781" }));
+    const roleChips = [["orgOwner","Org Owner"],["standard","Standard user"],["noFinance","No Finance access"]]
+      .map(([key,label]) => ({ label, go: () => this.setState({ currentRole: key }), bg: s.currentRole === key ? "#1f1e1c" : "transparent", fg: s.currentRole === key ? "#fff" : "#8c8781" }));
+    const evidenceSet = EVIDENCE_SETS[s.evidenceKey] || null;
+    const evidenceRows = evidenceSet ? evidenceSet.items.map(it => {
+      const visible = this.canViewEvidence(it.moduleKey);
+      if (!visible) return { module: it.module, masked: true, text: it.module + " evidence unavailable due to your permissions.", go: () => {} };
+      return { module: it.module, masked: false, record: it.record, value: it.value, note: it.note, go: it.target ? this.nav(it.target) : () => {} };
+    }) : [];
+    const evidenceChipMaker = (moduleKeys, evidenceKey) => moduleKeys.map(mk => ({ label: mk.charAt(0).toUpperCase() + mk.slice(1), go: this.openEvidence(evidenceKey) }));
+    const entitlementRows = Object.keys(ENTITLEMENTS).map(key => {
+      const ent = ENTITLEMENTS[key]; const meta = ENTITLEMENT_META[ent.state]; const canManage = this.canManageEntitlement(key);
+      const actionLabel = ent.state === "downgraded" ? "Upgrade / Restore access" : ent.state === "addon" ? "Add to plan" : ent.state === "higherEdition" ? "Upgrade" : "";
+      return { label: ent.label, stateLabel: meta.label, bg: meta.bg, fg: meta.fg, note: ent.note, retentionNote: ent.retentionNote || "", showManageAction: canManage && !!actionLabel, actionLabel, manage: () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: actionLabel + " requested for " + ent.label, time: "just now" }, ...s2.actionActivity] })) };
+    });
+
+    const tasksBase = [
+      { id:1, status:"Running", bg:"#eef2f6", fg:"#3a5a76", text:"Screening 24 resumes for Senior QA Engineer", meta:"Recruitment · started 2 min ago", actions:["Cancel"] },
+      { id:2, status:"Pending", bg:"#f5efdd", fg:"#8a6d1f", text:"Draft invoice reminder for Vertex Retail", meta:"Finance · awaiting approval", instanceId:"notifyFinance-vertex-retail-invoice-4471", pendingLabel:"Approve" },
+      { id:3, status:"Completed", bg:"#eaf0e6", fg:"#4a6b3d", text:"Generated JD for Plant Supervisor", meta:"Recruitment · finished 14 min ago", actions:["View"] },
+      { id:4, status:"Failed", bg:"#fbf2f0", fg:"#8a3527", text:"Sync Operations utilization data", meta:"Operations · failed 1 hr ago — connector timeout", instanceId:"retryOpsSync-operations-connector", pendingLabel:"Retry" },
+      { id:5, status:"Scheduled", bg:"#eeece7", fg:"#5c5852", text:"Weekly attrition summary for People leads", meta:"People · runs Mon 8am", actions:["Edit"] },
+      { id:6, status:"Completed", bg:"#eaf0e6", fg:"#4a6b3d", text:"Reconciled 42 invoices against payments", meta:"Finance · finished this morning", actions:["View"] }
+    ];
+    const tasks = tasksBase.map(t => {
+      if (!t.instanceId) return { ...t, isGeneric: true, isPending: false, isDone: false, isUndone: false, isRejected: false, actionsGeneric: t.actions };
+      const st2 = this.stateOf(t.instanceId);
+      const isDone = st2 === "executed", isUndone = st2 === "undone", isRejected = st2 === "rejected", isPending = st2 === "pending";
+      const status = isDone ? "Completed" : isUndone ? "Undone" : isRejected ? "Rejected" : t.status;
+      const bg = isDone ? "#eaf0e6" : isUndone ? "#eeece7" : isRejected ? "#fbf2f0" : t.bg;
+      const fg = isDone ? "#4a6b3d" : isUndone ? "#5c5852" : isRejected ? "#8a3527" : t.fg;
+      return {
+        ...t, status, bg, fg, isGeneric: false, isPending, isDone, isUndone, isRejected,
+        approve: this.openPreview(t.instanceId), viewActivity: this.nav("activity"),
+        reversible: ACTION_CATALOG[ACTION_INSTANCES[t.instanceId].catalogKey].reversible, undo: this.genericUndo(t.instanceId)
+      };
+    });
+    const taskFilterMap = { all: () => true, running: t => t.status === "Running", pending: t => t.status === "Pending", completed: t => t.status === "Completed", failed: t => t.status === "Failed" };
+    const taskFilterChips = [["all","All"],["running","Running"],["pending","Pending"],["completed","Completed"],["failed","Failed"]].map(([key,label]) => ({ label, go: () => this.setState({ taskFilter: key }), bg: s.taskFilter === key ? "#1f1e1c" : "transparent", fg: s.taskFilter === key ? "#fff" : "#8c8781" }));
+
+    const recommendationsBase = [
+      { id:"cross", category:"Revenue", catBg:"#eef2f6", catFg:"#3a5a76", text:"Propose the Payroll module to Solace Health.", reason:"No Payroll usage despite 22% headcount growth this quarter.", impact:"Est. ₹6L additional ARR.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Draft proposal", source:"Finance + Clients modules, trailing 6 months.", instanceId:"draftProposal-solace-health-payroll" },
+      { id:"hiring", category:"Hiring", catBg:"#f5efdd", catFg:"#8a6d1f", text:"Reassign 2 requirements from R. Iyer to reduce overload.", reason:"R. Iyer is carrying 40% more open reqs than the team average.", impact:"Could cut time-to-fill by ~6 days.", confidence:"Medium", confBg:"#f5efdd", confFg:"#8a6d1f", primaryAction:"Reassign requirement", source:"Recruitment module — Requirement ownership.", instanceId:"reassignReq-iyer-kulkarni" },
+      { id:"finance", category:"Finance", catBg:"#eef2f6", catFg:"#3a5a76", text:"Escalate Vertex Retail's overdue invoice before renewal.", reason:"Invoice 41 days overdue; contract renews in 12 days.", impact:"₹8.4L at risk if unresolved.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Notify Finance", source:"Finance module — Invoices, Clients — Contracts.", instanceId:"notifyFinance-vertex-retail-invoice-4471", evidenceKey:"vertex-retail-risk" },
+      { id:"compliance", category:"Compliance", catBg:"#fbf2f0", catFg:"#8a3527", text:"3 employees are missing updated background checks.", reason:"Policy requires renewal every 24 months; these lapsed last week.", impact:"Compliance exposure for audit.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Notify HR", source:"People module — Compliance records.", instanceId:"notifyHR-lapsed-checks" },
+      { id:"clients", category:"Clients", catBg:"#eef2f6", catFg:"#3a5a76", text:"Schedule a health review with Vertex Retail.", reason:"Health score dropped to 41 — declining placements and delayed invoices.", impact:"Reduces churn risk on a ₹43L account.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Schedule review", source:"Clients module — Health Score model.", instanceId:"scheduleReview-vertex-retail", evidenceKey:"vertex-retail-risk" },
+      { id:"employees", category:"Employees", catBg:"#eeece7", catFg:"#5c5852", text:"Check in with 4 engineers flagged at attrition risk.", reason:"Engagement scores fell below threshold for 6 consecutive weeks.", impact:"Preempts potential regretted attrition.", confidence:"Medium", confBg:"#f5efdd", confFg:"#8a6d1f", primaryAction:"View list", source:"People module — Engagement surveys.", instanceId:null },
+      { id:"licenses", category:"Licenses", catBg:"#eeece7", catFg:"#5c5852", text:"Reclaim 3 unused Recruitment licenses.", reason:"No login activity in the last 60 days.", impact:"Saves ~₹18,000/year.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Reclaim licenses", source:"Administration — License usage.", instanceId:"reclaimLicenses-recruitment-q3" },
+      { id:"security", category:"Security", catBg:"#fbf2f0", catFg:"#8a3527", text:"Enforce MFA for 2 Org Owner accounts still without it.", reason:"Owner-level access without MFA is a top audit finding.", impact:"Closes the highest-severity security gap.", confidence:"High", confBg:"#eaf0e6", confFg:"#4a6b3d", primaryAction:"Enforce MFA", source:"Administration — Security & Access.", instanceId:"enforceMFA-org-owners" },
+      { id:"payroll", category:"Payroll", catBg:"#eeece7", catFg:"#5c5852", text:"Generate this month's payroll summary for 480 employees.", reason:"Scheduled monthly payroll summary generation.", impact:"—", confidence:null, primaryAction:"Run payroll summary", source:"People module — Payroll.", instanceId:null, moduleKey:"payroll" }
+    ];
+    const recommendations = recommendationsBase.map(r => {
+      if (r.moduleKey && !this.canExecute(r.moduleKey)) {
+        const ent = ENTITLEMENTS[r.moduleKey];
+        return {
+          ...r, explain: (e) => this.openExplain(r.id, e), isPlain: false, isPending: false, isDone: false, isUndone: false, isRejected: false, isBlocked: true,
+          blockedNote: "This action requires the " + ent.label + " module, which is not currently enabled.",
+          viewData: this.nav(r.moduleKey === "payroll" ? "payroll" : "settings"), canManage: this.canManageEntitlement(r.moduleKey), canRequest: !this.canManageEntitlement(r.moduleKey),
+          manage: this.canManageEntitlement(r.moduleKey) ? this.nav("settings") : () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: "Requested access to " + ent.label + " module", time: "just now" }, ...s2.actionActivity] }))
+        };
+      }
+      const hasEvidence = !!r.evidenceKey; const viewEvidence = hasEvidence ? this.openEvidence(r.evidenceKey) : () => {};
+      if (!r.instanceId) return { ...r, explain: (e) => this.openExplain(r.id, e), isPending: false, isDone: false, isUndone: false, isRejected: false, isBlocked: false, isPlain: true, hasEvidence, viewEvidence };
+      const st2 = this.stateOf(r.instanceId);
+      return {
+        ...r, explain: (e) => this.openExplain(r.id, e), isPlain: false, isBlocked: false, hasEvidence, viewEvidence,
+        isPending: st2 === "pending", isDone: st2 === "executed", isUndone: st2 === "undone", isRejected: st2 === "rejected",
+        go: this.openPreview(r.instanceId), viewActivity: this.nav("activity"),
+        reversible: ACTION_CATALOG[ACTION_INSTANCES[r.instanceId].catalogKey].reversible, undo: this.genericUndo(r.instanceId)
+      };
+    });
+
+    const approvalsBase = [
+      { id:1, status:"Awaiting", bg:"#f5efdd", fg:"#8a6d1f", text:"Send overdue-invoice notice to Vertex Retail Finance contact.", meta:"generated 20 min ago", module:"Finance", instanceId:"notifyFinance-vertex-retail-invoice-4471" },
+      { id:2, status:"Awaiting", bg:"#f5efdd", fg:"#8a6d1f", text:"Create employee record for R. Menon (joined today).", meta:"generated 1 hr ago", module:"People", instanceId:"createEmployee-r-menon" },
+      { id:3, status:"Executed", bg:"#eaf0e6", fg:"#4a6b3d", text:"Notified Account Manager of Vertex Retail renewal in 14 days.", meta:"approved by K. Shah, 2 hr ago", module:"Clients", actions:["View"], instanceId:null },
+      { id:4, status:"Rejected", bg:"#fbf2f0", fg:"#8a3527", text:"Auto-approve 3 leave requests within policy.", meta:"rejected by Anita Rao, yesterday", module:"People", actions:["View"], instanceId:null },
+      { id:5, status:"Executed", bg:"#eaf0e6", fg:"#4a6b3d", text:"Reassigned REQ-1042 from R. Iyer to T. Kulkarni.", meta:"approved by R. Iyer, yesterday", module:"Recruitment", actions:["View"], instanceId:null },
+      { id:6, status:"Awaiting", bg:"#f5efdd", fg:"#8a6d1f", text:"Reclaim 3 unused Recruitment licenses.", meta:"generated 3 hr ago", module:"Administration", instanceId:"reclaimLicenses-recruitment-q3" }
+    ];
+    const approvalsComputed = approvalsBase.map(a => {
+      if (!a.instanceId) return { ...a, isPending: false, isDone: false, isUndone: false, isRejected: false, isPlain: true, actions: a.actions || ["View"] };
+      const st2 = this.stateOf(a.instanceId);
+      const isPending = st2 === "pending", isDone = st2 === "executed", isUndone = st2 === "undone", isRejected = st2 === "rejected";
+      const status = isDone ? "Executed" : isUndone ? "Undone" : isRejected ? "Rejected" : "Awaiting";
+      const bg = isDone ? "#eaf0e6" : isUndone ? "#eeece7" : isRejected ? "#fbf2f0" : a.bg;
+      const fg = isDone ? "#4a6b3d" : isUndone ? "#5c5852" : isRejected ? "#8a3527" : a.fg;
+      return {
+        ...a, status, bg, fg, isPending, isDone, isUndone, isRejected, isPlain: false,
+        approve: this.openPreview(a.instanceId), reject: this.rejectApproval(a.instanceId), viewActivity: this.nav("activity"),
+        reversible: ACTION_CATALOG[ACTION_INSTANCES[a.instanceId].catalogKey].reversible, undo: this.genericUndo(a.instanceId)
+      };
+    });
+    const approvalFilterMap = { all: () => true, awaiting: a => a.status === "Awaiting", executed: a => a.status === "Executed", rejected: a => a.status === "Rejected" };
+    const approvalFilterChips = [["all","All"],["awaiting","Awaiting"],["executed","Executed"],["rejected","Rejected"]].map(([key,label]) => ({ label, go: () => this.setState({ approvalFilter: key }), bg: s.approvalFilter === key ? "#1f1e1c" : "transparent", fg: s.approvalFilter === key ? "#fff" : "#8c8781" }));
+
+    const promptsBase = [
+      { text: "Summarize this week's placements by recruiter.", cat: "Recruitment" },
+      { text: "Which employees are at risk of attrition this quarter?", cat: "People" },
+      { text: "Explain the drop in collections this month.", cat: "Finance" },
+      { text: "Which clients need a renewal conversation in the next 30 days?", cat: "Clients" },
+      { text: "Draft this week's executive digest.", cat: "Executive" },
+      { text: "List unused licenses across the organization.", cat: "Administration" }
+    ];
+    const promptCatFilterMap = { all: () => true, recruitment: p => p.cat === "Recruitment", finance: p => p.cat === "Finance", people: p => p.cat === "People", clients: p => p.cat === "Clients", executive: p => p.cat === "Executive" };
+    const promptCatChips = [["all","All"],["recruitment","Recruitment"],["finance","Finance"],["people","People"],["clients","Clients"],["executive","Executive"]].map(([key,label]) => ({ label, go: () => this.setState({ promptCat: key }), bg: s.promptCat === key ? "#1f1e1c" : "transparent", fg: s.promptCat === key ? "#fff" : "#8c8781" }));
+
+    return {
+      goHome: this.nav("home"), navAsk: this.nav("ask"), toSuccess: () => this.setState({ demo: "success" }),
+      emptyTitle: "Nothing here yet", emptyBody: EMPTY_COPY[s.section] || "No data for this view.",
+      crumbs, demoChips, roleChips, entitlementRows, sections, screenLabel, pendingCount: 6,
+      showEmpty: s.demo === "empty", showLoading: s.demo === "loading", showError: s.demo === "error",
+      showDenied: s.demo === "denied", showUpgrade: s.demo === "upgrade", showReadonly: s.demo === "readonly", showSuccess: s.demo === "success",
+      skeletonRows: ["95%","88%","70%","92%","60%"],
+      isHome: s.section === "home", isAsk: s.section === "ask", isTasks: s.section === "tasks", isRecs: s.section === "recs",
+      isWorkflows: s.section === "workflows", isApprovals: s.section === "approvals", isKnowledge: s.section === "knowledge",
+      isAgents: s.section === "agents", isSkills: s.section === "skills", isMemory: s.section === "memory",
+      isActivity: s.section === "activity", isPromptLibrary: s.section === "prompts", isAutomationCenter: s.section === "automation",
+      isSettings: s.section === "settings", isUsage: s.section === "usage", isAnalytics: s.section === "analytics", isPayroll: s.section === "payroll",
+
+      priorities: [
+        { tag: "Clients", bg: "#fbf2f0", fg: "#8a3527", text: "Vertex Retail health score dropped to 41 — renewal in 14 days.", action: "Review" },
+        { tag: "Finance", bg: "#f5efdd", fg: "#8a6d1f", text: "₹62L outstanding across 18 invoices, 6 overdue.", action: "View" },
+        { tag: "Recruitment", bg: "#eef2f6", fg: "#3a5a76", text: "Senior QA Engineer requirement stalled — 0 candidates moved in 5 days.", action: "Review" },
+        { tag: "Approvals", bg: "#eeece7", fg: "#5c5852", text: "3 AI-generated actions awaiting your approval.", action: "Approve" },
+        { tag: "Entitlements", bg: "#eeece7", fg: "#5c5852", text: "Analytics add-on is inactive — dashboards are preserved and read-only.", action: "View" }
+      ].map(p => ({ ...p, go: p.tag === "Entitlements" ? this.nav("settings") : () => {} })),
+      orgHealth: [
+        { label: "Security", value: "62 / 100", color: "#b5493a" }, { label: "Licensing", value: "88 / 100", color: "#4a6b3d" },
+        { label: "Usage", value: "74 / 100", color: "#8a6d1f" }, { label: "Integrations", value: "55 / 100", color: "#b5493a" },
+        { label: "Compliance", value: "91 / 100", color: "#4a6b3d" }
+      ],
+      quickActions: ["Ask Lex a question", "Generate executive digest", "Create workflow", "Review approvals", "Summarize this week", "Search knowledge base"].map(label => ({ label, go: this.nav("ask") })),
+      recentActivity: [
+        { text: "Answered: \"Which clients are at risk?\"", time: "2 min ago" }, { text: "Summarized Q3 hiring pipeline", time: "18 min ago" },
+        { text: "Flagged Vertex Retail payment risk", time: "40 min ago" }, { text: "Generated JD for Plant Supervisor", time: "1 hr ago" }
+      ],
+      recentAutomations: [
+        { text: "Overdue invoice notice sent to Finance" }, { text: "Employee record created for R. Menon" },
+        { text: "3 leave requests auto-approved within policy" }, { text: "Weekly recruitment pulse posted to Slack" }
+      ],
+
+      contextChips: ["People","Recruitment","Finance","Clients","Administration","Analytics","Operations"],
+      conversation: [
+        { isUser: true, isLex: false, text: "Which clients are at risk?" },
+        { isUser: false, isLex: true, text: "3 clients require attention.", hasConfidence: false, hasClientCards: true, clientCards: [
+            { name: "Vertex Retail", health: "42", reasons: ["Declining placements", "Overdue invoices", "Renewal in 14 days"], evidenceChips: evidenceChipMaker(["clients","finance","recruitment"], "vertex-retail-risk"), viewClient: this.nav("recs"), viewEvidence: this.openEvidence("vertex-retail-risk") },
+            { name: "TechNova", health: "57", reasons: ["Support tickets up 30%", "Login activity down 18%"], evidenceChips: evidenceChipMaker(["clients","finance"], "technova-risk"), viewClient: this.nav("recs"), viewEvidence: this.openEvidence("technova-risk") },
+            { name: "BlueGrid", health: "61", reasons: ["Onboarding delayed 2 weeks", "1 invoice overdue 12 days"], evidenceChips: evidenceChipMaker(["clients","finance"], "bluegrid-risk"), viewClient: this.nav("recs"), viewEvidence: this.openEvidence("bluegrid-risk") }
+          ], actions: [] },
+        { isUser: true, isLex: false, text: "Why is revenue lower?" },
+        { isUser: false, isLex: true, text: "Revenue dropped because of slower collections, softer hiring volume, delayed client payments, and seasonal dip.", hasConfidence: true, confidence: "92%", evidence: "Based on Finance + Recruitment trends, last 30 days.", confidenceFactors: EVIDENCE_SETS["revenue-lower"].confidenceFactors, evidenceChips: evidenceChipMaker(["finance","clients","recruitment"], "revenue-lower"), actions: [["Ask a follow-up",null]].map(([label,key]) => this.conversationAction(label, key)) },
+        { isUser: true, isLex: false, text: "Create onboarding workflow" },
+        { isUser: false, isLex: true, text: "Generated workflow: \"When candidate joins, create employee record and assign onboarding tasks.\"", hasConfidence: false, actions: [["Review",null],["Approve","activateOnboarding-candidate-join"],["Activate","activateOnboarding-candidate-join"]].map(([label,key]) => this.conversationAction(label, key)) }
+      ],
+      suggestedPrompts: ["Summarize this week's placements", "Show clients at risk of churn", "Draft the executive digest", "Which invoices are overdue?", "Forecast next quarter's hiring", "What changed since yesterday?"],
+
+      taskFilterChips, filteredTasks: tasks.filter(taskFilterMap[s.taskFilter] || taskFilterMap.all),
+
+      recommendations,
+      showExplainDrawer: !!s.explainRecId, closeExplainDrawer: () => this.setState({ explainRecId: null }),
+      explainRec: recommendationsBase.find(r => r.id === s.explainRecId) || { reason: "", impact: "", confidence: "", source: "" },
+
+      showEvidenceDrawer: !!evidenceSet, closeEvidence: this.closeEvidence, evidenceRows,
+      evidenceView: evidenceSet ? { conclusion: evidenceSet.conclusion, lastUpdated: evidenceSet.lastUpdated, freshness: evidenceSet.freshness || "", hasFreshnessWarning: !!evidenceSet.freshness, confidence: evidenceSet.confidence, factors: evidenceSet.confidenceFactors } : { conclusion: "", lastUpdated: "", freshness: "", hasFreshnessWarning: false, confidence: "", factors: [] },
+
+      showActionPreview: !!s.previewKey, closeActionPreview: this.closeActionPreview, confirmActionPreview: this.confirmActionPreview,
+      previewAction: (() => {
+        const inst = ACTION_INSTANCES[s.previewKey];
+        if (!inst) return { action: "", whatWillHappen: "", records: [], affected: "", source: "", permission: "", impact: "", reversible: false, confidence: null, hasConfidence: false, reversibleLabel: "", reversibleColor: "#8c8781", state: "pending", isPending: true, isDone: false, isUndone: false, isRejected: false };
+        const type = ACTION_CATALOG[inst.catalogKey];
+        const state = this.stateOf(s.previewKey);
+        return {
+          ...type, ...inst, hasConfidence: !!inst.confidence,
+          reversibleLabel: type.reversible ? "Yes — can be undone from AI Activity." : "No — this action cannot be undone.",
+          reversibleColor: type.reversible ? "#4a6b3d" : "#8a3527",
+          state, isPending: state === "pending", isDone: state === "executed", isUndone: state === "undone", isRejected: state === "rejected",
+          stateNote: state === "executed" ? "This action has already been executed." : state === "undone" ? "This action was executed, then undone." : state === "rejected" ? "This action was rejected and was never executed." : ""
+        };
+      })(),
+
+      workflowTypes: ["Approval workflow", "Notification workflow", "Scheduled workflow", "Conditional workflow"],
+      workflows: [
+        { name: "Overdue invoice escalation", type: "Conditional", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", runs: "14 runs this month", isPaused: false, isDone: false },
+        { name: "New hire onboarding", type: "Conditional", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", runs: "9 runs this month", isPaused: false, isDone: false },
+        { name: "Contract expiry notice", type: "Notification", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", runs: "6 runs this month", isPaused: false, isDone: false },
+        { name: "Weekly executive digest", type: "Scheduled", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", runs: "Runs Mon 8am", isPaused: false, isDone: false },
+        (() => {
+          const key = "activateLeaveWorkflow-leave-autoapprove";
+          const st2 = this.stateOf(key);
+          const isPending = st2 === "pending", isDone = st2 === "executed", isUndone = st2 === "undone";
+          const status = isDone ? "Active" : isUndone ? "Undone" : "Paused";
+          const bg = isDone ? "#eaf0e6" : "#eeece7", fg = isDone ? "#4a6b3d" : "#5c5852";
+          const runs = isDone ? "Reactivated just now" : isUndone ? "Reverted to paused" : "Paused by Anita Rao";
+          return { name: "Leave request auto-approval", type: "Approval", status, bg, fg, runs,
+            isPaused: isPending, isDone, isUndone, activate: this.openPreview(key), viewActivity: this.nav("activity"),
+            reversible: true, undo: this.genericUndo(key) };
+        })()
+      ],
+      workflowExamples: ["If invoice overdue >30 days notify Finance", "When candidate joins create employee", "When contract expires notify Client Manager"],
+
+      approvalFilterChips, filteredApprovals: approvalsComputed.filter(approvalFilterMap[s.approvalFilter] || approvalFilterMap.all),
+
+      knowledgeDocs: [
+        { name: "Employee Handbook 2026", category: "HR Manual", updated: "3 weeks ago" }, { name: "Leave & Attendance Policy", category: "Policy", updated: "2 months ago" },
+        { name: "Recruitment SOP — Sourcing to Offer", category: "Playbook", updated: "1 month ago" }, { name: "Finance SOP — Invoicing & Collections", category: "Finance SOP", updated: "5 days ago" },
+        { name: "Client Onboarding Playbook", category: "Playbook", updated: "2 weeks ago" }, { name: "Data Retention Policy", category: "Policy", updated: "4 months ago" },
+        { name: "Benefits FAQ", category: "FAQ", updated: "1 week ago" }, { name: "Security & Access SOP", category: "Finance SOP", updated: "6 days ago" }
+      ],
+
+      agents: [
+        { name: "Recruitment Agent", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", capabilities: "Resume screening, JD generation, interview scheduling", permissions: "Read/write — Recruitment" },
+        { name: "Finance Agent", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", capabilities: "Invoice summaries, collections monitoring, payment reminders", permissions: "Read/write — Finance" },
+        { name: "HR Agent", status: this.canExecute("payroll") ? "Active" : "Limited — Payroll disabled", bg: this.canExecute("payroll") ? "#eaf0e6" : "#eeece7", fg: this.canExecute("payroll") ? "#4a6b3d" : "#5c5852", capabilities: "Payroll summaries, leave triage, employee record updates", permissions: this.canExecute("payroll") ? "Read/write — People" : "Read/write — People (Payroll actions blocked, module downgraded)" },
+        { name: "Client Agent", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", capabilities: "Health scoring, renewal tracking, account summaries", permissions: "Read/write — Clients" },
+        { name: "Administration Agent", status: "Active", bg: "#eaf0e6", fg: "#4a6b3d", capabilities: "License audits, access reviews, security checks", permissions: "Read-only — Administration" },
+        { name: "Analytics Agent", status: this.canExecute("analytics") ? "Active" : "Read-only — Analytics add-on inactive", bg: this.canExecute("analytics") ? "#eaf0e6" : "#eeece7", fg: this.canExecute("analytics") ? "#4a6b3d" : "#5c5852", capabilities: "Narrative reports, forecasting, benchmarking", permissions: this.canExecute("analytics") ? "Read-only — Analytics" : "Read-only — Analytics (existing dashboards only, add-on inactive)" },
+        { name: "Operations Agent", status: "Coming soon", bg: "#eeece7", fg: "#5c5852", capabilities: "Utilization forecasting, capacity planning", permissions: "Not yet enabled" }
+      ],
+
+      skills: [
+        { name: "Resume Screening", module: "Recruitment", uses: "312 times" }, { name: "JD Generation", module: "Recruitment", uses: "84 times" },
+        { name: "Interview Questions", module: "Recruitment", uses: "146 times" }, { name: "Invoice Summary", module: "Finance", uses: "220 times" },
+        { name: "Payroll Summary", module: "People", uses: "58 times" }, { name: "Employee Summary", module: "People", uses: "97 times" },
+        { name: "Contract Summary", module: "Clients", uses: "41 times" }, { name: "Client Summary", module: "Clients", uses: "76 times" },
+        { name: "Meeting Summary", module: "General", uses: "133 times" }
+      ],
+
+      pinnedMemory: ["Vertex Retail is a priority watch account", "Fiscal year starts April 1"],
+      orgMemory: ["OmegaHires operates across 4 business units", "Standard invoice payment term is 30 days", "Recruitment SLA target: 30-day time-to-fill"],
+      recentMemory: ["Discussed Vertex Retail renewal risk, 20 min ago", "Reviewed Q3 hiring forecast, 1 hr ago", "Asked about overdue invoices, this morning", "Generated onboarding workflow, yesterday"],
+      tempMemoryNote: "Session context clears after 24 hours unless pinned.",
+
+      activityLog: [...s.actionActivity, ...ACTIVITY_STATIC].map(a => a.evidenceKey ? { ...a, hasEvidence: true, sourceCount: EVIDENCE_SETS[a.evidenceKey].items.length, viewEvidence: this.openEvidence(a.evidenceKey) } : { ...a, hasEvidence: false }),
+
+      promptCatChips, filteredPrompts: promptsBase.filter(promptCatFilterMap[s.promptCat] || promptCatFilterMap.all),
+
+      automationMetrics: [
+        { label: "Running", value: "3", color: "#3a5a76" }, { label: "Scheduled", value: "9", color: "#1f1e1c" },
+        { label: "Completed (30d)", value: "412", color: "#4a6b3d" }, { label: "Failed (30d)", value: "6", color: "#b5493a" }
+      ],
+      automations: [
+        { name: "Overdue invoice escalation", status: "Running", bg: "#eef2f6", fg: "#3a5a76", detail: "processing 6 invoices" },
+        { name: "New hire onboarding — R. Menon", status: "Running", bg: "#eef2f6", fg: "#3a5a76", detail: "assigning tasks" },
+        { name: "Weekly executive digest", status: "Scheduled", bg: "#eeece7", fg: "#5c5852", detail: "runs Mon 8am" },
+        { name: "Contract expiry notice", status: "Scheduled", bg: "#eeece7", fg: "#5c5852", detail: "runs on expiry − 30d" },
+        { name: "Operations data sync", status: "Failed", bg: "#fbf2f0", fg: "#8a3527", detail: "connector timeout, 1 hr ago" }
+      ],
+      automationLogs: [
+        "08:14:02 — overdue-invoice-escalation: notified Finance for INV-4471",
+        "07:52:10 — new-hire-onboarding: created employee record for R. Menon",
+        "07:40:33 — operations-sync: connection timeout after 30s, retrying in 15 min",
+        "06:00:00 — recruitment-pulse: posted daily summary to #recruitment-ops"
+      ],
+
+      settingsRows: [
+        { label: "Model", value: "Lex Standard" }, { label: "Creativity", value: "Balanced" }, { label: "Language", value: "English (India)" },
+        { label: "Data access", value: "All connected modules" }, { label: "Action permissions", value: "Approval required for all writes" },
+        { label: "Privacy mode", value: "Organization data only, no external sharing" }, { label: "Retention", value: "Conversations retained 90 days" },
+        { label: "Destructive actions", value: "Always require explicit approval" }
+      ],
+
+      usageMetrics: [
+        { label: "Requests (30d)", value: "8,420" }, { label: "Tokens (30d)", value: "14.2M" }, { label: "Cost (30d)", value: "₹42,600" }, { label: "Active users", value: "38" }
+      ],
+      usageTrend: [40,52,48,60,55,72],
+      usageByDept: [
+        { label: "Recruitment", value: "38% of usage" }, { label: "Finance", value: "24% of usage" }, { label: "People", value: "19% of usage" },
+        { label: "Clients", value: "12% of usage" }, { label: "Administration", value: "7% of usage" }
+      ],
+
+      analyticsReadOnly: !this.canEdit("analytics"), analyticsCanManage: this.canManageEntitlement("analytics"), analyticsShowRequest: !this.canManageEntitlement("analytics"),
+      analyticsRetentionNote: ENTITLEMENTS.analytics.retentionNote,
+      analyticsManage: () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: "Upgrade / Restore access requested for Analytics", time: "just now" }, ...s2.actionActivity] })),
+      analyticsRequest: () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: "Requested access to Analytics module", time: "just now" }, ...s2.actionActivity] })),
+      analyticsDashboard: { name: "Weekly Executive Snapshot", owner: "Anita Rao", scope: "Organization", lastUpdated: "15 Jul 2026 — before downgrade" },
+      analyticsHiringFunnel: [
+        { label: "Applications", count: "3,120", pct: 100 }, { label: "Screened", count: "1,180", pct: 38 },
+        { label: "Interviewed", count: "540", pct: 17 }, { label: "Offered", count: "212", pct: 7 }, { label: "Hired", count: "178", pct: 6 }
+      ],
+      analyticsTimeToFill: "31 days", analyticsAttrition: "11.2%",
+      analyticsRevenueTrend: [45,52,48,60,64,70],
+
+      payrollReadOnly: !this.canEdit("payroll"), payrollCanManage: this.canManageEntitlement("payroll"), payrollShowRequest: !this.canManageEntitlement("payroll"),
+      payrollManage: () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: "Upgrade / Restore access requested for Payroll", time: "just now" }, ...s2.actionActivity] })),
+      payrollRequest: () => this.setState(s2 => ({ actionActivity: [{ type: "Request", text: "Requested access to Payroll module", time: "just now" }, ...s2.actionActivity] })),
+      payrollRun: { date: "31 Jul 2026", employees: "480", gross: "₹3.9 Cr", deductions: "₹68L", net: "₹3.22 Cr" },
+      payrollHistory: [
+        { date: "30 Jun 2026", employees: "478", gross: "₹3.87 Cr", net: "₹3.19 Cr" },
+        { date: "31 May 2026", employees: "471", gross: "₹3.81 Cr", net: "₹3.15 Cr" },
+        { date: "30 Apr 2026", employees: "465", gross: "₹3.74 Cr", net: "₹3.09 Cr" }
+      ],
+
+      searchOpen: s.searchOpen, toggleSearch: this.toggleSearch,
+      searchResults: SEARCH_INDEX.filter(item => this.canView(item.moduleKey)).map(item => {
+        const executable = item.executable && this.canExecute(item.moduleKey);
+        const readOnlyNote = item.executable && !executable ? "View only — " + ENTITLEMENTS[item.moduleKey].label + " execution not available" : "";
+        return { label: item.label, type: item.type, readOnlyNote, go: item.target ? this.nav(item.target) : () => this.setState({ searchOpen: false }) };
+      })
+    };
+  }
+}
+
+</script>
+</body>
+</html>

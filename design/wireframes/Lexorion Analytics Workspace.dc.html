@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+.pill{font:400 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;border:1px solid #e3e0da;color:#5c5852;cursor:pointer}
+.subtab{padding:7px 12px;font:500 12.5px 'Public Sans',sans-serif;border-radius:7px;cursor:pointer}
+a{color:#2a78d6}
+a:hover{color:#1f5aa8}
+</style>
+</helmet>
+
+<div style="max-width:1520px;margin:0 auto;padding:24px 24px 100px">
+<div style="border:1px solid #e3e0da;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fdfdfc">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:920px">
+
+  <div style="background:#f7f6f3;border-right:1px solid #e3e0da;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 16px">
+      <div style="width:22px;height:22px;border-radius:6px;background:#1f1e1c"></div>
+      <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c">Lexorion</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:9px 10px;margin-bottom:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+      <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;flex:1">Search reports, metrics…</span>
+      <span class="mono" style="font-size:10px;color:#8c8781;border:1px solid #e3e0da;border-radius:4px;padding:1px 5px">⌘K</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:7px;background:#1f1e1c;color:#f0eee9;border-radius:9px;padding:9px;font:500 13.5px 'Public Sans',sans-serif;margin-bottom:16px">+ New report</div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:4px 6px 6px">WORKSPACE</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733">Overview</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733;display:flex;justify-content:space-between">AI Insights <span class="mono" style="font-size:10px;background:#1f1e1c;color:#f0eee9;padding:1px 6px;border-radius:9px">5</span></div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:16px 6px 6px">WORKSPACES</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Recruitment</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">People</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Finance</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Clients</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Administration</div>
+    <div onClick="{{ goHome }}" style="cursor:pointer;padding:8px 10px;border-radius:7px;font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;background:#e8e5e0">Analytics</div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px">
+      <div class="mono" style="font-size:10.5px;color:#a8a39a;line-height:1.8">/ search · g a analytics<br/>g e executive · g r recruitment<br/>g f finance · g c clients<br/>shift+a ask lex</div>
+      <div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div><div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c">Anita Rao · Org Owner</div></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:16px;min-width:0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2">
+          <span onClick="{{ cr.go }}" style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cr.color }};cursor:{{ cr.cursor }}">{{ cr.label }}</span>
+          <span style="color:#cdc8c0;font-size:12px">/</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <sc-for list="{{ demoChips }}" as="dcp" hint-placeholder-count="7">
+          <div onClick="{{ dcp.go }}" style="cursor:pointer;font:500 10.5px 'Public Sans',sans-serif;padding:4px 8px;border-radius:6px;background:{{ dcp.bg }};color:{{ dcp.fg }};border:1px solid #e3e0da">{{ dcp.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="15">
+        <div onClick="{{ sec.go }}" class="subtab" style="background:{{ sec.bg }};color:{{ sec.fg }}">{{ sec.label }}</div>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;border:1px solid #e3e0da;border-radius:9px;padding:8px 10px;background:#f7f6f3">
+        <span class="mono" style="font-size:10px;color:#8c8781;letter-spacing:.05em;text-transform:uppercase;margin-right:2px">Filters</span>
+        <sc-for list="{{ globalFilters }}" as="gf" hint-placeholder-count="8">
+          <div class="pill" style="background:#fdfdfc">{{ gf }} ▾</div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:60px 20px;text-align:center;margin-top:6px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#eeece7;margin:0 auto 12px"></div>
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">{{ emptyTitle }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:10px">{{ emptyBody }}</div>
+        <a href="#" style="font:400 12.5px 'Public Sans',sans-serif">View documentation</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+        <sc-for list="{{ skeletonRows }}" as="sr" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:9px;background:#eeece7;width:{{ sr }}"></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:11px;padding:24px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:5px">Couldn't load {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:12px">Check your connection and retry.</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <div onClick="{{ toSuccess }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Retry</div>
+          <div style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Explain</div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showDenied }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">You don't have access to {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">Ask an Org Owner to grant Analytics access.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showUpgrade }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:36px;text-align:center;margin-top:6px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:5px">{{ screenLabel }} needs a higher edition</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a6d1f;margin-bottom:12px">Advanced forecasting, industry benchmarks and custom AI models are Enterprise-only.</div>
+        <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer">Request upgrade</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showReadonly }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3e0da;border-radius:9px;padding:9px 14px;margin-top:2px;background:#f7f6f3;font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Viewing in read-only mode — you can see {{ screenLabel }} but not edit filters or save changes.</div>
+    </sc-if>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="font:600 24px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Analytics</div>
+        <div style="font:400 13.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">OmegaHires · organization-wide, updated 8 min ago</div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ overviewKpis }}" as="k" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px;position:relative">
+              <div onClick="{{ k.explain }}" style="position:absolute;top:10px;right:10px;cursor:pointer;font:400 10px 'Public Sans',sans-serif;color:#8c8781;border:1px solid #e3e0da;border-radius:5px;padding:1px 5px">?</div>
+              <div onClick="{{ k.drill }}" style="cursor:pointer">
+                <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:5px">{{ k.label }}</div>
+                <div style="display:flex;align-items:baseline;gap:7px;margin-bottom:7px"><span style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ k.value }}</span><span style="font:500 11.5px 'Public Sans',sans-serif;color:{{ k.trendColor }}">{{ k.trend }}</span></div>
+                <div style="display:flex;align-items:flex-end;gap:2px;height:20px">
+                  <sc-for list="{{ k.spark }}" as="b" hint-placeholder-count="6"><div style="flex:1;background:#e3e0da;border-radius:1px;height:{{ b }}%"></div></sc-for>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Executive digest</div>
+            <sc-for list="{{ execDigest }}" as="ed" hint-placeholder-count="6">
+              <div style="display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733;padding:5px 0;border-bottom:1px solid #eeece7"><span>{{ ed.label }}</span><span style="color:{{ ed.color }}">{{ ed.value }}</span></div>
+            </sc-for>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">What changed today</div>
+            <sc-for list="{{ whatChanged }}" as="wc" hint-placeholder-count="6">
+              <div style="display:flex;gap:9px;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:6px"><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eeece7;color:#5c5852;flex:none">{{ wc.tag }}</span><span>{{ wc.text }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px"><div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c">Lex summary</div><div onClick="{{ toggleNarrative }}" class="pill">{{ narrativeCta }}</div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <sc-for list="{{ overviewLexNotes }}" as="n" hint-placeholder-count="3">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;background:#f7f6f3;font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ n }}</div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ showNarrative }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">AI narrative report — this month</div><div class="pill">Export PDF</div></div>
+            <sc-for list="{{ narrativeSections }}" as="ns" hint-placeholder-count="8">
+              <div style="margin-bottom:9px"><span style="font:500 12.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ ns.label }}: </span><span style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ ns.text }}</span></div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isExecutive }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Executive dashboard</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ execMetrics }}" as="m" hint-placeholder-count="10">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px">
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div>
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 19px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.value }}</span><span style="font:500 11px 'Public Sans',sans-serif;color:{{ m.trendColor }}">{{ m.trend }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:4px">Top business unit</div><div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">{{ topBU }}</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:4px">Top recruiter</div><div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">{{ topRecruiter }}</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:4px">Top client</div><div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">{{ topClient }}</div></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRecruitmentAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Recruitment analytics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ recruitmentMetrics }}" as="m" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Hiring funnel</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <sc-for list="{{ hiringFunnel }}" as="f" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font:400 12px 'Public Sans',sans-serif;color:#5c5852;width:100px;flex:none">{{ f.label }}</span>
+              <div style="flex:1;height:20px;border-radius:5px;background:#eeece7;overflow:hidden"><div style="height:100%;width:{{ f.pct }}%;background:#1f1e1c;border-radius:5px"></div></div>
+              <span class="mono" style="font-size:11.5px;color:#8c8781;width:56px;text-align:right">{{ f.count }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Source performance</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ sourcePerformance }}" as="sp" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ sp.label }}</span><span class="mono" style="color:#8c8781">{{ sp.value }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recruiter performance</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ recruiterPerformance }}" as="rp" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ rp.label }}</span><span class="mono" style="color:#8c8781">{{ rp.value }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPeopleAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">People analytics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ peopleMetrics }}" as="m" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:{{ m.color }}">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Department distribution</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ deptDistribution }}" as="d" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ d.label }}</span><span class="mono" style="color:#8c8781">{{ d.value }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Tenure &amp; transfers</div>
+            <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+              <sc-for list="{{ tenureStats }}" as="t" hint-placeholder-count="4">
+                <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ t.label }}</span><span class="mono" style="color:#8c8781">{{ t.value }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isFinanceAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Finance analytics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ financeMetrics }}" as="m" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Billing trend</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:80px;border:1px solid #e3e0da;border-radius:11px;padding:14px;margin-bottom:18px">
+          <sc-for list="{{ billingTrend }}" as="b" hint-placeholder-count="6"><div style="flex:1;background:#cdc8c0;border-radius:3px 3px 0 0;height:{{ b }}%"></div></sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recurring revenue &amp; forecast</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ financeExtras }}" as="e" hint-placeholder-count="3">
+            <div style="padding:9px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ e.label }}</span><span class="mono" style="color:#8c8781">{{ e.value }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isClientAnalytics }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Client analytics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ clientMetrics }}" as="m" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:#1f1e1c">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Top clients</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ topClients }}" as="c" hint-placeholder-count="3">
+            <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ c.name }}</span><span style="color:#8c8781">{{ c.revenue }} · Health {{ c.health }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOperations }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Operations analytics</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">Lite — utilization and capacity signals.</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+          <sc-for list="{{ opsMetrics }}" as="m" hint-placeholder-count="6">
+            <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ m.label }}</div><div style="font:600 19px 'Public Sans',sans-serif;color:{{ m.color }}">{{ m.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:14px 16px;font:400 13px 'Public Sans',sans-serif;color:#8a6d1f">{{ opsWarning }}</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAiInsights }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">AI insights</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ aiInsights }}" as="ai" hint-placeholder-count="8">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="font:500 10.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ ai.catBg }};color:{{ ai.catFg }};flex:none">{{ ai.category }}</span>
+                <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ ai.text }}</div>
+              </div>
+              <div style="display:flex;gap:7px;flex:none"><div class="pill">Review</div><div class="pill">Explain</div><div class="pill">Act</div><div class="pill">Dismiss</div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin:20px 0 9px">AI opportunities</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ aiOpportunities }}" as="op" hint-placeholder-count="5">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ op.title }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">{{ op.confidence }}</span></div>
+              <div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781">{{ op.detail }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCustomReports }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Custom reports</div><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">+ New report</div></div>
+        <div style="display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap">
+          <sc-for list="{{ reportFilters }}" as="f" hint-placeholder-count="9"><div class="pill">{{ f }} ▾</div></sc-for>
+        </div>
+
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Report builder</div>
+        <div style="display:flex;gap:14px;margin-bottom:20px">
+          <div style="flex:1;border:1px solid #e3e0da;border-radius:11px;padding:12px">
+            <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:8px">Available metrics — click to add</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <sc-for list="{{ availableMetrics }}" as="am" hint-placeholder-count="10">
+                <div onClick="{{ am.add }}" class="pill">{{ am.label }} +</div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;border:1px dashed #cdc8c0;border-radius:11px;padding:12px">
+            <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:8px">Report canvas — drag to reorder</div>
+            <sc-if value="{{ builderEmpty }}" hint-placeholder-val="{{ true }}"><div style="font:400 12.5px 'Public Sans',sans-serif;color:#a8a39a">Add metrics from the left to build a report.</div></sc-if>
+            <sc-for list="{{ builderMetrics }}" as="bm" hint-placeholder-count="0">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid #e3e0da;border-radius:7px;margin-bottom:6px;background:#fdfdfc">
+                <span style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">⠿ {{ bm.label }}</span>
+                <span onClick="{{ bm.remove }}" style="cursor:pointer;color:#8c8781;font-size:14px">×</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+          <sc-for list="{{ savedReports }}" as="r" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ r.name }} <span style="color:#8c8781">· {{ r.module }}</span></span>
+              <span style="display:flex;gap:8px"><div class="pill">Export PDF</div><div class="pill">Export Excel</div><div class="pill">Export CSV</div><div class="pill">Schedule</div></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSavedDashboards }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Saved dashboards</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <sc-for list="{{ dashboardFilterChips }}" as="df" hint-placeholder-count="4">
+            <div onClick="{{ df.go }}" class="pill" style="background:{{ df.bg }};color:{{ df.fg }}">{{ df.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ filteredDashboards }}" as="d" hint-placeholder-count="6">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ d.name }}</span><sc-if value="{{ d.pinned }}" hint-placeholder-val="{{ false }}"><span style="color:#8a6d1f">★</span></sc-if></div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:8px">{{ d.owner }} · {{ d.scope }}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="font:500 10.5px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ d.shareBg }};color:{{ d.shareFg }}">{{ d.sharePermission }}</span><span style="font:400 10.5px 'Public Sans',sans-serif;color:#8c8781">{{ d.roleNote }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isScheduler }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px"><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Report scheduler</div><div class="pill" style="background:#1f1e1c;color:#fff;border-color:#1f1e1c">+ New schedule</div></div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ scheduledReports }}" as="r" hint-placeholder-count="4">
+            <div style="padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ r.name }} <span style="color:#8c8781">· {{ r.frequency }}</span></span>
+              <span style="display:flex;gap:8px;align-items:center"><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:#eef2f6;color:#3a5a76">{{ r.channel }}</span><span style="color:#8c8781">{{ r.recipients }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDataSources }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Data sources</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <sc-for list="{{ dataSources }}" as="ds" hint-placeholder-count="6">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:13px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ ds.name }}</span><span style="font:500 11px 'Public Sans',sans-serif;padding:2px 7px;border-radius:6px;background:{{ ds.bg }};color:{{ ds.fg }}">{{ ds.status }}</span></div>
+              <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Last sync: {{ ds.lastSync }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isForecasting }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Forecasting</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:16px">AI-generated projections for next quarter and next year.</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div>Metric</div><div>Next quarter</div><div>Next year</div><div>Confidence</div></div>
+          <sc-for list="{{ forecasts }}" as="f" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13px 'Public Sans',sans-serif;color:#3a3733">
+              <span>{{ f.metric }}</span><span class="mono" style="color:#1f1e1c">{{ f.quarter }}</span><span class="mono" style="color:#1f1e1c">{{ f.year }}</span><span style="color:{{ f.confColor }}">{{ f.confidence }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBenchmarks }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Benchmarks</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:12px">vs. Staffing &amp; Recruiting industry pack, previous month/year</div>
+        <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:11px;padding:13px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font:400 13px 'Public Sans',sans-serif;color:#8a6d1f">Percentile ranking against the full industry pack is an Enterprise feature — this preview shows what's included.</div>
+          <div style="display:inline-block;padding:7px 14px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;cursor:pointer;flex:none">Upgrade</div>
+        </div>
+        <div style="opacity:.5;pointer-events:none;border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.6fr 0.9fr 0.7fr 0.7fr;padding:9px 14px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div>Metric</div><div>Value</div><div>Percentile</div><div>Trend</div></div>
+          <sc-for list="{{ benchmarks }}" as="b" hint-placeholder-count="5">
+            <div style="padding:10px 14px;border-top:1px solid #e8e5e0;display:grid;grid-template-columns:1.6fr 0.9fr 0.7fr 0.7fr;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ b.label }}</span><span class="mono" style="color:#8c8781">{{ b.value }}</span><span class="mono" style="color:#1f1e1c">{{ b.percentile }}</span><span style="color:{{ b.trendColor }}">{{ b.trend }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isExportCenter }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:16px">Export center</div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Recent downloads</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden;margin-bottom:16px">
+          <sc-for list="{{ exportHistory }}" as="e" hint-placeholder-count="4">
+            <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ e.name }}</span><span class="mono" style="color:#8c8781">{{ e.time }}</span></div>
+          </sc-for>
+        </div>
+        <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:9px">Scheduled reports</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ scheduledReports }}" as="r" hint-placeholder-count="4">
+            <div style="padding:10px 14px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;font:400 13px 'Public Sans',sans-serif;color:#3a3733"><span>{{ r.name }}</span><span style="color:#8c8781">{{ r.frequency }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ showKpiDrawer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:100px;right:34px;width:360px;max-height:75vh;overflow-y:auto;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:40">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:5px;font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ drawerKpi.label }} <span>›</span> Module Analytics <span>›</span> Records <span>›</span> Record</div>
+          <span onClick="{{ closeKpiDrawer }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+        </div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:2px">{{ drawerKpi.value }}</div>
+        <div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:12px">{{ drawerKpi.label }} — underlying records</div>
+        <sc-for list="{{ drawerKpi.records }}" as="rec" hint-placeholder-count="4">
+          <div style="padding:9px 0;border-bottom:1px solid #eeece7;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ rec }}</div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showExplainDrawer }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;top:100px;right:34px;width:340px;background:#fdfdfc;border:1px solid #e3e0da;border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:16px;z-index:40">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="font:600 15px 'Public Sans',sans-serif;color:#1f1e1c">Explain: {{ explainKpi.label }}</div>
+          <span onClick="{{ closeExplainDrawer }}" style="cursor:pointer;color:#8c8781;font-size:16px">×</span>
+        </div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Formula</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainKpi.formula }}</div></div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Data source</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainKpi.source }}</div></div>
+        <div style="margin-bottom:8px"><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Last update</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainKpi.lastUpdate }}</div></div>
+        <div><div style="font:500 11px 'Public Sans',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#8c8781;margin-bottom:2px">Included / excluded</div><div style="font:400 12.5px 'Public Sans',sans-serif;color:#3a3733">{{ explainKpi.scope }}</div></div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1520,&quot;height&quot;:1000}}">
+const SECTIONS = ["overview","executive","recruitment","people","finance","clients","operations","aiinsights","reports","dashboards","scheduler","datasources","forecasting","benchmarks","export"];
+const LABELS = { overview:"Overview", executive:"Executive Dashboard", recruitment:"Recruitment Analytics", people:"People Analytics", finance:"Finance Analytics", clients:"Client Analytics", operations:"Operations Analytics", aiinsights:"AI Insights", reports:"Custom Reports", dashboards:"Saved Dashboards", scheduler:"Report Scheduler", datasources:"Data Sources", forecasting:"Forecasting", benchmarks:"Benchmarks", export:"Export Center" };
+const EMPTY_COPY = {
+  overview: "No analytics data yet.", executive: "Not enough data for an executive view yet.",
+  recruitment: "No recruitment activity in this range.", people: "No people data in this range.",
+  finance: "No finance data in this range.", clients: "No client data in this range.",
+  operations: "No operations data yet.", aiinsights: "Lex has nothing to flag right now.",
+  reports: "No saved reports yet. Build one with the filters above.",
+  dashboards: "No saved dashboards yet. Save any analytics page to reuse later.",
+  scheduler: "No scheduled reports yet.", datasources: "No data sources connected.",
+  forecasting: "Not enough history to forecast yet.", benchmarks: "No benchmark data available.",
+  export: "No exports generated yet."
+};
+const DASHBOARD_SCOPES = ["Personal","Shared","Organization"];
+const KPI_EXPLAIN = {
+  "Revenue": { formula: "Sum of invoiced amount across active contracts, current month.", source: "Finance module — Invoices", lastUpdate: "8 min ago", scope: "Excludes draft and voided invoices." },
+  "Profit": { formula: "Revenue minus operating expenses and payroll cost.", source: "Finance module — P&L", lastUpdate: "8 min ago", scope: "Excludes one-time write-offs." },
+  "Hiring": { formula: "Count of requirements with status = Open.", source: "Recruitment module — Requirements", lastUpdate: "4 min ago", scope: "Excludes on-hold and cancelled requirements." },
+  "Placements": { formula: "Count of candidates marked Joined, trailing 90 days.", source: "Recruitment module — Placements", lastUpdate: "4 min ago", scope: "Excludes offers not yet joined." },
+  "Employees": { formula: "Count of active employee records.", source: "People module — Employees", lastUpdate: "6 min ago", scope: "Excludes exited and pending-onboarding records." },
+  "Active clients": { formula: "Count of clients with status = Active and a signed contract.", source: "Clients module — Client Directory", lastUpdate: "8 min ago", scope: "Excludes prospects and churned clients." },
+  "Growth (MoM)": { formula: "(This month revenue − last month revenue) / last month revenue.", source: "Finance module — Revenue Trend", lastUpdate: "8 min ago", scope: "Organization-wide, all business units." },
+  "Health score": { formula: "Weighted average of security, licensing, usage, integrations and compliance scores.", source: "Administration — Organization Health", lastUpdate: "12 min ago", scope: "Excludes sandbox and dev environments." }
+};
+const KPI_RECORDS = {
+  "Revenue": ["INV-4390 — Solace Health, ₹2.8L", "INV-4388 — Meridian Logistics, ₹1.6L", "INV-4381 — Vertex Retail, ₹0.9L", "INV-4379 — Atlas Manufacturing, ₹1.2L"],
+  "Profit": ["Revenue ₹4.8 Cr − Expenses ₹3.7 Cr", "Payroll cost: ₹2.1 Cr", "Operating cost: ₹1.6 Cr"],
+  "Hiring": ["REQ-1042 — Senior QA Engineer, Solace Health", "REQ-1039 — Ops Analyst, Meridian Logistics", "REQ-1031 — Plant Supervisor, Atlas Manufacturing"],
+  "Placements": ["R. Menon — Ops Analyst, Meridian Logistics", "P. Shetty — QA Lead, Solace Health", "A. Verma — Supervisor, Atlas Manufacturing"],
+  "Employees": ["480 active employee records", "34 in Engineering", "18 in Recruitment Ops"],
+  "Active clients": ["Solace Health — Active", "Meridian Logistics — Active", "Atlas Manufacturing — Active"],
+  "Growth (MoM)": ["This month: ₹4.8 Cr", "Last month: ₹4.06 Cr"],
+  "Health score": ["Security: 62", "Licensing: 88", "Usage: 74", "Integrations: 55"]
+};
+const AVAILABLE_METRICS = ["Revenue","Profit","Placements","Time to hire","Offer acceptance","Attrition","Utilization","Outstanding invoices","Client health score","Headcount"];
+
+class Component extends DCLogic {
+  state = { section: "overview", demo: "success", dashboardScope: "all", drawerKpiLabel: null, explainKpiLabel: null, showNarrative: false, builderMetrics: [] };
+  nav(section) { return () => this.setState({ section, demo: "success" }); }
+  openKpiDrawer(label) { this.setState({ drawerKpiLabel: label, explainKpiLabel: null }); }
+  openExplain(label, e) { e.stopPropagation(); this.setState({ explainKpiLabel: label, drawerKpiLabel: null }); }
+  addMetric(label) { this.setState(s => s.builderMetrics.includes(label) ? s : { builderMetrics: [...s.builderMetrics, label] }); }
+  removeMetric(label) { this.setState(s => ({ builderMetrics: s.builderMetrics.filter(m => m !== label) })); }
+
+  renderVals() {
+    const s = this.state;
+    const screenLabel = LABELS[s.section];
+    const crumbs = [["Analytics","overview"],[screenLabel,s.section]].map(([label,key],i,arr) => { const isLast = i === arr.length - 1; return { label, color: isLast ? "#1f1e1c" : "#8c8781", cursor: isLast ? "default" : "pointer", go: isLast ? () => {} : this.nav(key) }; });
+    const sections = SECTIONS.map(k => ({ label: LABELS[k], go: this.nav(k), bg: s.section === k ? "#e8e5e0" : "transparent", fg: s.section === k ? "#1f1e1c" : "#8c8781" }));
+    const demoChips = [["success","Success"],["empty","Empty"],["loading","Loading"],["error","Error"],["denied","No access"],["upgrade","Upgrade"],["readonly","Read-only"]]
+      .map(([key,label]) => ({ label, go: () => this.setState({ demo: key }), bg: s.demo === key ? "#1f1e1c" : "transparent", fg: s.demo === key ? "#fff" : "#8c8781" }));
+
+    const dashboards = [
+      { name: "Weekly Executive Snapshot", owner: "Anita Rao", scope: "Organization", pinned: true, cat: "org", sharePermission: "Organization default", shareBg: "#eef2f6", shareFg: "#3a5a76", roleNote: "Edit: Org Owner only" },
+      { name: "My Recruitment Pipeline", owner: "R. Iyer", scope: "Personal", pinned: true, cat: "personal", sharePermission: "Edit", shareBg: "#eaf0e6", shareFg: "#4a6b3d", roleNote: "Private to owner" },
+      { name: "Finance — Collections Watch", owner: "N. Bhatt", scope: "Shared with Finance", pinned: false, cat: "shared", sharePermission: "Comment", shareBg: "#f5efdd", shareFg: "#8a6d1f", roleNote: "Role-based: Finance Admin" },
+      { name: "Client Health Overview", owner: "K. Shah", scope: "Shared with Account Managers", pinned: false, cat: "shared", sharePermission: "View-only", shareBg: "#eeece7", shareFg: "#5c5852", roleNote: "Role-based: Account Manager" },
+      { name: "Headcount by Department", owner: "K. Iyer", scope: "Organization", pinned: false, cat: "org", sharePermission: "View-only", shareBg: "#eeece7", shareFg: "#5c5852", roleNote: "Visible org-wide" },
+      { name: "My Saved Filters — Q3", owner: "Anita Rao", scope: "Personal", pinned: false, cat: "personal", sharePermission: "Edit", shareBg: "#eaf0e6", shareFg: "#4a6b3d", roleNote: "Private to owner" }
+    ];
+    const filterMap = { all: () => true, pinned: d => d.pinned, personal: d => d.cat === "personal", shared: d => d.cat === "shared" || d.cat === "org" };
+    const dashboardFilterChips = [["all","All"],["pinned","Pinned"],["personal","Personal"],["shared","Shared"]].map(([key,label]) => ({ label, go: () => this.setState({ dashboardScope: key }), bg: s.dashboardScope === key ? "#1f1e1c" : "transparent", fg: s.dashboardScope === key ? "#fff" : "#8c8781" }));
+
+    return {
+      goHome: this.nav("overview"), toSuccess: () => this.setState({ demo: "success" }),
+      emptyTitle: "Nothing here yet", emptyBody: EMPTY_COPY[s.section] || "No data for this view.",
+      crumbs, demoChips, sections, screenLabel,
+      showEmpty: s.demo === "empty", showLoading: s.demo === "loading", showError: s.demo === "error",
+      showDenied: s.demo === "denied", showUpgrade: s.demo === "upgrade", showReadonly: s.demo === "readonly", showSuccess: s.demo === "success",
+      skeletonRows: ["95%","88%","70%","92%","60%"],
+      isOverview: s.section === "overview", isExecutive: s.section === "executive", isRecruitmentAnalytics: s.section === "recruitment",
+      isPeopleAnalytics: s.section === "people", isFinanceAnalytics: s.section === "finance", isClientAnalytics: s.section === "clients",
+      isOperations: s.section === "operations", isAiInsights: s.section === "aiinsights", isCustomReports: s.section === "reports",
+      isSavedDashboards: s.section === "dashboards", isScheduler: s.section === "scheduler", isDataSources: s.section === "datasources",
+      isForecasting: s.section === "forecasting", isBenchmarks: s.section === "benchmarks", isExportCenter: s.section === "export",
+
+      overviewKpis: [
+        { label: "Revenue", value: "₹4.8 Cr", trend: "↑ 18%", trendColor: "#4a6b3d", spark: [40,55,50,65,60,80] },
+        { label: "Profit", value: "₹1.1 Cr", trend: "↑ 9%", trendColor: "#4a6b3d", spark: [50,45,55,52,60,58] },
+        { label: "Hiring", value: "62 open reqs", trend: "↓ 4%", trendColor: "#b5493a", spark: [70,65,68,60,58,55] },
+        { label: "Placements", value: "324", trend: "↑ 12%", trendColor: "#4a6b3d", spark: [30,40,45,50,60,70] },
+        { label: "Employees", value: "480", trend: "↑ 3%", trendColor: "#4a6b3d", spark: [80,82,84,85,88,90] },
+        { label: "Active clients", value: "38", trend: "↑ 2", trendColor: "#4a6b3d", spark: [60,62,63,64,65,68] },
+        { label: "Growth (MoM)", value: "6.2%", trend: "↑ 1.1pt", trendColor: "#4a6b3d", spark: [40,42,45,48,52,58] },
+        { label: "Health score", value: "82", trend: "→ stable", trendColor: "#8a6d1f", spark: [80,81,79,82,82,82] }
+      ].map(k => ({ ...k, drill: () => this.openKpiDrawer(k.label), explain: (e) => this.openExplain(k.label, e) })),
+      overviewLexNotes: [
+        "Revenue increased 18% this month, driven mainly by OmegaHires' expansion at Vertex Retail.",
+        "Hiring volume dipped 4% — 3 recruiters have reduced throughput this week, worth a quick check-in.",
+        "Offer acceptance improved after the June salary band revision, up from 71% to 84%."
+      ],
+      execDigest: [
+        { label: "Revenue", value: "₹4.8 Cr ↑ 18%", color: "#4a6b3d" }, { label: "Hiring", value: "62 open ↓ 4%", color: "#b5493a" },
+        { label: "Cashflow", value: "₹68L ↓ 5%", color: "#b5493a" }, { label: "Attrition", value: "11.2% ↑ 1.1pt", color: "#8a6d1f" },
+        { label: "Client health", value: "78 avg → stable", color: "#8a6d1f" }, { label: "Priority actions", value: "3 open", color: "#1f1e1c" }
+      ],
+      whatChanged: [
+        { tag: "Placements", text: "3 new placements confirmed today, including 1 at Solace Health." },
+        { tag: "Revenue", text: "₹8.4L invoiced today across 4 clients." },
+        { tag: "Clients", text: "1 new client onboarded — BlueGrid Manufacturing." },
+        { tag: "Employees", text: "2 new hires joined, 1 resignation submitted." },
+        { tag: "Contracts", text: "Vertex Retail renewal moved to Negotiation stage." },
+        { tag: "Collections", text: "₹3.1L collected against 2 overdue invoices." }
+      ],
+      showNarrative: s.showNarrative, toggleNarrative: () => this.setState(s2 => ({ showNarrative: !s2.showNarrative })), narrativeCta: s.showNarrative ? "Hide narrative report" : "Generate narrative report",
+      narrativeSections: [
+        { label: "Revenue", text: "₹4.8 Cr this month, up 18%, led by Solace Health and Meridian Logistics." },
+        { label: "Hiring", text: "62 open requirements, down 4% — throughput softened at 3 recruiter accounts." },
+        { label: "People", text: "480 employees, attrition at 11.2% annualized, slightly above target." },
+        { label: "Finance", text: "Collection rate 94%, DSO 38 days, ₹62L currently outstanding." },
+        { label: "Client health", text: "Average health score 78; Vertex Retail is the one account at risk." },
+        { label: "Risks", text: "Vertex Retail renewal in 12 days with unresolved payment risk." },
+        { label: "Opportunities", text: "Solace Health is a strong upsell candidate given 22% growth in billed hours." },
+        { label: "Recommendations", text: "Prioritize a Vertex Retail account review and pursue the Solace Health upsell this week." }
+      ],
+
+      execMetrics: [
+        { label: "Revenue", value: "₹4.8 Cr", trend: "↑ 18%", trendColor: "#4a6b3d" }, { label: "Profit", value: "₹1.1 Cr", trend: "↑ 9%", trendColor: "#4a6b3d" },
+        { label: "Pipeline", value: "₹2.3 Cr", trend: "↑ 6%", trendColor: "#4a6b3d" }, { label: "Client growth", value: "+2 this qtr", trend: "→", trendColor: "#8a6d1f" },
+        { label: "Employee growth", value: "+14 this qtr", trend: "↑", trendColor: "#4a6b3d" }, { label: "Placement rate", value: "76%", trend: "↑ 3pt", trendColor: "#4a6b3d" },
+        { label: "Offer acceptance", value: "84%", trend: "↑ 13pt", trendColor: "#4a6b3d" }, { label: "Avg billing", value: "₹1.48L", trend: "↑ 2%", trendColor: "#4a6b3d" },
+        { label: "Forecast (Q3)", value: "₹5.4 Cr", trend: "82% conf.", trendColor: "#8a6d1f" }, { label: "Cash flow", value: "₹68L", trend: "↓ 5%", trendColor: "#b5493a" }
+      ],
+      topBU: "Enterprise Accounts", topRecruiter: "R. Iyer — 42 placements", topClient: "Solace Health — ₹1.8 Cr YTD",
+
+      recruitmentMetrics: [
+        { label: "Jobs created", value: "94" }, { label: "Applications", value: "3,120" }, { label: "Interviews", value: "540" }, { label: "Offers", value: "212" },
+        { label: "Offer acceptance", value: "84%" }, { label: "Time to hire", value: "24 days" }, { label: "Time to fill", value: "31 days" }, { label: "Pipeline conversion", value: "10.4%" }
+      ],
+      hiringFunnel: [
+        { label: "Applications", count: "3,120", pct: 100 }, { label: "Screened", count: "1,180", pct: 38 },
+        { label: "Interviewed", count: "540", pct: 17 }, { label: "Offered", count: "212", pct: 7 }, { label: "Hired", count: "178", pct: 6 }
+      ],
+      sourcePerformance: [
+        { label: "Naukri", value: "38% of hires" }, { label: "LinkedIn", value: "31% of hires" }, { label: "Referrals", value: "22% of hires" }, { label: "Direct", value: "9% of hires" }
+      ],
+      recruiterPerformance: [
+        { label: "R. Iyer", value: "42 placements" }, { label: "T. Kulkarni", value: "28 placements" }, { label: "S. Bose", value: "24 placements" }, { label: "A. Nair", value: "19 placements" }
+      ],
+
+      peopleMetrics: [
+        { label: "Headcount", value: "480", color: "#1f1e1c" }, { label: "Attrition (annualized)", value: "11.2%", color: "#8a6d1f" },
+        { label: "Retention", value: "88.8%", color: "#4a6b3d" }, { label: "Attendance", value: "96.4%", color: "#4a6b3d" },
+        { label: "Avg tenure", value: "2.4 yrs", color: "#1f1e1c" }, { label: "Internal transfers (qtr)", value: "6", color: "#1f1e1c" },
+        { label: "Performance (top-rated)", value: "22%", color: "#1f1e1c" }, { label: "Open leave requests", value: "9", color: "#8a6d1f" }
+      ],
+      deptDistribution: [
+        { label: "Engineering", value: "34%" }, { label: "Recruitment Ops", value: "18%" }, { label: "Finance", value: "9%" }, { label: "Other", value: "39%" }
+      ],
+      tenureStats: [
+        { label: "0–1 year", value: "28%" }, { label: "1–3 years", value: "41%" }, { label: "3+ years", value: "31%" }, { label: "Internal transfers (qtr)", value: "6" }
+      ],
+
+      financeMetrics: [
+        { label: "Revenue", value: "₹4.8 Cr" }, { label: "Expenses", value: "₹3.7 Cr" }, { label: "Profit margin", value: "22.9%" }, { label: "Outstanding invoices", value: "₹62L" },
+        { label: "Collection rate", value: "94%" }, { label: "DSO", value: "38 days" }, { label: "Avg invoice value", value: "₹2.9L" }, { label: "Cash flow", value: "₹68L" }
+      ],
+      billingTrend: [45,52,48,60,64,70],
+      financeExtras: [
+        { label: "Recurring revenue (MRR)", value: "₹38L" }, { label: "Forecast next quarter", value: "₹5.4 Cr (82% confidence)" }, { label: "Invoices this month", value: "1,100" }
+      ],
+
+      clientMetrics: [
+        { label: "Active clients", value: "38" }, { label: "New clients (qtr)", value: "4" }, { label: "Lost clients (qtr)", value: "1" }, { label: "Revenue per client", value: "₹12.6L" },
+        { label: "Avg lifetime value", value: "₹58L" }, { label: "Renewals due (90d)", value: "6" }, { label: "Avg health score", value: "78" }, { label: "On-time payment rate", value: "91%" }
+      ],
+      topClients: [
+        { name: "Solace Health", revenue: "₹1.8 Cr YTD", health: "94" }, { name: "Meridian Logistics", revenue: "₹86L YTD", health: "85" }, { name: "Vertex Retail", revenue: "₹43L YTD", health: "41" }
+      ],
+
+      opsMetrics: [
+        { label: "Billable hours (mo.)", value: "18,400", color: "#1f1e1c" }, { label: "Utilization", value: "78%", color: "#4a6b3d" },
+        { label: "Bench strength", value: "22 people", color: "#8a6d1f" }, { label: "Capacity used", value: "84%", color: "#8a6d1f" },
+        { label: "Upcoming overload (2wk)", value: "3 teams", color: "#b5493a" }, { label: "Forecast utilization", value: "82%", color: "#1f1e1c" }
+      ],
+      opsWarning: "Lex: Engineering delivery is projected to exceed 100% capacity in 2 weeks — consider reallocating from bench.",
+
+      aiInsights: [
+        { category: "Revenue", catBg: "#eef2f6", catFg: "#3a5a76", text: "Revenue growth slowed this week because two enterprise invoices from Solace Health remain unpaid." },
+        { category: "Attrition", catBg: "#fbf2f0", catFg: "#8a3527", text: "Engineering attrition may exceed target in Q4 — 4 resignations in the last 6 weeks, above the historical rate." },
+        { category: "Hiring", catBg: "#f5efdd", catFg: "#8a6d1f", text: "Hiring bottleneck: interview-to-offer conversion dropped 9pt for the Senior QA Engineer requirement." },
+        { category: "Productivity", catBg: "#f5efdd", catFg: "#8a6d1f", text: "2 recruiters are producing 40% fewer placements than their trailing 3-month average." },
+        { category: "Cash flow", catBg: "#fbf2f0", catFg: "#8a3527", text: "Cash flow warning: collections are down 5% while outstanding invoices rose to ₹62L." },
+        { category: "Renewal", catBg: "#eef2f6", catFg: "#3a5a76", text: "Vertex Retail's contract renews in 12 days with an unresolved payment risk — recommend review before renewal." },
+        { category: "Licensing", catBg: "#eeece7", catFg: "#5c5852", text: "3 unused Recruitment licenses detected — reassign or reclaim to reduce cost." },
+        { category: "Forecast", catBg: "#eaf0e6", catFg: "#4a6b3d", text: "Offer acceptance improved to 84% after the June salary band revision, supporting the Q3 hiring forecast." }
+      ],
+      aiOpportunities: [
+        { title: "Cross-sell", detail: "Solace Health has no Payroll module usage yet — strong fit given headcount growth.", confidence: "High" },
+        { title: "Upsell", detail: "Meridian Logistics billed hours up 15% — propose a higher-tier support plan.", confidence: "Medium" },
+        { title: "Renewals", detail: "6 contracts renew in the next 90 days — 1 at risk (Vertex Retail).", confidence: "High" },
+        { title: "Recruitment demand", detail: "Atlas Manufacturing is projected to open 4 new requirements next quarter.", confidence: "Medium" },
+        { title: "Revenue growth", detail: "Expanding Solace Health's account could add an estimated ₹40L annually.", confidence: "Medium" }
+      ],
+
+      globalFilters: ["Date range", "Business unit", "Department", "Recruiter", "Client", "Industry pack", "Region", "Workspace"],
+      showKpiDrawer: !!s.drawerKpiLabel, closeKpiDrawer: () => this.setState({ drawerKpiLabel: null }),
+      drawerKpi: (() => { const label = s.drawerKpiLabel || ""; const value = ({"Revenue":"₹4.8 Cr","Profit":"₹1.1 Cr","Hiring":"62 open reqs","Placements":"324","Employees":"480","Active clients":"38","Growth (MoM)":"6.2%","Health score":"82"})[label] || ""; return { label, value, records: KPI_RECORDS[label] || [] }; })(),
+      showExplainDrawer: !!s.explainKpiLabel, closeExplainDrawer: () => this.setState({ explainKpiLabel: null }),
+      explainKpi: (() => { const label = s.explainKpiLabel || ""; const d = KPI_EXPLAIN[label] || {}; return { label, ...d }; })(),
+
+      availableMetrics: AVAILABLE_METRICS.map(m => ({ label: m, add: () => this.addMetric(m) })),
+      builderMetrics: s.builderMetrics.map(m => ({ label: m, remove: () => this.removeMetric(m) })),
+      builderEmpty: s.builderMetrics.length === 0,
+
+      reportFilters: ["Date range", "Department", "Recruiter", "Business unit", "Client", "Employee", "Industry", "Module", "Status"],
+      savedReports: [
+        { name: "Monthly Placement Summary", module: "Recruitment" }, { name: "Client Payment Behaviour", module: "Finance" },
+        { name: "Attrition by Department", module: "People" }, { name: "Contract Renewal Pipeline", module: "Clients" }
+      ],
+
+      dashboardFilterChips, filteredDashboards: dashboards.filter(filterMap[s.dashboardScope] || filterMap.all),
+
+      scheduledReports: [
+        { name: "Weekly Executive Snapshot", frequency: "Weekly, Mon 8am", channel: "Email", recipients: "Anita Rao, K. Shah" },
+        { name: "Monthly Finance Pack", frequency: "Monthly, 1st", channel: "Email", recipients: "N. Bhatt" },
+        { name: "Recruitment Pulse", frequency: "Daily, 9am", channel: "Slack", recipients: "#recruitment-ops" },
+        { name: "Quarterly Board Deck", frequency: "Quarterly", channel: "Teams", recipients: "Leadership" }
+      ],
+
+      dataSources: [
+        { name: "Recruitment", status: "Synced", bg: "#eaf0e6", fg: "#4a6b3d", lastSync: "4 min ago" },
+        { name: "People", status: "Synced", bg: "#eaf0e6", fg: "#4a6b3d", lastSync: "6 min ago" },
+        { name: "Finance", status: "Synced", bg: "#eaf0e6", fg: "#4a6b3d", lastSync: "2 min ago" },
+        { name: "Clients", status: "Synced", bg: "#eaf0e6", fg: "#4a6b3d", lastSync: "8 min ago" },
+        { name: "Administration", status: "Synced", bg: "#eaf0e6", fg: "#4a6b3d", lastSync: "12 min ago" },
+        { name: "Operations", status: "Delayed", bg: "#f5efdd", fg: "#8a6d1f", lastSync: "1 hr ago" }
+      ],
+
+      forecasts: [
+        { metric: "Revenue", quarter: "₹5.4 Cr", year: "₹21.8 Cr", confidence: "High", confColor: "#4a6b3d" },
+        { metric: "Hiring", quarter: "84 hires", year: "340 hires", confidence: "Medium", confColor: "#8a6d1f" },
+        { metric: "Payroll", quarter: "₹3.9 Cr", year: "₹15.6 Cr", confidence: "High", confColor: "#4a6b3d" },
+        { metric: "Growth", quarter: "6.8%", year: "9.2%", confidence: "Medium", confColor: "#8a6d1f" },
+        { metric: "Utilization", quarter: "81%", year: "83%", confidence: "Medium", confColor: "#8a6d1f" },
+        { metric: "Collections", quarter: "₹4.6 Cr", year: "₹18.9 Cr", confidence: "High", confColor: "#4a6b3d" }
+      ],
+
+      benchmarks: [
+        { label: "Revenue growth", value: "+18% MoM", percentile: "78th", trend: "↑", trendColor: "#4a6b3d" },
+        { label: "Attrition", value: "11.2%", percentile: "61st", trend: "↑", trendColor: "#b5493a" },
+        { label: "Time to fill", value: "31 days", percentile: "54th", trend: "→", trendColor: "#8a6d1f" },
+        { label: "Placement rate", value: "76%", percentile: "82nd", trend: "↑", trendColor: "#4a6b3d" },
+        { label: "Collection rate", value: "94%", percentile: "88th", trend: "↑", trendColor: "#4a6b3d" }
+      ],
+
+      exportHistory: [
+        { name: "Monthly Placement Summary.pdf", time: "6 Aug, 9:14am" }, { name: "Client Payment Behaviour.xlsx", time: "5 Aug, 4:02pm" },
+        { name: "Attrition by Department.csv", time: "4 Aug, 11:20am" }, { name: "Quarterly Board Deck.pdf", time: "1 Aug, 3:00pm" }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

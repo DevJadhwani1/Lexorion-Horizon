@@ -1,0 +1,3 @@
+import type{ReactNode}from"react";export function Page({title,description,actions,children}:{title:string;description?:string;actions?:ReactNode;children:ReactNode}){return <section><header className="page-header"><div><h1>{title}</h1>{description&&<p>{description}</p>}</div>{actions}</header>{children}</section>}
+export function Notice({children,tone="error"}:{children:ReactNode;tone?:"error"|"success"|"info"}){return <div className={`notice ${tone}`} role={tone==="error"?"alert":undefined}>{children}</div>}
+export function Empty({children}:{children:ReactNode}){return <div className="empty">{children}</div>}

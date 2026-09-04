@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..800;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f7f6f3;color:#191817;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#3d5a80}a:hover{color:#2a4260}
+</style>
+</helmet>
+
+<div style="max-width:1240px;margin:0 auto;padding:64px 48px 120px">
+
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:40px;border-bottom:1px solid #dcd9d3;padding-bottom:28px">
+    <div>
+      <div style="font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8c8781;margin-bottom:14px">Phase 2 · Foundation</div>
+      <h1 style="font:600 40px/1.1 'Public Sans',sans-serif;letter-spacing:-.02em;margin:0 0 10px">Master Screen Inventory</h1>
+      <p style="font:300 16px/1.5 'Public Sans',sans-serif;color:#5c5852;margin:0;max-width:52ch;text-wrap:pretty">Every page in the product, by module, with role access and the journey it belongs to. Built from the Phase 1 module list before any screen is designed.</p>
+    </div>
+    <div style="display:flex;gap:36px;flex:none;padding-bottom:4px">
+      <div><div style="font:600 32px/1 'Public Sans',sans-serif;letter-spacing:-.02em">38</div><div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8c8781;margin-top:7px">Screens</div></div>
+      <div><div style="font:600 32px/1 'Public Sans',sans-serif;letter-spacing:-.02em">6</div><div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8c8781;margin-top:7px">Modules</div></div>
+      <div><div style="font:600 32px/1 'Public Sans',sans-serif;letter-spacing:-.02em">7</div><div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8c8781;margin-top:7px">Roles</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px 28px;padding:20px 0 0;font:400 12.5px/1.4 'Public Sans',sans-serif;color:#5c5852">
+    <span style="font:500 11px/1.4 'JetBrains Mono',monospace;color:#8c8781">KEY</span>
+    <span><span style="font-family:'JetBrains Mono',monospace">●</span> full access</span>
+    <span><span style="font-family:'JetBrains Mono',monospace">◐</span> scoped / read-only</span>
+    <span><span style="font-family:'JetBrains Mono',monospace;color:#c4bfb7">·</span> no access</span>
+  </div>
+
+  <sc-for list="{{ modules }}" as="mod" hint-placeholder-count="4">
+    <section style="margin-top:56px">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:4px">
+        <h2 style="font:600 20px/1.2 'Public Sans',sans-serif;letter-spacing:-.01em;margin:0">{{ mod.name }}</h2>
+        <span style="font:500 11px/1 'JetBrains Mono',monospace;color:#8c8781">{{ mod.count }} screens</span>
+      </div>
+      <p style="font:300 14px/1.5 'Public Sans',sans-serif;color:#6b6660;margin:0 0 18px;max-width:62ch">{{ mod.note }}</p>
+
+      <div style="display:grid;grid-template-columns:minmax(200px,1.5fr) minmax(160px,1.1fr) 96px repeat(7,26px) minmax(130px,.9fr);align-items:center;gap:0 12px;padding:0 14px 9px;font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#8c8781;border-bottom:1px solid #dcd9d3">
+        <div>Screen</div><div>Route</div><div>Type</div>
+        <div style="text-align:center">SA</div><div style="text-align:center">OA</div><div style="text-align:center">REC</div><div style="text-align:center">HRM</div><div style="text-align:center">FIN</div><div style="text-align:center">EMP</div><div style="text-align:center">CEO</div>
+        <div>Journey</div>
+      </div>
+
+      <sc-for list="{{ mod.screens }}" as="s" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:minmax(200px,1.5fr) minmax(160px,1.1fr) 96px repeat(7,26px) minmax(130px,.9fr);align-items:center;gap:0 12px;padding:11px 14px;border-bottom:1px solid #e8e5e0;background:#fdfdfc" style-hover="background:#f2f0ec">
+          <div style="font:500 14.5px/1.3 'Public Sans',sans-serif">{{ s.name }}</div>
+          <div style="font:400 12px/1.3 'JetBrains Mono',monospace;color:#8c8781">{{ s.route }}</div>
+          <div style="font:400 11px/1.3 'JetBrains Mono',monospace;color:#6b6660">{{ s.type }}</div>
+          <sc-for list="{{ s.roles }}" as="r" hint-placeholder-count="7">
+            <div style="text-align:center;font:400 13px/1 'JetBrains Mono',monospace;color:#2f2c29">{{ r }}</div>
+          </sc-for>
+          <div style="font:400 12px/1.3 'Public Sans',sans-serif;color:#6b6660">{{ s.journey }}</div>
+        </div>
+      </sc-for>
+    </section>
+  </sc-for>
+
+  <section style="margin-top:72px;border-top:1px solid #dcd9d3;padding-top:36px">
+    <h2 style="font:600 20px/1.2 'Public Sans',sans-serif;letter-spacing:-.01em;margin:0 0 6px">Journeys</h2>
+    <p style="font:300 14px/1.5 'Public Sans',sans-serif;color:#6b6660;margin:0 0 26px;max-width:62ch">Design order. Each journey is one continuous pass so navigation and state carry across screens instead of being reconciled later.</p>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <sc-for list="{{ journeys }}" as="j" hint-placeholder-count="3">
+        <div style="background:#fdfdfc;border:1px solid #e3e0da;border-radius:11px;padding:18px 20px">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+            <span style="font:500 11px/1 'JetBrains Mono',monospace;color:#8c8781">{{ j.order }}</span>
+            <span style="font:600 15px/1.2 'Public Sans',sans-serif">{{ j.name }}</span>
+            <span style="font:400 12px/1.2 'Public Sans',sans-serif;color:#8c8781">{{ j.roles }}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+            <sc-for list="{{ j.steps }}" as="st" hint-placeholder-count="6">
+              <span style="font:400 12.5px/1 'Public Sans',sans-serif;color:#2f2c29;background:#f2f0ec;border:1px solid #e3e0da;border-radius:7px;padding:7px 11px">{{ st }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="margin-top:64px;border-top:1px solid #dcd9d3;padding-top:36px">
+    <h2 style="font:600 20px/1.2 'Public Sans',sans-serif;letter-spacing:-.01em;margin:0 0 6px">Gaps to confirm</h2>
+    <p style="font:300 14px/1.5 'Public Sans',sans-serif;color:#6b6660;margin:0 0 22px;max-width:62ch">Screens the journeys imply but the Phase 1 list does not name. Flagged, not added — say which belong in scope.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+      <sc-for list="{{ gaps }}" as="g" hint-placeholder-count="6">
+        <div style="background:#fdfdfc;border:1px dashed #cdc8c0;border-radius:11px;padding:15px 17px">
+          <div style="font:500 14px/1.3 'Public Sans',sans-serif;margin-bottom:5px">{{ g.name }}</div>
+          <div style="font:300 12.5px/1.5 'Public Sans',sans-serif;color:#6b6660">{{ g.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  marks(code) {
+    return code.split("").map(c => c === "1" ? "\u25CF" : c === "0" ? "\u25D0" : "\u00B7");
+  }
+  // role order: SA OA REC HRM FIN EMP CEO
+  build(rows) {
+    return rows.map(r => ({ name: r[0], route: r[1], type: r[2], roles: this.marks(r[3]), journey: r[4] }));
+  }
+  renderVals() {
+    const mods = [
+      ["Authentication", "Pre-tenant and tenant-entry screens. No product chrome; these run outside the app shell.", [
+        ["Login", "/login", "form", "1111111", "Entry"],
+        ["Forgot Password", "/forgot-password", "form", "1111111", "Entry"],
+        ["Reset Password", "/reset-password", "form", "1111111", "Entry"],
+        ["Organization Selection", "/select-org", "utility", "10.....", "Entry"],
+        ["Invite User", "/admin/users/invite", "form", "11.0...", "Onboarding"]
+      ]],
+      ["Dashboards", "One per role. Same shell and card grammar, different data and default actions.", [
+        ["Super Admin Dashboard", "/dashboard/platform", "dashboard", "1......", "Platform ops"],
+        ["Organization Admin Dashboard", "/dashboard/org", "dashboard", ".1.....", "Org ops"],
+        ["Recruiter Dashboard", "/dashboard/recruiter", "dashboard", "..1....", "Recruitment"],
+        ["HR Manager Dashboard", "/dashboard/hr", "dashboard", "...1...", "Workforce"],
+        ["Finance Manager Dashboard", "/dashboard/finance", "dashboard", "....1..", "Finance"],
+        ["Employee Dashboard", "/dashboard/me", "dashboard", ".....1.", "Self-service"],
+        ["CEO Dashboard", "/dashboard/exec", "dashboard", "0.....1", "Executive"]
+      ]],
+      ["Recruitment", "The primary revenue path. Design as one journey, requirement through placement.", [
+        ["Recruitment Dashboard", "/recruitment", "dashboard", ".01.0.0", "Recruitment"],
+        ["Requirements List", "/recruitment/requirements", "list", ".01.0.0", "Recruitment"],
+        ["Requirement Details", "/recruitment/requirements/:id", "detail", ".01.0.0", "Recruitment"],
+        ["Candidate List", "/recruitment/candidates", "list", ".01....", "Recruitment"],
+        ["Candidate Profile", "/recruitment/candidates/:id", "detail", ".010...", "Recruitment"],
+        ["Resume Viewer", "/recruitment/candidates/:id/resume", "utility", ".010...", "Recruitment"],
+        ["Interview Pipeline", "/recruitment/pipeline", "board", ".01.0.0", "Recruitment"],
+        ["Placement Page", "/recruitment/placements/:id", "detail", ".0111.0", "Recruitment \u2192 Finance"]
+      ]],
+      ["Workforce", "Post-placement lifecycle. Employee-facing screens reuse the same views under a self scope.", [
+        ["Employee List", "/workforce/employees", "list", ".10.0..", "Workforce"],
+        ["Employee Profile", "/workforce/employees/:id", "detail", ".101.00", "Workforce"],
+        ["Attendance", "/workforce/attendance", "list", ".10.0.0", "Workforce"],
+        ["Leave", "/workforce/leave", "list", ".10.010", "Workforce"],
+        ["Performance", "/workforce/performance", "detail", ".10..00", "Workforce"],
+        ["Assets", "/workforce/assets", "list", ".10..0.", "Workforce"]
+      ]],
+      ["Finance", "Downstream of placement and attendance. Read-heavy; two write paths (invoice, payment).", [
+        ["Billing Dashboard", "/finance", "dashboard", "01..1.0", "Finance"],
+        ["Invoice List", "/finance/invoices", "list", "01..1.0", "Finance"],
+        ["Invoice Details", "/finance/invoices/:id", "detail", "00..1.0", "Finance"],
+        ["Payment History", "/finance/payments", "list", "00..1.0", "Finance"],
+        ["Reports", "/finance/reports", "report", "00.01.1", "Finance"]
+      ]],
+      ["Administration", "Tenant and platform configuration. Super Admin owns licensing; Org Admin owns everything below it.", [
+        ["Organizations", "/admin/organizations", "list", "1......", "Platform ops"],
+        ["Users", "/admin/users", "list", "11.....", "Org ops"],
+        ["Roles", "/admin/roles", "list", "11.....", "Org ops"],
+        ["Permissions", "/admin/permissions", "matrix", "10.....", "Org ops"],
+        ["Subscription", "/admin/subscription", "detail", "11..0..", "Platform ops"],
+        ["Module Licensing", "/admin/licensing", "matrix", "10.....", "Platform ops"],
+        ["Settings", "/admin/settings", "form", "11.....", "Org ops"]
+      ]]
+    ];
+    return {
+      modules: mods.map(m => ({ name: m[0], note: m[1], count: m[2].length, screens: this.build(m[2]) })),
+      journeys: [
+        { order: "01", name: "Recruitment", roles: "Recruiter, Org Admin", steps: ["Recruitment Dashboard", "Requirements List", "Requirement Details", "Candidate List", "Candidate Profile", "Interview Pipeline", "Offer", "Placement", "Invoice"] },
+        { order: "02", name: "Entry & onboarding", roles: "All roles", steps: ["Login", "Organization Selection", "Role dashboard", "Invite User", "Roles & Permissions"] },
+        { order: "03", name: "Workforce lifecycle", roles: "HR Manager, Employee", steps: ["Placement", "Employee Profile", "Attendance", "Leave", "Performance", "Assets"] },
+        { order: "04", name: "Billing cycle", roles: "Finance Manager", steps: ["Attendance \u2192 timesheet", "Billing Dashboard", "Invoice List", "Invoice Details", "Payment History", "Reports"] },
+        { order: "05", name: "Platform administration", roles: "Super Admin", steps: ["Organizations", "Subscription", "Module Licensing", "Permissions", "Settings"] }
+      ],
+      gaps: [
+        { name: "Offer screen", why: "Named in the recruitment journey but absent from the module list. Own page or a modal on Candidate Profile?" },
+        { name: "Timesheet / approval", why: "Billing needs approved hours. Attendance alone does not produce a billable record." },
+        { name: "Global search", why: "38 screens across 6 modules. Without it, deep records are only reachable by drilling." },
+        { name: "Notifications", why: "Interview scheduling, approvals and invoice status all imply an inbox or feed." },
+        { name: "Audit log", why: "Multi-tenant with role-scoped permissions usually needs one for compliance." },
+        { name: "Empty tenant state", why: "A new organization has no requirements, employees or invoices. Every list needs a first-run variant." }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

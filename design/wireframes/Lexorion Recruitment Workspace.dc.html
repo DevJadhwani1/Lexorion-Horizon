@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+</style>
+</helmet>
+
+<div style="max-width:1440px;margin:0 auto;padding:24px 24px 100px">
+<div style="border:1px solid #e3e0da;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08);background:#fdfdfc">
+<div style="display:grid;grid-template-columns:248px 1fr;min-height:900px">
+
+  <div style="background:#f7f6f3;border-right:1px solid #e3e0da;display:flex;flex-direction:column;padding:18px 14px">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 6px 16px">
+      <div style="width:22px;height:22px;border-radius:6px;background:#1f1e1c"></div>
+      <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c">Lexorion</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:9px;padding:9px 10px;margin-bottom:12px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg>
+      <span style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;flex:1">Search or ask Lex…</span>
+      <span class="mono" style="font-size:10px;color:#8c8781;border:1px solid #e3e0da;border-radius:4px;padding:1px 5px">⌘K</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:7px;background:#1f1e1c;color:#f0eee9;border-radius:9px;padding:9px;font:500 13.5px 'Public Sans',sans-serif;margin-bottom:16px">+ Create</div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:4px 6px 6px">WORKSPACE</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733">Overview</div>
+    <div style="padding:8px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#3a3733;display:flex;justify-content:space-between">Approvals <span class="mono" style="font-size:10px;background:#1f1e1c;color:#f0eee9;padding:1px 6px;border-radius:9px">7</span></div>
+    <div style="font:500 10px 'JetBrains Mono',monospace;letter-spacing:.1em;color:#a8a39a;padding:16px 6px 6px">WORKSPACES</div>
+    <div onClick="{{ goDashboard }}" style="cursor:pointer;padding:8px 10px;border-radius:7px;font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;background:#e8e5e0">Recruitment</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">People</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Finance</div>
+    <div style="padding:7px 10px;border-radius:7px;font:400 14px 'Public Sans',sans-serif;color:#8c8781">Clients</div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px">
+      <div class="mono" style="font-size:10.5px;color:#a8a39a;line-height:1.7">/ focus search<br/>g d → Dashboard<br/>g r → Requirements<br/>c → Create</div>
+      <div style="display:flex;align-items:center;gap:9px"><div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div><div style="font:400 13px 'Public Sans',sans-serif;color:#1f1e1c">Anita Rao</div></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 30px;display:flex;flex-direction:column;gap:18px;min-width:0">
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ crumbs }}" as="cr" hint-placeholder-count="2">
+          <span onClick="{{ cr.go }}" style="font:400 12.5px 'Public Sans',sans-serif;color:{{ cr.color }};cursor:{{ cr.cursor }}">{{ cr.label }}</span>
+          <span style="color:#cdc8c0;font-size:12px">/</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:6px">
+        <sc-for list="{{ demoChips }}" as="dc" hint-placeholder-count="4">
+          <div onClick="{{ dc.go }}" style="cursor:pointer;font:500 11px 'Public Sans',sans-serif;padding:4px 9px;border-radius:6px;background:{{ dc.bg }};color:{{ dc.fg }};border:1px solid #e3e0da">{{ dc.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px dashed #cdc8c0;border-radius:11px;padding:60px 20px;text-align:center;margin-top:20px">
+        <div style="width:36px;height:36px;border-radius:8px;background:#eeece7;margin:0 auto 12px"></div>
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:5px">Nothing here yet</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8c8781">{{ screenLabel }} has no records for this view.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showLoading }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+        <sc-for list="{{ skeletonRows }}" as="sr" hint-placeholder-count="5">
+          <div style="height:44px;border-radius:9px;background:#eeece7;width:{{ sr }}"></div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:11px;padding:24px;text-align:center;margin-top:20px">
+        <div style="font:500 15px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:5px">Couldn't load {{ screenLabel }}</div>
+        <div style="font:300 13px 'Public Sans',sans-serif;color:#8a3527;margin-bottom:12px">Check your connection and retry.</div>
+        <div onClick="{{ dc0go }}" style="display:inline-block;padding:7px 14px;border:1px solid #cdb5b0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif;color:#8a3527;cursor:pointer">Retry</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showSuccess }}" hint-placeholder-val="{{ true }}">
+    <div>
+
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px">
+          <div><div style="font:600 24px 'Public Sans',sans-serif;color:#1f1e1c;letter-spacing:-.01em">Recruitment</div><div style="font:400 13.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:3px">OmegaHires · 34 recruiters · 12 branches</div></div>
+          <div onClick="{{ goReqList }}" style="cursor:pointer;font:500 13px 'Public Sans',sans-serif;color:#1f1e1c;border:1px solid #cdc8c0;border-radius:8px;padding:8px 14px">View all requirements</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px"><div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">{{ s.label }}</div><div style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c">{{ s.value }}</div></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center">
+          <div style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI: 3 candidates across open requirements are ready to move to Interview.</div>
+          <div style="display:flex;gap:8px"><div style="padding:6px 12px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Review</div><div style="padding:6px 12px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Dismiss</div></div>
+        </div>
+        <div style="font:600 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Requirements needing attention</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ topRequirements }}" as="r" hint-placeholder-count="4">
+            <div onClick="{{ r.go }}" style="cursor:pointer;padding:12px 15px;border-bottom:1px solid #e8e5e0;display:flex;justify-content:space-between;align-items:center" style-hover="background:#f7f6f3">
+              <div><div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ r.title }}</div><div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781">{{ r.dept }} · {{ r.recruiter }}</div></div>
+              <div style="display:flex;align-items:center;gap:14px"><span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 9px;border-radius:6px;background:{{ r.badgeBg }};color:{{ r.badgeFg }}">{{ r.status }}</span><span class="mono" style="font-size:12px;color:#3a3733">{{ r.applicants }} applicants</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReqList }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+          <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Requirements</div>
+          <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:8px;padding:7px 11px;width:240px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg><span style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Search requirements…</span></div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:28px 2fr 1fr 1fr 1fr 90px;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div></div><div>Title</div><div>Recruiter</div><div>Status</div><div>Applicants</div><div>Days open</div></div>
+          <sc-for list="{{ allRequirements }}" as="r" hint-placeholder-count="6">
+            <div onClick="{{ r.go }}" style="cursor:pointer;display:grid;grid-template-columns:28px 2fr 1fr 1fr 1fr 90px;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733" style-hover="background:#f7f6f3">
+              <div onClick="{{ stop }}" style="width:16px;height:16px;border:1.5px solid #cdc8c0;border-radius:5px"></div>
+              <div style="color:#1f1e1c;font-weight:500">{{ r.title }}</div>
+              <div style="color:#6b6660">{{ r.recruiter }}</div>
+              <div><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ r.badgeBg }};color:{{ r.badgeFg }}">{{ r.status }}</span></div>
+              <div class="mono" style="font-size:12.5px">{{ r.applicants }}</div>
+              <div class="mono" style="font-size:12.5px">{{ r.days }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:10px;font:400 12px 'Public Sans',sans-serif;color:#8c8781">Select rows for bulk actions — assign recruiter, close, or export.</div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReqDetail }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ ctxReqName }}</div><div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-top:4px">Engineering · Posted 18 days ago · Recruiter: R. Iyer</div></div>
+          <span style="font:500 12px 'Public Sans',sans-serif;padding:5px 11px;border-radius:7px;background:#eaf0e6;color:#4a6b3d">Open</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Applicants</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">12</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">In interview</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">3</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:12px"><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">Target close</div><div style="font:600 20px 'Public Sans',sans-serif;color:#1f1e1c">7 days</div></div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:18px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI found 4 matching candidates from other closed requirements. <span style="color:#1f1e1c;font-weight:500;cursor:pointer">Add to pipeline</span></div>
+        <div style="font:600 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Candidates</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <sc-for list="{{ reqCandidates }}" as="c" hint-placeholder-count="4">
+            <div onClick="{{ c.go }}" style="cursor:pointer;padding:11px 15px;border-bottom:1px solid #e8e5e0;display:flex;align-items:center;gap:12px" style-hover="background:#f7f6f3">
+              <div style="width:26px;height:26px;border-radius:13px;background:#cdc8c0;flex:none"></div>
+              <div style="flex:1"><div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c">{{ c.name }}</div><div style="font:400 12px 'Public Sans',sans-serif;color:#8c8781">{{ c.source }}</div></div>
+              <span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 9px;border-radius:6px;background:{{ c.badgeBg }};color:{{ c.badgeFg }}">{{ c.stage }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCandList }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+          <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Candidates</div>
+          <div style="display:flex;align-items:center;gap:9px;background:#eeece7;border:1px solid #e3e0da;border-radius:8px;padding:7px 11px;width:220px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8c8781" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.4" y2="16.4"></line></svg><span style="font:400 12.5px 'Public Sans',sans-serif;color:#8c8781">Search candidates…</span></div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:28px 2fr 1fr 1fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781"><div></div><div>Name</div><div>Requirement</div><div>Stage</div><div>Applied</div></div>
+          <sc-for list="{{ allCandidates }}" as="c" hint-placeholder-count="6">
+            <div onClick="{{ c.go }}" style="cursor:pointer;display:grid;grid-template-columns:28px 2fr 1fr 1fr 1fr;padding:11px 15px;border-top:1px solid #e8e5e0;align-items:center;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733" style-hover="background:#f7f6f3">
+              <div onClick="{{ stop }}" style="width:16px;height:16px;border:1.5px solid #cdc8c0;border-radius:5px"></div>
+              <div style="display:flex;align-items:center;gap:9px;color:#1f1e1c;font-weight:500"><div style="width:22px;height:22px;border-radius:11px;background:#cdc8c0;flex:none"></div>{{ c.name }}</div>
+              <div style="color:#6b6660">{{ c.req }}</div>
+              <div><span style="font:500 11px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ c.badgeBg }};color:{{ c.badgeFg }}">{{ c.stage }}</span></div>
+              <div class="mono" style="font-size:12px;color:#8c8781">{{ c.applied }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCandProfile }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+          <div style="width:52px;height:52px;border-radius:26px;background:#cdc8c0;flex:none"></div>
+          <div><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">{{ ctxCandName }}</div><div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-top:3px">Applied for {{ ctxReqName }} · sourced via LinkedIn</div></div>
+          <div onClick="{{ goPipeline }}" style="margin-left:auto;padding:9px 16px;background:#1f1e1c;color:#fff;border-radius:8px;font:500 13.5px 'Public Sans',sans-serif;cursor:pointer">Schedule interview</div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:18px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI summary: 6 years backend experience, strong distributed-systems background, one prior offer declined for compensation.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Resume</div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="height:10px;background:#eeece7;border-radius:4px;width:90%"></div><div style="height:10px;background:#eeece7;border-radius:4px;width:75%"></div><div style="height:10px;background:#eeece7;border-radius:4px;width:82%"></div></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Stage timeline</div>
+            <sc-for list="{{ candTimeline }}" as="tl" hint-placeholder-count="4">
+              <div style="display:flex;gap:9px;align-items:baseline;margin-bottom:7px"><span style="width:6px;height:6px;border-radius:3px;background:{{ tl.dot }};flex:none;margin-top:5px"></span><span class="mono" style="font-size:11px;color:#8c8781;flex:none;width:52px">{{ tl.date }}</span><span style="font:400 13px 'Public Sans',sans-serif;color:#3a3733">{{ tl.text }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPipeline }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:14px">{{ ctxReqName }} · Pipeline</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <sc-for list="{{ pipelineCols }}" as="col" hint-placeholder-count="4">
+            <div style="background:#f7f6f3;border:1px solid #e3e0da;border-radius:11px;padding:10px;min-height:340px">
+              <div style="font:500 11.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781;margin-bottom:9px;display:flex;justify-content:space-between">{{ col.name }}<span>{{ col.count }}</span></div>
+              <sc-for list="{{ col.cards }}" as="cd" hint-placeholder-count="2">
+                <div onClick="{{ cd.go }}" style="cursor:pointer;background:#fdfdfc;border:1px solid #e3e0da;border-radius:9px;padding:10px;margin-bottom:8px" style-hover="box-shadow:0 1px 3px rgba(0,0,0,.08)">
+                  <div style="font:500 13px 'Public Sans',sans-serif;color:#1f1e1c">{{ cd.name }}</div>
+                  <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-top:2px">{{ cd.meta }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOffer }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:640px">
+        <div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">Offer — {{ ctxCandName }}</div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">{{ ctxReqName }} · pending your approval</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px 18px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>Base salary</span><span class="mono">₹22,00,000 / yr</span></div>
+          <div style="display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>Start date</span><span class="mono">01 Sep 2026</span></div>
+          <div style="display:flex;justify-content:space-between;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733"><span>Branch</span><span class="mono">Bengaluru</span></div>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;margin-bottom:18px;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Lex AI drafted the offer letter from the approved template. <span style="color:#1f1e1c;font-weight:500;cursor:pointer">Preview letter</span></div>
+        <div style="display:flex;gap:10px">
+          <div onClick="{{ goPlacement }}" style="padding:9px 16px;background:#1f1e1c;color:#fff;border-radius:8px;font:500 13.5px 'Public Sans',sans-serif;cursor:pointer">Send offer</div>
+          <div style="padding:9px 16px;border:1px solid #cdc8c0;border-radius:8px;font:500 13.5px 'Public Sans',sans-serif;cursor:pointer">Edit terms</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isPlacement }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:640px">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:6px"><span style="width:9px;height:9px;border-radius:5px;background:#4a6b3d"></span><div style="font:600 22px 'Public Sans',sans-serif;color:#1f1e1c">Placed — {{ ctxCandName }}</div></div>
+        <div style="font:400 13px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:18px">{{ ctxReqName }} · accepted offer, converting to employee record</div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px 18px;margin-bottom:16px">
+          <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Next steps</div>
+          <sc-for list="{{ placementSteps }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;gap:9px;align-items:center;margin-bottom:8px"><div style="width:16px;height:16px;border:1.5px solid #cdc8c0;border-radius:5px;flex:none"></div><span style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">{{ p }}</span></div>
+          </sc-for>
+        </div>
+        <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px 16px;background:#f7f6f3;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">An invoice for the placement fee will be generated in Finance once onboarding is confirmed.</div>
+      </div>
+    </sc-if>
+
+    </div>
+    </sc-if>
+
+  </div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000}}">
+const REQS = [
+  { key: "backend", title: "Senior Backend Engineer", dept: "Engineering", recruiter: "R. Iyer", status: "Open", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", applicants: 12, days: 18 },
+  { key: "payroll", title: "Payroll Analyst", dept: "Finance", recruiter: "S. Bose", status: "Interviewing", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", applicants: 6, days: 11 },
+  { key: "opslead", title: "Branch Ops Lead — Pune", dept: "Operations", recruiter: "M. Osei", status: "Closing", badgeBg: "#eef2f6", badgeFg: "#3a5a76", applicants: 21, days: 34 },
+  { key: "qa", title: "QA Automation Engineer", dept: "Engineering", recruiter: "R. Iyer", status: "Open", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", applicants: 9, days: 5 }
+];
+const CANDS = [
+  { key: "priya", name: "Priya Nair", reqKey: "backend", source: "LinkedIn", stage: "Interview", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", applied: "3 Aug" },
+  { key: "arjun", name: "Arjun Mehta", reqKey: "backend", source: "Referral", stage: "Screening", badgeBg: "#eef2f6", badgeFg: "#3a5a76", applied: "1 Aug" },
+  { key: "leela", name: "Leela Krishnan", reqKey: "backend", source: "Naukri", stage: "Offer", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", applied: "22 Jul" },
+  { key: "farhan", name: "Farhan Sheikh", reqKey: "payroll", source: "LinkedIn", stage: "Interview", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", applied: "29 Jul" },
+  { key: "divya", name: "Divya Rao", reqKey: "opslead", source: "Referral", stage: "Screening", badgeBg: "#eef2f6", badgeFg: "#3a5a76", applied: "18 Jul" }
+];
+class Component extends DCLogic {
+  state = { screen: "dashboard", reqKey: "backend", candKey: "priya", demo: "success" };
+
+  reqByKey(k) { return REQS.find(r => r.key === k) || REQS[0]; }
+  candByKey(k) { return CANDS.find(c => c.key === k) || CANDS[0]; }
+
+  nav(screen, patch) {
+    return () => this.setState(s => ({ screen, demo: "success", ...(patch || {}) }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const req = this.reqByKey(s.reqKey), cand = this.candByKey(s.candKey);
+    const badge = (label, map) => ({ label, badgeBg: map[label]?.[0] || "#eeece7", badgeFg: map[label]?.[1] || "#5c5852" });
+
+    const screenLabels = { dashboard: "Recruitment", reqList: "Requirements", reqDetail: req.title, candList: "Candidates", candProfile: cand.name, pipeline: req.title + " pipeline", offer: "Offer", placement: "Placement" };
+
+    const crumbTrail = {
+      dashboard: [["Recruitment", "dashboard"]],
+      reqList: [["Recruitment", "dashboard"], ["Requirements", "reqList"]],
+      reqDetail: [["Recruitment", "dashboard"], ["Requirements", "reqList"], [req.title, "reqDetail"]],
+      candList: [["Recruitment", "dashboard"], ["Candidates", "candList"]],
+      candProfile: s.viaReq
+        ? [["Recruitment", "dashboard"], ["Requirements", "reqList"], [req.title, "reqDetail"], [cand.name, "candProfile"]]
+        : [["Recruitment", "dashboard"], ["Candidates", "candList"], [cand.name, "candProfile"]],
+      pipeline: [["Recruitment", "dashboard"], ["Requirements", "reqList"], [req.title, "reqDetail"], ["Pipeline", "pipeline"]],
+      offer: [["Recruitment", "dashboard"], ["Requirements", "reqList"], [req.title, "reqDetail"], ["Pipeline", "pipeline"], ["Offer", "offer"]],
+      placement: [["Recruitment", "dashboard"], ["Requirements", "reqList"], [req.title, "reqDetail"], ["Pipeline", "pipeline"], ["Offer", "offer"], ["Placement", "placement"]]
+    }[s.screen];
+
+    const crumbs = crumbTrail.map(([label, key], i) => {
+      const isLast = i === crumbTrail.length - 1;
+      return { label, color: isLast ? "#1f1e1c" : "#8c8781", cursor: isLast ? "default" : "pointer", go: isLast ? () => {} : this.nav(key) };
+    });
+
+    const chipDefs = [["success", "Success"], ["empty", "Empty"], ["loading", "Loading"], ["error", "Error"]];
+    const demoChips = chipDefs.map(([key, label]) => ({ label, go: () => this.setState({ demo: key }), bg: s.demo === key ? "#1f1e1c" : "transparent", fg: s.demo === key ? "#fff" : "#8c8781" }));
+
+    return {
+      goDashboard: this.nav("dashboard"),
+      goReqList: this.nav("reqList"),
+      goPipeline: this.nav("pipeline"),
+      goPlacement: this.nav("placement"),
+      stop: (e) => e.stopPropagation(),
+      dc0go: () => this.setState({ demo: "success" }),
+      crumbs, demoChips,
+      screenLabel: screenLabels[s.screen],
+      showEmpty: s.demo === "empty", showLoading: s.demo === "loading", showError: s.demo === "error", showSuccess: s.demo === "success",
+      skeletonRows: ["95%", "88%", "70%", "92%", "60%"],
+      isDashboard: s.screen === "dashboard", isReqList: s.screen === "reqList", isReqDetail: s.screen === "reqDetail",
+      isCandList: s.screen === "candList", isCandProfile: s.screen === "candProfile", isPipeline: s.screen === "pipeline",
+      isOffer: s.screen === "offer", isPlacement: s.screen === "placement",
+      stats: [
+        { label: "Open requirements", value: "41" }, { label: "Interviews this week", value: "17" },
+        { label: "Offers pending", value: "4" }, { label: "Placements this month", value: "9" }
+      ],
+      topRequirements: REQS.map(r => ({ ...r, go: this.nav("reqDetail", { reqKey: r.key }) })),
+      allRequirements: REQS.map(r => ({ ...r, go: this.nav("reqDetail", { reqKey: r.key }) })),
+      ctxReqName: req.title,
+      reqCandidates: CANDS.filter(c => c.reqKey === req.key).map(c => ({ ...c, go: this.nav("candProfile", { candKey: c.key, reqKey: req.key, viaReq: true }) })),
+      allCandidates: CANDS.map(c => ({ ...c, req: this.reqByKey(c.reqKey).title, go: this.nav("candProfile", { candKey: c.key, reqKey: c.reqKey, viaReq: false }) })),
+      ctxCandName: cand.name,
+      candTimeline: [
+        { date: "22 Jul", text: "Applied via " + cand.source, dot: "#8c8781" },
+        { date: "25 Jul", text: "Resume screened by R. Iyer", dot: "#8c8781" },
+        { date: "1 Aug", text: "Moved to " + cand.stage, dot: "#4a6b3d" },
+        { date: "Today", text: "Awaiting interview scheduling", dot: "#8a6d1f" }
+      ],
+      pipelineCols: [
+        { name: "Screening", count: 5, cards: CANDS.filter(c => c.reqKey === req.key || c.stage === "Screening").slice(0, 2).map(c => ({ name: c.name, meta: c.source, go: this.nav("candProfile", { candKey: c.key, reqKey: req.key, viaReq: true }) })) },
+        { name: "Interview", count: 3, cards: CANDS.filter(c => c.stage === "Interview").map(c => ({ name: c.name, meta: this.reqByKey(c.reqKey).title, go: this.nav("candProfile", { candKey: c.key, reqKey: c.reqKey, viaReq: true }) })) },
+        { name: "Offer", count: 1, cards: [{ name: cand.name, meta: "Awaiting approval", go: this.nav("offer", { candKey: cand.key, reqKey: req.key }) }] },
+        { name: "Hired", count: 2, cards: [{ name: "K. Suresh", meta: "Started 15 Jul", go: () => {} }] }
+      ],
+      placementSteps: ["Assign onboarding buddy", "Provision laptop and access", "Schedule day-one orientation", "Confirm branch and reporting manager"]
+    };
+  }
+}
+</script>
+</body>
+</html>

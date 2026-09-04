@@ -1,1 +1,12 @@
 .DS_Store
+.idea/
+.claude/
+node_modules/
+target/
+dist/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+*.pem
+*.key

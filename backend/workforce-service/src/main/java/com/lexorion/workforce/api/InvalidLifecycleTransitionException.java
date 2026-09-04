@@ -1,0 +1,1 @@
+package com.lexorion.workforce.api;import com.lexorion.workforce.domain.EmploymentStatus;public final class InvalidLifecycleTransitionException extends WorkforceException{public InvalidLifecycleTransitionException(EmploymentStatus from,EmploymentStatus to){super(409,"Invalid employee lifecycle transition from "+from+" to "+to);}}

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:#f0eee9}
+*{box-sizing:border-box}
+.mono{font-family:"JetBrains Mono",monospace}
+</style>
+</helmet>
+
+<div style="display:grid;grid-template-columns:212px 1fr;min-height:100vh">
+
+  <div style="position:sticky;top:0;height:100vh;background:#f7f6f3;border-right:1px solid #e3e0da;padding:22px 14px;display:flex;flex-direction:column;gap:2px">
+    <div style="font:600 14px 'Public Sans',sans-serif;color:#1f1e1c;padding:4px 8px 4px">Lexorion</div>
+    <div style="font:400 11px 'Public Sans',sans-serif;color:#8c8781;padding:0 8px 16px">Design System v1.0</div>
+    <sc-for list="{{ sections }}" as="s" hint-placeholder-count="8">
+      <div onClick="{{ s.go }}" style="cursor:pointer;padding:8px 9px;border-radius:7px;font:400 13.5px 'Public Sans',sans-serif;color:{{ s.fg }};background:{{ s.bg }}">{{ s.label }}</div>
+    </sc-for>
+  </div>
+
+  <div style="padding:44px 52px 100px;max-width:1080px">
+
+    <sc-if value="{{ isFoundations }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">Foundations</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 34px;max-width:70ch">Neutral, warm-toned base — near-white and near-black, not saturated grays. One ink accent for actions and links; semantic hues share its lightness and chroma so status colors read as a family, not an afterthought.</p>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Color · neutral</div>
+        <div style="display:flex;gap:0;margin-bottom:28px;border-radius:10px;overflow:hidden;border:1px solid #e3e0da">
+          <sc-for list="{{ neutrals }}" as="c" hint-placeholder-count="7">
+            <div style="flex:1;height:64px;background:{{ c.hex }};display:flex;align-items:flex-end;padding:6px 8px">
+              <span class="mono" style="font-size:10px;color:{{ c.label }}">{{ c.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Color · semantic</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:34px">
+          <sc-for list="{{ semantics }}" as="c" hint-placeholder-count="4">
+            <div style="border:1px solid #e3e0da;border-radius:10px;overflow:hidden">
+              <div style="height:44px;background:{{ c.hex }}"></div>
+              <div style="padding:8px 10px"><div style="font:500 12.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ c.name }}</div><div class="mono" style="font-size:10.5px;color:#8c8781">{{ c.hex }}</div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Type scale — Public Sans</div>
+        <div style="border:1px solid #e3e0da;border-radius:10px;padding:20px 22px;margin-bottom:34px;display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ typeScale }}" as="ts" hint-placeholder-count="6">
+            <div style="display:flex;align-items:baseline;gap:16px">
+              <span class="mono" style="font-size:11px;color:#8c8781;width:120px;flex:none">{{ ts.tag }} · {{ ts.px }}</span>
+              <span style="font-family:'Public Sans',sans-serif;font-weight:{{ ts.weight }};font-size:{{ ts.px }};color:#1f1e1c">{{ ts.sample }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;align-items:baseline;gap:16px;padding-top:6px;border-top:1px solid #e3e0da">
+            <span class="mono" style="font-size:11px;color:#8c8781;width:120px;flex:none">mono · 12.5px</span>
+            <span class="mono" style="font-size:12.5px;color:#1f1e1c">JetBrains Mono — counts, routes, code</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Spacing — 8px grid</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ spacing }}" as="sp" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:10px"><span class="mono" style="font-size:11px;color:#8c8781;width:44px">{{ sp }}px</span><div style="height:10px;width:{{ sp }}px;background:#cdc8c0;border-radius:2px"></div></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Radius &amp; shadow</div>
+            <div style="display:flex;gap:10px;margin-bottom:14px">
+              <sc-for list="{{ radii }}" as="r" hint-placeholder-count="4">
+                <div style="width:52px;height:52px;background:#fdfdfc;border:1px solid #e3e0da;border-radius:{{ r }}px;display:flex;align-items:center;justify-content:center"><span class="mono" style="font-size:9px;color:#8c8781">{{ r }}</span></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:14px">
+              <div style="width:90px;height:52px;background:#fdfdfc;border-radius:9px;box-shadow:0 1px 3px rgba(0,0,0,.08)"></div>
+              <div style="width:90px;height:52px;background:#fdfdfc;border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.14)"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:34px">
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Elevation</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ elevation }}" as="e" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px"><div style="width:60px;height:36px;background:#fdfdfc;border-radius:8px;box-shadow:{{ e.shadow }};flex:none"></div><span class="mono" style="font-size:11px;color:#8c8781">{{ e.name }} — {{ e.shadow }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Motion</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <sc-for list="{{ motion }}" as="m" hint-placeholder-count="5">
+                <div style="display:flex;justify-content:space-between;font:400 12.5px 'Public Sans',sans-serif;color:#3a3733"><span>{{ m.name }}</span><span class="mono" style="color:#8c8781">{{ m.dur }} · {{ m.ease }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:34px">
+          <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Layout tokens</div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;overflow:hidden">
+            <sc-for list="{{ layoutTokens }}" as="l" hint-placeholder-count="7">
+              <div style="display:flex;justify-content:space-between;padding:9px 15px;border-bottom:1px solid #e8e5e0;font:400 13px 'Public Sans',sans-serif"><span style="color:#3a3733">{{ l.name }}</span><span class="mono" style="color:#8c8781;font-size:12px">{{ l.value }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isForms }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">Forms</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 30px">Buttons, inputs and selection controls. One primary action per view — ink-filled; everything else is outline or ghost.</p>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Buttons</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <sc-for list="{{ buttons }}" as="b" hint-placeholder-count="6">
+            <div style="{{ b.style }}">{{ b.label }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:34px">
+          <div style="padding:9px 16px;border-radius:8px;background:#1f1e1c;color:#f0eee9;font:500 14px 'Public Sans',sans-serif;opacity:.4">Disabled</div>
+          <div style="padding:7px 14px;border-radius:7px;background:#1f1e1c;color:#f0eee9;font:500 12.5px 'Public Sans',sans-serif">Small</div>
+          <div style="padding:11px 20px;border-radius:9px;background:#1f1e1c;color:#f0eee9;font:500 15px 'Public Sans',sans-serif">Large</div>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Inputs &amp; selection</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:34px">
+          <div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">Text — default</div>
+            <div style="border:1px solid #cdc8c0;border-radius:8px;padding:9px 11px;font:400 13.5px 'Public Sans',sans-serif;color:#8c8781">Placeholder text</div>
+          </div>
+          <div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">Text — focus</div>
+            <div style="border:1.5px solid #1f1e1c;border-radius:8px;padding:8.5px 10.5px;font:400 13.5px 'Public Sans',sans-serif;color:#1f1e1c;box-shadow:0 0 0 3px rgba(31,30,28,.08)">Editing…</div>
+          </div>
+          <div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781;margin-bottom:6px">Text — error</div>
+            <div style="border:1.5px solid #b5493a;border-radius:8px;padding:8.5px 10.5px;font:400 13.5px 'Public Sans',sans-serif;color:#1f1e1c">invalid@</div>
+            <div style="font:400 11.5px 'Public Sans',sans-serif;color:#b5493a;margin-top:4px">Enter a valid email</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:28px;align-items:center;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:17px;height:17px;border:1.5px solid #cdc8c0;border-radius:5px"></div><span style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Checkbox</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:17px;height:17px;background:#1f1e1c;border-radius:5px"></div><span style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Checked</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:16px;height:16px;border:1.5px solid #cdc8c0;border-radius:8px"></div><span style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733">Radio</span></div>
+          <div style="display:flex;align-items:center;gap:0;width:34px;height:19px;background:#1f1e1c;border-radius:10px;padding:2px"><div style="width:15px;height:15px;background:#f0eee9;border-radius:8px;margin-left:auto"></div></div>
+          <span style="font:400 13.5px 'Public Sans',sans-serif;color:#3a3733;margin-left:-16px">Toggle — on</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isData }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">Data display</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 30px">Rows over grids. Status carried by a badge and a word, never color alone.</p>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Badges &amp; tags</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:30px">
+          <sc-for list="{{ badges }}" as="b" hint-placeholder-count="6">
+            <span style="font:500 12px 'Public Sans',sans-serif;padding:4px 10px;border-radius:6px;background:{{ b.bg }};color:{{ b.fg }};border:1px solid {{ b.border }}">{{ b.label }}</span>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Table row</div>
+        <div style="border:1px solid #e3e0da;border-radius:10px;overflow:hidden;margin-bottom:30px">
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:9px 15px;background:#f7f6f3;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:#8c8781">
+            <div>Requirement</div><div>Recruiter</div><div>Status</div><div>Applicants</div>
+          </div>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;padding:11px 15px;border-top:1px solid #e8e5e0;font:400 13.5px 'Public Sans',sans-serif;color:#3a3733;align-items:center">
+              <div>{{ r.name }}</div><div style="color:#6b6660">{{ r.owner }}</div>
+              <div><span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ r.badgeBg }};color:{{ r.badgeFg }}">{{ r.status }}</span></div>
+              <div class="mono" style="font-size:12.5px">{{ r.count }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font:600 13px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Empty, loading, error</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div style="border:1px dashed #cdc8c0;border-radius:10px;padding:26px 16px;text-align:center"><div style="width:34px;height:34px;border-radius:8px;background:#eeece7;margin:0 auto 10px"></div><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:4px">No requirements yet</div><div style="font:300 12px 'Public Sans',sans-serif;color:#8c8781">Create the first one to start sourcing.</div></div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div style="height:12px;width:70%;background:#eeece7;border-radius:4px"></div><div style="height:12px;width:90%;background:#eeece7;border-radius:4px"></div><div style="height:12px;width:50%;background:#eeece7;border-radius:4px"></div>
+          </div>
+          <div style="border:1px solid #e3c9c4;background:#fbf2f0;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:6px"><div style="font:500 13.5px 'Public Sans',sans-serif;color:#8a3527">Couldn't load requirements</div><div style="font:300 12px 'Public Sans',sans-serif;color:#8a3527">Check your connection and retry.</div></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOverlays }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">Overlays</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 30px">Modal for a decision that blocks the page; drawer for detail alongside it; toast for confirmation that needs no response. Command palette lives in the shell (⌘K).</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:20px;background:#fdfdfc">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Confirm dialog</div>
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#6b6660;margin-bottom:14px">Remove K. Patel's access to Finance? This can be undone from Audit log.</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><div style="padding:7px 13px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Cancel</div><div style="padding:7px 13px;background:#b5493a;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Remove access</div></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:14px 16px;background:#1f1e1c;color:#f0eee9;display:flex;align-items:center;gap:10px;height:fit-content">
+            <div style="width:8px;height:8px;border-radius:4px;background:#7a9a6e;flex:none"></div>
+            <div style="font:400 13px 'Public Sans',sans-serif">Invoice #4471 marked as paid</div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:0;overflow:hidden">
+            <div style="padding:10px 14px;border-bottom:1px solid #e3e0da;font:500 13px 'Public Sans',sans-serif">Tooltip</div>
+            <div style="padding:20px;display:flex;justify-content:center"><div style="background:#1f1e1c;color:#f0eee9;font:400 12px 'Public Sans',sans-serif;padding:5px 9px;border-radius:6px">Approve within policy</div></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:10px;padding:14px 16px">
+            <div style="font:500 14px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Popover — context menu</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="padding:6px 8px;border-radius:6px;font:400 13px 'Public Sans',sans-serif;background:#eeece7">Edit</div>
+              <div style="padding:6px 8px;border-radius:6px;font:400 13px 'Public Sans',sans-serif">Duplicate</div>
+              <div style="padding:6px 8px;border-radius:6px;font:400 13px 'Public Sans',sans-serif;color:#b5493a">Delete</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAi }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">AI components</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 30px">Lex AI drafts, it doesn't decide. Every suggestion resolves to an explicit approve/dismiss — never a silent action.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px;background:#f7f6f3">
+            <div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">AI suggestion card</div>
+            <div style="font:400 13px 'Public Sans',sans-serif;color:#3a3733;margin-bottom:10px">3 leave requests fall within policy. Approve them together?</div>
+            <div style="display:flex;gap:8px"><div style="padding:6px 12px;background:#1f1e1c;color:#fff;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Approve all</div><div style="padding:6px 12px;border:1px solid #cdc8c0;border-radius:7px;font:500 12.5px 'Public Sans',sans-serif">Review each</div></div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px">
+            <div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:8px">Draft action — pending approval</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="border:1px solid #e3e0da;border-radius:8px;padding:8px 10px;font:400 12.5px 'Public Sans',sans-serif;display:flex;justify-content:space-between"><span>Grant K. Patel Finance · Viewer</span><span style="color:#8c8781">draft</span></div>
+              <div style="border:1px solid #ded9c9;background:#fbf7ea;border-radius:8px;padding:8px 10px;font:400 12.5px 'Public Sans',sans-serif;display:flex;justify-content:space-between"><span>Invoice #4471 — over limit</span><span style="color:#8a6d1f">needs you</span></div>
+            </div>
+          </div>
+          <div style="border:1px solid #e3e0da;border-radius:11px;padding:16px;grid-column:span 2">
+            <div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c;margin-bottom:10px">Confidence badge</div>
+            <div style="display:flex;gap:10px">
+              <span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 9px;border-radius:6px;background:#eaf0e6;color:#4a6b3d">High confidence</span>
+              <span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 9px;border-radius:6px;background:#f5efdd;color:#8a6d1f">Needs review</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isBusiness }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font:600 26px 'Public Sans',sans-serif;color:#1f1e1c;margin:0 0 6px;letter-spacing:-.01em">Business components</h1>
+        <p style="font:300 14px/1.6 'Public Sans',sans-serif;color:#6b6660;margin:0 0 30px">Record cards. Same anatomy across modules — identity, one status, one metric, one action — so Recruitment, Workforce and Finance read as one product.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <sc-for list="{{ recordCards }}" as="rc" hint-placeholder-count="3">
+            <div style="border:1px solid #e3e0da;border-radius:11px;padding:14px">
+              <div style="display:flex;gap:9px;align-items:center;margin-bottom:9px"><div style="width:28px;height:28px;border-radius:14px;background:#cdc8c0;flex:none"></div><div><div style="font:500 13.5px 'Public Sans',sans-serif;color:#1f1e1c">{{ rc.name }}</div><div style="font:400 11.5px 'Public Sans',sans-serif;color:#8c8781">{{ rc.sub }}</div></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:500 11.5px 'Public Sans',sans-serif;padding:3px 8px;border-radius:6px;background:{{ rc.badgeBg }};color:{{ rc.badgeFg }}">{{ rc.status }}</span><span class="mono" style="font-size:12px;color:#3a3733">{{ rc.metric }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:1600}}">
+const SECTIONS = ["Foundations", "Forms", "Data display", "Overlays", "AI components", "Business components"];
+class Component extends DCLogic {
+  state = { active: "Foundations" };
+  renderVals() {
+    const active = this.state.active;
+    return {
+      sections: SECTIONS.map(name => ({ label: name, go: () => this.setState({ active: name }), bg: active === name ? "#e8e5e0" : "transparent", fg: active === name ? "#1f1e1c" : "#5c5852" })),
+      isFoundations: active === "Foundations", isForms: active === "Forms", isData: active === "Data display", isOverlays: active === "Overlays", isAi: active === "AI components", isBusiness: active === "Business components",
+      neutrals: [
+        { hex: "#1f1e1c", label: "#f0eee9" }, { hex: "#3a3733", label: "#f0eee9" }, { hex: "#6b6660", label: "#f0eee9" },
+        { hex: "#8c8781", label: "#1f1e1c" }, { hex: "#cdc8c0", label: "#1f1e1c" }, { hex: "#e3e0da", label: "#1f1e1c" }, { hex: "#f7f6f3", label: "#1f1e1c" }
+      ],
+      semantics: [
+        { name: "Success", hex: "#4a6b3d" }, { name: "Warning", hex: "#8a6d1f" }, { name: "Danger", hex: "#b5493a" }, { name: "Info", hex: "#2a78d6" }
+      ],
+      typeScale: [
+        { tag: "Display", px: "28px", weight: 600, sample: "Overview" },
+        { tag: "Title", px: "20px", weight: 600, sample: "Requirements list" },
+        { tag: "Body", px: "14px", weight: 400, sample: "Approvals waiting on you" },
+        { tag: "Body small", px: "13px", weight: 400, sample: "Recruitment · submitted 2h ago" },
+        { tag: "Caption", px: "12px", weight: 400, sample: "Renews Sep 1" }
+      ],
+      spacing: [4, 8, 12, 16, 24, 32],
+      radii: [6, 8, 10, 14],
+      elevation: [
+        { name: "0 · flat", shadow: "none" },
+        { name: "1 · card", shadow: "0 1px 3px rgba(0,0,0,.08)" },
+        { name: "2 · popover", shadow: "0 6px 20px rgba(0,0,0,.14)" },
+        { name: "3 · modal", shadow: "0 20px 60px rgba(0,0,0,.3)" }
+      ],
+      motion: [
+        { name: "Hover", dur: "100ms", ease: "ease-out" },
+        { name: "Focus ring", dur: "150ms", ease: "ease-out" },
+        { name: "Toast", dur: "180ms", ease: "ease-out" },
+        { name: "Modal", dur: "200ms", ease: "ease-in-out" },
+        { name: "Drawer / AI rail", dur: "250ms", ease: "ease-in-out" }
+      ],
+      layoutTokens: [
+        { name: "Sidebar width", value: "248px" },
+        { name: "Sidebar — collapsed", value: "64px" },
+        { name: "Header height", value: "0 (search lives in sidebar)" },
+        { name: "AI rail — collapsed", value: "64px" },
+        { name: "AI rail — open", value: "268px" },
+        { name: "Content max width", value: "1440px" },
+        { name: "Table row height", value: "44px" }
+      ],
+      buttons: [
+        { label: "Primary", style: "padding:9px 16px;border-radius:8px;background:#1f1e1c;color:#f0eee9;font:500 14px 'Public Sans',sans-serif" },
+        { label: "Secondary", style: "padding:8.5px 15px;border-radius:8px;border:1px solid #cdc8c0;color:#1f1e1c;font:500 14px 'Public Sans',sans-serif" },
+        { label: "Ghost", style: "padding:8.5px 15px;border-radius:8px;color:#1f1e1c;font:500 14px 'Public Sans',sans-serif" },
+        { label: "Destructive", style: "padding:9px 16px;border-radius:8px;background:#b5493a;color:#fff;font:500 14px 'Public Sans',sans-serif" }
+      ],
+      badges: [
+        { label: "Open", bg: "#eaf0e6", fg: "#4a6b3d", border: "#dbe6d4" },
+        { label: "Pending", bg: "#f5efdd", fg: "#8a6d1f", border: "#eadfc0" },
+        { label: "Overdue", bg: "#fbf2f0", fg: "#8a3527", border: "#e3c9c4" },
+        { label: "Draft", bg: "#eeece7", fg: "#5c5852", border: "#e3e0da" },
+        { label: "Recruitment", bg: "#eef2f6", fg: "#3a5a76", border: "#dce4ea" },
+        { label: "Finance", bg: "#eef2f6", fg: "#3a5a76", border: "#dce4ea" }
+      ],
+      rows: [
+        { name: "Senior QA Engineer", owner: "R. Iyer", status: "Open", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", count: 12 },
+        { name: "Payroll Analyst", owner: "S. Bose", status: "Interviewing", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", count: 6 },
+        { name: "Branch Ops Lead — Pune", owner: "M. Osei", status: "Closed", badgeBg: "#eeece7", badgeFg: "#5c5852", count: 21 }
+      ],
+      recordCards: [
+        { name: "M. Osei", sub: "People · On leave", status: "Approved", badgeBg: "#eaf0e6", badgeFg: "#4a6b3d", metric: "3 days" },
+        { name: "Invoice #4471", sub: "Finance · Vertex Retail", status: "Overdue", badgeBg: "#fbf2f0", badgeFg: "#8a3527", metric: "₹8.4L" },
+        { name: "Sr. QA Engineer", sub: "Recruitment · 2 candidates", status: "Offer sent", badgeBg: "#f5efdd", badgeFg: "#8a6d1f", metric: "closes today" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

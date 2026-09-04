@@ -1,0 +1,2 @@
+import{StrictMode}from"react";import{createRoot}from"react-dom/client";import{AuthProvider}from"./auth/AuthProvider";import{WorkspaceProvider}from"./workspace/WorkspaceProvider";import{ThemeProvider}from"./theme/ThemeProvider";import{Router}from"./app/Router";import"./styles.css";
+createRoot(document.getElementById("root")!).render(<StrictMode><ThemeProvider><AuthProvider><WorkspaceProvider><Router/></WorkspaceProvider></AuthProvider></ThemeProvider></StrictMode>);
