@@ -5,6 +5,7 @@ import com.lexorion.payroll.tenant.AuthorityRequestContext;
 import com.lexorion.payroll.tenant.TrustedPayrollContext;
 import java.net.SocketTimeoutException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,7 @@ public class PlatformPayrollProcessingEntitlementGate implements PayrollProcessi
     private final RestClient client;
     private final AuthorityRequestContext requests;
 
-    public PlatformPayrollProcessingEntitlementGate(RestClient.Builder builder,
+    public PlatformPayrollProcessingEntitlementGate(@Qualifier("serviceRestClientBuilder") RestClient.Builder builder,
             @Value("${lexorion.platform-service-url}") String baseUrl,
             AuthorityRequestContext requests) {
         this.client = builder.baseUrl(baseUrl).build();

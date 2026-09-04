@@ -6,7 +6,8 @@ import org.springframework.context.annotation.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 @Configuration public class ClientConfig {
- @Bean @LoadBalanced RestClient.Builder restClientBuilder(
+ @Bean @Primary RestClient.Builder restClientBuilder(){return RestClient.builder();}
+ @Bean("serviceRestClientBuilder") @LoadBalanced RestClient.Builder serviceRestClientBuilder(
    @Value("${lexorion.http.connect-timeout:2s}") Duration connectTimeout,
    @Value("${lexorion.http.read-timeout:3s}") Duration readTimeout){
   SimpleClientHttpRequestFactory requests=new SimpleClientHttpRequestFactory();

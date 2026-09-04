@@ -5,6 +5,7 @@ import com.lexorion.payroll.tenant.AuthorityRequestContext;
 import com.lexorion.payroll.tenant.TrustedPayrollContext;
 import java.net.SocketTimeoutException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class HttpWorkforceEmployeeClient implements WorkforceEmployeeClient {
     private final RestClient client;
     private final AuthorityRequestContext requests;
 
-    public HttpWorkforceEmployeeClient(RestClient.Builder builder,
+    public HttpWorkforceEmployeeClient(@Qualifier("serviceRestClientBuilder") RestClient.Builder builder,
             @Value("${lexorion.workforce-service-url:http://workforce-service}") String baseUrl,
             AuthorityRequestContext requests) {
         this.client = builder.baseUrl(baseUrl).build();
