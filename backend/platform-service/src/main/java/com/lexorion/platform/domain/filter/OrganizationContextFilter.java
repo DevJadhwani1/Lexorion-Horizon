@@ -30,6 +30,11 @@ public class OrganizationContextFilter extends OncePerRequestFilter {
       this.objectMapper = objectMapper;
    }
 
+   @Override
+   protected boolean shouldNotFilter(HttpServletRequest request) {
+      return request.getRequestURI().startsWith("/api/core/");
+   }
+
    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
       this.contextHolder.clear();
 

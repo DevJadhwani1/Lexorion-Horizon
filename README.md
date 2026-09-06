@@ -1,6 +1,6 @@
 # Lexorion Horizon
 
-Lexorion Horizon is an academic enterprise HRMS project built with a microservices architecture. The current implementation includes platform and tenant administration, Workforce functionality, foundational Payroll workflows, a Finance service shell, service discovery, an API Gateway, and a React frontend.
+Lexorion Horizon is an academic enterprise workforce platform project built with a microservices architecture. The current implementation includes platform and tenant administration, Workforce functionality, foundational Payroll workflows, a Finance service shell, service discovery, an API Gateway, and a legacy functional React client.
 
 ## Project Members
 
@@ -61,6 +61,8 @@ Horizon/
 - Phase 1 synopsis and ERD material is under `docs/Phase-1/`.
 - Docker instructions are in `docs/docker.md`.
 - Jenkins CI information is in `docs/ci-cd.md`.
+- The implemented security, tenancy, migration, API, audit, and deployment conventions are in `docs/foundation.md`.
+- The verified pre-change baseline is in `docs/foundation-baseline.md`.
 
 PostgreSQL is an external dependency and is not included in Docker Compose. See the Docker documentation for required environment variables and known local database prerequisites.
 

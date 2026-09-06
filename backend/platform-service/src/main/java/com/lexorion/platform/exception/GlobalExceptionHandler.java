@@ -1,19 +1,21 @@
 package com.lexorion.platform.exception;
+import com.lexorion.core.exception.DuplicateResourceException;
+import com.lexorion.core.exception.ResourceNotFoundException;
 
-import com.lexorion.platform.auth.exception.InvalidCredentialsException;
-import com.lexorion.platform.auth.exception.InvalidRefreshTokenException;
+import com.lexorion.core.auth.exception.InvalidCredentialsException;
+import com.lexorion.core.auth.exception.InvalidRefreshTokenException;
 import com.lexorion.platform.domain.exception.InvalidDomainStateException;
 import com.lexorion.platform.domain.exception.InvalidHostnameException;
 import com.lexorion.platform.domain.exception.TenantHostnameUnavailableException;
-import com.lexorion.platform.entitlement.exception.InvalidEntitlementValueException;
-import com.lexorion.platform.entitlement.exception.InvalidPlanAssignmentException;
-import com.lexorion.platform.invitation.exception.InvalidInvitationException;
-import com.lexorion.platform.invitation.exception.InvitationConflictException;
+import com.lexorion.horizon.entitlement.exception.InvalidEntitlementValueException;
+import com.lexorion.horizon.entitlement.exception.InvalidPlanAssignmentException;
+import com.lexorion.horizon.invitation.exception.InvalidInvitationException;
+import com.lexorion.horizon.invitation.exception.InvitationConflictException;
 import com.lexorion.platform.organization.exception.InvalidLifecycleTransitionException;
 import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
-import com.lexorion.platform.organizationsettings.exception.InvalidOrganizationSettingsException;
-import com.lexorion.platform.tenantadmin.exception.TenantAdministrationConflictException;
-import com.lexorion.platform.workspace.exception.InvalidWorkspaceException;
+import com.lexorion.horizon.organizationsettings.exception.InvalidOrganizationSettingsException;
+import com.lexorion.horizon.tenantadmin.exception.TenantAdministrationConflictException;
+import com.lexorion.horizon.workspace.exception.InvalidWorkspaceException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
@@ -27,6 +29,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+   @ExceptionHandler(IllegalArgumentException.class)
+   public ResponseEntity<ApiError> handleInvalidArgument(IllegalArgumentException ex, HttpServletRequest request) {
+      return this.build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+   }
+
    @ExceptionHandler({InvalidEntitlementValueException.class})
    public ResponseEntity<ApiError> handleInvalidEntitlementValue(InvalidEntitlementValueException ex, HttpServletRequest request) {
       return this.build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);

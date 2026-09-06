@@ -1,22 +1,22 @@
 package com.lexorion.platform.organization.service;
 
-import com.lexorion.platform.exception.DuplicateResourceException;
-import com.lexorion.platform.exception.ResourceNotFoundException;
-import com.lexorion.platform.membership.entity.MembershipStatus;
-import com.lexorion.platform.membership.entity.OrganizationMembership;
-import com.lexorion.platform.membership.entity.OrganizationRole;
-import com.lexorion.platform.membership.repository.OrganizationMembershipRepository;
+import com.lexorion.core.exception.DuplicateResourceException;
+import com.lexorion.core.exception.ResourceNotFoundException;
+import com.lexorion.horizon.membership.entity.MembershipStatus;
+import com.lexorion.horizon.membership.entity.OrganizationMembership;
+import com.lexorion.horizon.membership.entity.OrganizationRole;
+import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
 import com.lexorion.platform.organization.dto.CreateOrganizationRequest;
 import com.lexorion.platform.organization.dto.OrganizationResponse;
 import com.lexorion.platform.organization.dto.UpdateOrganizationRequest;
 import com.lexorion.platform.organization.dto.UpdateOrganizationStatusRequest;
-import com.lexorion.platform.organization.entity.Organization;
-import com.lexorion.platform.organization.entity.OrganizationStatus;
+import com.lexorion.core.organization.entity.Organization;
+import com.lexorion.core.organization.entity.OrganizationStatus;
 import com.lexorion.platform.organization.exception.InvalidLifecycleTransitionException;
 import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
-import com.lexorion.platform.organization.repository.OrganizationRepository;
-import com.lexorion.platform.user.entity.User;
-import com.lexorion.platform.user.service.UserService;
+import com.lexorion.core.organization.repository.OrganizationRepository;
+import com.lexorion.core.user.entity.User;
+import com.lexorion.core.user.service.UserService;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,8 +33,10 @@ public class OrganizationService {
    private final UserService userService;
    private final TenantSlugService tenantSlugService;
    private final Clock clock;
+   private final com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon;
 
-   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock) {
+   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock, com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon) {
+      this.horizon = horizon;
       this.organizationRepository = organizationRepository;
       this.membershipRepository = membershipRepository;
       this.userService = userService;
@@ -63,10 +65,11 @@ public class OrganizationService {
             OrganizationMembership ownership = new OrganizationMembership();
             ownership.setOrganization(organization);
             ownership.setUser(owner);
-            ownership.setRole(OrganizationRole.OWNER);
+            ownership.setRole(OrganizationRole.ADMIN);
             ownership.setStatus(MembershipStatus.ACTIVE);
             ownership.setJoinedAt(this.clock.instant());
             this.membershipRepository.save(ownership);
+            this.horizon.enroll(organization.getId());
             return OrganizationResponse.from(organization);
          }
       }

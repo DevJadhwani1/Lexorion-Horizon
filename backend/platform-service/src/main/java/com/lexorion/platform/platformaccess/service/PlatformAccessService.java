@@ -1,16 +1,16 @@
 package com.lexorion.platform.platformaccess.service;
 
-import com.lexorion.platform.exception.DuplicateResourceException;
-import com.lexorion.platform.exception.ResourceNotFoundException;
+import com.lexorion.core.exception.DuplicateResourceException;
+import com.lexorion.core.exception.ResourceNotFoundException;
 import com.lexorion.platform.platformaccess.dto.CreatePlatformAccessRequest;
 import com.lexorion.platform.platformaccess.dto.PlatformAccessResponse;
 import com.lexorion.platform.platformaccess.dto.UpdatePlatformAccessStatusRequest;
 import com.lexorion.platform.platformaccess.dto.UpdatePlatformRoleRequest;
-import com.lexorion.platform.platformaccess.entity.PlatformAccess;
-import com.lexorion.platform.platformaccess.entity.PlatformAccessStatus;
-import com.lexorion.platform.platformaccess.repository.PlatformAccessRepository;
-import com.lexorion.platform.user.entity.User;
-import com.lexorion.platform.user.service.UserService;
+import com.lexorion.core.platformaccess.entity.PlatformAccess;
+import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
+import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
+import com.lexorion.core.user.entity.User;
+import com.lexorion.core.user.service.UserService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

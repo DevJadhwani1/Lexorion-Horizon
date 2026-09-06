@@ -63,6 +63,7 @@ public class CompensationService {
         profile.setEffectiveFrom(request.effectiveFrom());
         profile.setEffectiveTo(request.effectiveTo());
         profile.setStatus(request.status());
+        profile.setSourceTemplateKey(null);
         Set<String> seen = new HashSet<>();
         for (CreateAssignment item : request.components()) {
             String componentKey = ComponentDefinitionService.key(item.componentKey());
@@ -78,8 +79,27 @@ public class CompensationService {
             assignment.setProfile(profile);
             assignment.setDefinition(definition);
             assignment.setValue(item.value().setScale(4, RoundingMode.UNNECESSARY));
+            snapshot(assignment, definition, null);
             profile.getAssignments().add(assignment);
         }
+        return response(profiles.saveAndFlush(profile));
+    }
+
+        ProfileResponse createFromTemplate(String raw, String rawProfileKey, java.time.LocalDate effectiveFrom,
+            java.time.LocalDate effectiveTo, SalaryTemplateVersion version) {
+        scope.locked();
+        String code = employeeCode(raw);
+        PayrollEmployee employee = employees.findScopedForUpdate(scope.context().workspaceId(), code)
+                .orElseThrow(() -> new PayrollException(404, "Payroll employee not found"));
+        String key = profileKey(rawProfileKey);
+        if (employee.getPayFrequency() != version.getPayFrequency()) throw new PayrollException(409, "Template version pay frequency does not match employee");
+        if (!employee.getCurrency().equals(version.getCurrency())) throw new PayrollException(409, "Template version currency does not match employee");
+        if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) throw new PayrollException(400, "effectiveTo cannot precede effectiveFrom");
+        if (profiles.findByPayrollEmployeeWorkspaceIdAndPayrollEmployeeEmployeeCodeAndProfileKey(scope.context().workspaceId(), code, key).isPresent()) throw new PayrollException(409, "Compensation profile key already exists");
+        if (profiles.countOverlaps(employee.getId(), effectiveFrom, effectiveTo) > 0) throw new PayrollException(409, "Compensation profile overlaps an existing profile");
+        CompensationProfile profile = new CompensationProfile();profile.setPayrollEmployee(employee);profile.setProfileKey(key);profile.setSourceTemplateKey(version.getTemplate().getTemplateKey());profile.setSourceTemplateVersion(version.getVersionNumber());profile.setCurrency(version.getCurrency());profile.setEffectiveFrom(effectiveFrom);profile.setEffectiveTo(effectiveTo);profile.setStatus(CompensationProfileStatus.ACTIVE);
+        if (version.getEffectiveTo() != null && (effectiveTo == null || effectiveTo.isAfter(version.getEffectiveTo()))) throw new PayrollException(409, "Assignment effective dates exceed template version");
+        for (SalaryTemplateVersionComponent item : version.getComponents()) {ComponentAssignment assignment=new ComponentAssignment();assignment.setProfile(profile);assignment.setDefinition(item.getDefinition());assignment.setValue(item.getValue());snapshot(assignment,item.getDefinition(),item.getPercentageBasis());profile.getAssignments().add(assignment);}
         return response(profiles.saveAndFlush(profile));
     }
 
@@ -97,17 +117,26 @@ public class CompensationService {
         }
     }
 
+    private void snapshot(ComponentAssignment assignment, ComponentDefinition definition, String percentageBasis) {
+        assignment.setComponentKey(definition.getComponentKey());
+        assignment.setDisplayName(definition.getDisplayName());
+        assignment.setCategory(definition.getCategory());
+        assignment.setAmountType(definition.getAmountType());
+        assignment.setOccurrenceType(definition.getOccurrenceType());
+        assignment.setTaxability(definition.getTaxability());
+        assignment.setPercentageBasis(percentageBasis);
+    }
+
     private ProfileResponse response(CompensationProfile profile) {
         PayFrequency frequency = profile.getPayrollEmployee().getPayFrequency();
         List<AssignmentResponse> items = profile.getAssignments().stream()
                 .sorted(Comparator.comparing(a -> a.getDefinition().getComponentKey()))
                 .map(assignment -> {
-                    ComponentDefinition definition = assignment.getDefinition();
-                    return new AssignmentResponse(definition.getComponentKey(), definition.getDisplayName(),
-                            definition.getCategory(), definition.getAmountType(), frequency,
-                            definition.getOccurrenceType(), definition.getTaxability(), assignment.getValue());
+                        return new AssignmentResponse(assignment.getComponentKey(), assignment.getDisplayName(),
+                            assignment.getCategory(), assignment.getAmountType(), frequency,
+                            assignment.getOccurrenceType(), assignment.getTaxability(), assignment.getValue());
                 }).toList();
-        return new ProfileResponse(profile.getPayrollEmployee().getEmployeeCode(), profile.getProfileKey(),
+        return new ProfileResponse(profile.getPayrollEmployee().getEmployeeCode(), profile.getProfileKey(), profile.getSourceTemplateKey(), profile.getSourceTemplateVersion(),
                 profile.getCurrency(), profile.getEffectiveFrom(), profile.getEffectiveTo(), profile.getStatus(), items);
     }
 

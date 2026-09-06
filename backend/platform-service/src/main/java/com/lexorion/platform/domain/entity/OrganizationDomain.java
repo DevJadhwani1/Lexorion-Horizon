@@ -1,7 +1,7 @@
 package com.lexorion.platform.domain.entity;
 
-import com.lexorion.platform.config.Auditable;
-import com.lexorion.platform.organization.entity.Organization;
+import com.lexorion.core.config.Auditable;
+import com.lexorion.core.organization.entity.Organization;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

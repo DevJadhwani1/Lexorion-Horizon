@@ -1,8 +1,8 @@
 package com.lexorion.platform.platformaccess.dto;
 
-import com.lexorion.platform.platformaccess.entity.PlatformAccess;
-import com.lexorion.platform.platformaccess.entity.PlatformAccessStatus;
-import com.lexorion.platform.platformaccess.entity.PlatformRole;
+import com.lexorion.core.platformaccess.entity.PlatformAccess;
+import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
+import com.lexorion.core.platformaccess.entity.PlatformRole;
 import java.time.Instant;
 import java.util.UUID;
 

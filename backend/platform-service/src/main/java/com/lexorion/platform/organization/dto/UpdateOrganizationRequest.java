@@ -11,5 +11,5 @@ public record UpdateOrganizationRequest(@Size(
    max = 255
 ) String primaryEmail, @Size(
    max = 30
-) String primaryPhone) {
+) String primaryPhone, @Size(max = 100) String planKey) {
 }

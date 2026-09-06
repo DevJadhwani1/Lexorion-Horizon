@@ -56,8 +56,9 @@ public class CalculationService {
         if (effective.size() != 1) throw new PayrollException(409, "Conflicting effective compensation profiles");
         CompensationProfile profile = effective.getFirst();
         List<ComponentAssignment> ordered = profile.getAssignments().stream()
-                .sorted(Comparator.comparing(a -> a.getDefinition().getComponentKey())).toList();
+            .sorted(Comparator.comparing(ComponentAssignment::getComponentKey)).toList();
         if (ordered.isEmpty()) throw new PayrollException(409, "Effective compensation profile has no components");
+        ordered.forEach(this::percentageBasis);
 
         BigDecimal fixedGross = sum(ordered, ComponentCategory.EARNING, AmountType.FIXED_AMOUNT, BigDecimal.ZERO);
         BigDecimal percentageEarnings = sum(ordered, ComponentCategory.EARNING, AmountType.PERCENTAGE, fixedGross);
@@ -76,18 +77,18 @@ public class CalculationService {
         calculation.setDeductionAmount(deductions);
         calculation.setNetAmount(money(gross.subtract(deductions)));
         for (ComponentAssignment assignment : ordered) {
-            ComponentDefinition definition = assignment.getDefinition();
-            BigDecimal base = definition.getAmountType() == AmountType.FIXED_AMOUNT ? BigDecimal.ZERO
-                    : definition.getCategory() == ComponentCategory.EARNING ? fixedGross : gross;
+                BigDecimal base = assignment.getAmountType() == AmountType.FIXED_AMOUNT ? BigDecimal.ZERO
+                    : assignment.getCategory() == ComponentCategory.EARNING ? fixedGross : gross;
             CalculationLine line = new CalculationLine();
             line.setCalculation(calculation);
-            line.setComponentKey(definition.getComponentKey());
-            line.setDisplayName(definition.getDisplayName());
-            line.setCategory(definition.getCategory());
-            line.setAmountType(definition.getAmountType());
-            line.setOccurrence(definition.getOccurrenceType());
-            line.setTaxability(definition.getTaxability());
+            line.setComponentKey(assignment.getComponentKey());
+            line.setDisplayName(assignment.getDisplayName());
+            line.setCategory(assignment.getCategory());
+            line.setAmountType(assignment.getAmountType());
+            line.setOccurrence(assignment.getOccurrenceType());
+            line.setTaxability(assignment.getTaxability());
             line.setConfiguredValue(money(assignment.getValue()));
+            line.setPercentageBasis(percentageBasis(assignment));
             line.setCalculatedAmount(amount(assignment, base));
             line.setCurrency(profile.getCurrency());
             calculation.getLines().add(line);
@@ -97,14 +98,26 @@ public class CalculationService {
 
     private BigDecimal sum(List<ComponentAssignment> assignments, ComponentCategory category,
             AmountType type, BigDecimal base) {
-        return money(assignments.stream().filter(a -> a.getDefinition().getCategory() == category)
-                .filter(a -> a.getDefinition().getAmountType() == type)
+        return money(assignments.stream().filter(a -> a.getCategory() == category)
+            .filter(a -> a.getAmountType() == type)
                 .map(a -> amount(a, base)).reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     private BigDecimal amount(ComponentAssignment assignment, BigDecimal base) {
-        if (assignment.getDefinition().getAmountType() == AmountType.FIXED_AMOUNT) return money(assignment.getValue());
+        if (assignment.getAmountType() == AmountType.FIXED_AMOUNT) return money(assignment.getValue());
         return money(base.multiply(assignment.getValue()).divide(new BigDecimal("100"), SCALE, ROUNDING));
+    }
+
+    private String percentageBasis(ComponentAssignment assignment) {
+        if (assignment.getAmountType() != AmountType.PERCENTAGE) return null;
+        String basis = assignment.getPercentageBasis();
+        if (basis == null || basis.isBlank()) {
+            return assignment.getCategory() == ComponentCategory.EARNING ? "FIXED_EARNINGS" : "GROSS";
+        }
+        String normalized = basis.trim().toUpperCase(Locale.ROOT);
+        String expected = assignment.getCategory() == ComponentCategory.EARNING ? "FIXED_EARNINGS" : "GROSS";
+        if (!normalized.equals(expected)) throw new PayrollException(409, "Unsupported percentage basis");
+        return normalized;
     }
 
     private BigDecimal money(BigDecimal value) {

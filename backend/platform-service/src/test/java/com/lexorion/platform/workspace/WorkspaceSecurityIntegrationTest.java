@@ -9,38 +9,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
-import com.lexorion.platform.auth.repository.RefreshTokenRepository;
+import com.lexorion.core.auth.repository.RefreshTokenRepository;
 import com.lexorion.platform.domain.entity.DomainAccessMode;
 import com.lexorion.platform.domain.entity.DomainType;
 import com.lexorion.platform.domain.entity.DomainVerificationStatus;
 import com.lexorion.platform.domain.entity.OrganizationDomain;
 import com.lexorion.platform.domain.repository.OrganizationDomainRepository;
-import com.lexorion.platform.invitation.repository.OrganizationInvitationRepository;
-import com.lexorion.platform.entitlement.entity.AssignmentStatus;
-import com.lexorion.platform.entitlement.entity.OrganizationPlanAssignment;
-import com.lexorion.platform.entitlement.repository.OrganizationPlanAssignmentRepository;
-import com.lexorion.platform.entitlement.repository.PlanRepository;
-import com.lexorion.platform.membership.entity.MembershipStatus;
-import com.lexorion.platform.membership.entity.OrganizationMembership;
-import com.lexorion.platform.membership.entity.OrganizationRole;
-import com.lexorion.platform.membership.repository.OrganizationMembershipRepository;
-import com.lexorion.platform.organization.entity.Organization;
-import com.lexorion.platform.organization.entity.OrganizationStatus;
-import com.lexorion.platform.organization.repository.OrganizationRepository;
-import com.lexorion.platform.organizationsettings.repository.OrganizationSettingsRepository;
-import com.lexorion.platform.platformaccess.entity.PlatformAccess;
-import com.lexorion.platform.platformaccess.entity.PlatformAccessStatus;
-import com.lexorion.platform.platformaccess.entity.PlatformRole;
-import com.lexorion.platform.platformaccess.repository.PlatformAccessRepository;
-import com.lexorion.platform.product.entity.Product;
-import com.lexorion.platform.product.entity.ProductStatus;
-import com.lexorion.platform.product.repository.ProductRepository;
-import com.lexorion.platform.user.entity.User;
-import com.lexorion.platform.user.entity.UserStatus;
-import com.lexorion.platform.user.repository.UserRepository;
-import com.lexorion.platform.workspace.entity.OrganizationWorkspace;
-import com.lexorion.platform.workspace.entity.WorkspaceStatus;
-import com.lexorion.platform.workspace.repository.OrganizationWorkspaceRepository;
+import com.lexorion.horizon.invitation.repository.OrganizationInvitationRepository;
+import com.lexorion.horizon.entitlement.entity.AssignmentStatus;
+import com.lexorion.horizon.entitlement.entity.OrganizationPlanAssignment;
+import com.lexorion.horizon.entitlement.repository.OrganizationPlanAssignmentRepository;
+import com.lexorion.horizon.entitlement.repository.PlanRepository;
+import com.lexorion.horizon.membership.entity.MembershipStatus;
+import com.lexorion.horizon.membership.entity.OrganizationMembership;
+import com.lexorion.horizon.membership.entity.OrganizationRole;
+import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
+import com.lexorion.core.organization.entity.Organization;
+import com.lexorion.core.organization.entity.OrganizationStatus;
+import com.lexorion.core.organization.repository.OrganizationRepository;
+import com.lexorion.horizon.organizationsettings.repository.OrganizationSettingsRepository;
+import com.lexorion.core.platformaccess.entity.PlatformAccess;
+import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
+import com.lexorion.core.platformaccess.entity.PlatformRole;
+import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
+import com.lexorion.horizon.product.entity.Product;
+import com.lexorion.horizon.product.entity.ProductStatus;
+import com.lexorion.horizon.product.repository.ProductRepository;
+import com.lexorion.core.user.entity.User;
+import com.lexorion.core.user.entity.UserStatus;
+import com.lexorion.core.user.repository.UserRepository;
+import com.lexorion.horizon.workspace.entity.OrganizationWorkspace;
+import com.lexorion.horizon.workspace.entity.WorkspaceStatus;
+import com.lexorion.horizon.workspace.repository.OrganizationWorkspaceRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -67,6 +67,8 @@ class WorkspaceSecurityIntegrationTest {
     @Autowired OrganizationPlanAssignmentRepository planAssignments; @Autowired PlanRepository plans;
     @Autowired OrganizationInvitationRepository invitations; @Autowired OrganizationDomainRepository domains;
     @Autowired PlatformAccessRepository platformAccess; @Autowired RefreshTokenRepository refreshTokens;
+    @Autowired com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon;
+    @Autowired com.lexorion.core.product.ProductAccessRepository coreGrants;
     @Autowired PasswordEncoder passwordEncoder;
     private Organization alpha; private Organization beta;
     private User owner; private User admin; private User manager; private User member;
@@ -77,10 +79,10 @@ class WorkspaceSecurityIntegrationTest {
         beta = organization("Beta", "beta", OrganizationStatus.TRIAL);
         owner = user("owner@alpha.test"); admin = user("admin@alpha.test");
         manager = user("manager@alpha.test"); member = user("member@alpha.test");
-        membership(alpha, owner, OrganizationRole.OWNER, MembershipStatus.ACTIVE);
+        membership(alpha, owner, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
         membership(alpha, admin, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
         membership(alpha, manager, OrganizationRole.MANAGER, MembershipStatus.ACTIVE);
-        membership(alpha, member, OrganizationRole.MEMBER, MembershipStatus.ACTIVE);
+        membership(alpha, member, OrganizationRole.EMPLOYEE, MembershipStatus.ACTIVE);
         assign(alpha, "workforce", "workforce-starter");
     }
     @AfterEach void tearDown() { cleanTenantData(); resetProducts(); }
@@ -92,6 +94,18 @@ class WorkspaceSecurityIntegrationTest {
                 .andExpect(jsonPath("$[0].status").value("ACTIVE"));
         assertThat(products.findAll()).extracting(Product::getKey)
                 .contains("horizon", "workforce", "payroll", "finance");
+    }
+
+    @Test
+    void platformOperatorCanReadProductCatalogWithoutOrganizationContext() throws Exception {
+        User platform = user("catalog-platform@example.com");
+        PlatformAccess access = new PlatformAccess();
+        access.setUser(platform); access.setRole(PlatformRole.SUPER_ADMIN); access.setStatus(PlatformAccessStatus.ACTIVE);
+        access.setGrantedAt(Instant.now()); platformAccess.saveAndFlush(access);
+
+        mockMvc.perform(get("/api/platform/products").header("Host", HOST)
+                .header("Authorization", "Bearer " + token(platform)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].key").isNotEmpty());
     }
 
     @Test
@@ -134,7 +148,7 @@ class WorkspaceSecurityIntegrationTest {
     void managerMemberInactiveAndPlatformAuthorityCannotAdminister() throws Exception {
         create(manager, "one", "One", "horizon", "alpha").andExpect(status().isForbidden());
         create(member, "two", "Two", "horizon", "alpha").andExpect(status().isForbidden());
-        User inactive = user("inactive@example.com"); membership(alpha, inactive, OrganizationRole.OWNER, MembershipStatus.INACTIVE);
+        User inactive = user("inactive@example.com"); membership(alpha, inactive, OrganizationRole.ADMIN, MembershipStatus.INACTIVE);
         create(inactive, "three", "Three", "horizon", "alpha").andExpect(status().isForbidden());
         User platform = user("platform@example.com"); PlatformAccess access = new PlatformAccess();
         access.setUser(platform); access.setRole(PlatformRole.SUPER_ADMIN); access.setStatus(PlatformAccessStatus.ACTIVE);
@@ -152,9 +166,9 @@ class WorkspaceSecurityIntegrationTest {
 
     @Test
     void crossTenantReadsAndMutationsAreScopedByTrustedOrganization() throws Exception {
-        create(owner, "alpha-only", "Alpha Only", "horizon", "alpha").andExpect(status().isCreated());
-        User dual = user("dual@example.com"); membership(alpha, dual, OrganizationRole.OWNER, MembershipStatus.ACTIVE);
-        membership(beta, dual, OrganizationRole.OWNER, MembershipStatus.ACTIVE);
+        create(owner, "alpha-only", "Alpha Only", "workforce", "alpha").andExpect(status().isCreated());
+        User dual = user("dual@example.com"); membership(alpha, dual, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
+        membership(beta, dual, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
         tenant(get("/api/tenant/workspaces/alpha-only"), token(dual), "beta", HOST).andExpect(status().isForbidden());
         tenant(patch("/api/tenant/workspaces/alpha-only").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\":\"Stolen\"}"), token(dual), "beta", HOST).andExpect(status().isNotFound());
@@ -169,7 +183,7 @@ class WorkspaceSecurityIntegrationTest {
                 + beta.getId() + "\"}").andExpect(status().isBadRequest());
         createBody(owner, "alpha", "{\"key\":\"x\",\"displayName\":\"X\",\"productKey\":\"horizon\",\"productId\":\""
                 + horizon.getId() + "\"}").andExpect(status().isBadRequest());
-        create(owner, "fixed", "Fixed", "horizon", "alpha").andExpect(status().isCreated());
+        create(owner, "fixed", "Fixed", "workforce", "alpha").andExpect(status().isCreated());
         tenant(patch("/api/tenant/workspaces/fixed").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"organizationId\":\"" + beta.getId() + "\",\"productKey\":\"finance\"}"),
                 token(owner), "alpha", HOST).andExpect(status().isBadRequest());
@@ -180,9 +194,10 @@ class WorkspaceSecurityIntegrationTest {
         createBody(owner, "alpha", "{\"key\":\"Bad Key\",\"displayName\":\"Bad\",\"productKey\":\"horizon\"}")
                 .andExpect(status().isBadRequest());
         create(owner, "valid", "Valid", "missing-product", "alpha").andExpect(status().isBadRequest());
-        create(owner, "valid", "Valid", "horizon", "alpha").andExpect(status().isCreated());
+        create(owner, "valid", "Valid", "workforce", "alpha").andExpect(status().isCreated());
         create(owner, "valid", "Duplicate", "finance", "alpha").andExpect(status().isConflict());
-        User betaOwner = user("owner@beta.test"); membership(beta, betaOwner, OrganizationRole.OWNER, MembershipStatus.ACTIVE);
+        User betaOwner = user("owner@beta.test"); membership(beta, betaOwner, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
+        assign(beta, "finance", "finance-starter");
         create(betaOwner, "valid", "Beta Valid", "finance", "beta").andExpect(status().isCreated());
     }
 
@@ -219,7 +234,7 @@ class WorkspaceSecurityIntegrationTest {
     }
     private int createStatus(String token) {
         try { return tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"key\":\"race\",\"displayName\":\"Race\",\"productKey\":\"horizon\"}"),
+                .content("{\"key\":\"race\",\"displayName\":\"Race\",\"productKey\":\"workforce\"}"),
                 token, "alpha", HOST).andReturn().getResponse().getStatus(); }
         catch (Exception ex) { throw new IllegalStateException(ex); }
     }
@@ -251,7 +266,7 @@ class WorkspaceSecurityIntegrationTest {
     private Organization organization(String name, String slug, OrganizationStatus status) {
         Organization value = new Organization(); value.setName(name); value.setOrganizationCode(name.toUpperCase());
         value.setSlug(slug); value.setPrimaryEmail("ops@" + slug + ".test"); value.setStatus(status);
-        return organizations.saveAndFlush(value);
+        var saved = organizations.saveAndFlush(value); horizon.enroll(saved.getId()); return saved;
     }
     private User user(String email) {
         User value = new User(); value.setEmail(email); value.setFirstName("Test"); value.setLastName("User");
@@ -270,6 +285,6 @@ class WorkspaceSecurityIntegrationTest {
     private void resetProducts() { products.findAll().forEach(p -> { p.setStatus(ProductStatus.ACTIVE); products.save(p); }); products.flush(); }
     private void cleanTenantData() {
         refreshTokens.deleteAll(); invitations.deleteAll(); workspaces.deleteAll(); planAssignments.deleteAll(); domains.deleteAll(); memberships.deleteAll();
-        settings.deleteAll(); platformAccess.deleteAll(); organizations.deleteAll(); users.deleteAll();
+        settings.deleteAll(); platformAccess.deleteAll(); coreGrants.deleteAll(); organizations.deleteAll(); users.deleteAll();
     }
 }

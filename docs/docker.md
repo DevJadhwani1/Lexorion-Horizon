@@ -20,6 +20,8 @@ export WORKFORCE_DB_NAME=lexorion_workforce
 export PAYROLL_DB_NAME=lexorion_payroll
 export FINANCE_DB_NAME=lexorion_finance
 export JWT_SECRET='<at-least-32-byte-secret>'
+export WORKFORCE_SERVICE_TOKEN='<independent-random-secret-at-least-32-bytes>'
+export PAYROLL_SERVICE_TOKEN='<independent-random-secret-at-least-32-bytes>'
 ```
 
 `DB_HOST` may need the host's LAN address on Docker environments that do not support `host.docker.internal`. Full JDBC URLs can instead be supplied with `PLATFORM_DB_URL`, `WORKFORCE_DB_URL`, `PAYROLL_DB_URL`, or `FINANCE_DB_URL` through an environment override.
@@ -34,7 +36,7 @@ docker compose ps
 docker compose down
 ```
 
-Compose does not create databases, users, schemas, migrations, or seed data. Existing `ddl-auto` behavior is unchanged: Platform, Workforce, and Payroll use `update`; Finance uses `validate`.
+Compose does not create databases, users, or seed data. Each service applies its own versioned Flyway migrations and Hibernate validates the resulting schema; migrations are non-destructive and must be reviewed before deployment.
 
 ## Ports and health
 
@@ -42,11 +44,9 @@ Compose does not create databases, users, schemas, migrations, or seed data. Exi
 | --- | ---: | --- |
 | Frontend | 9000 | `http://localhost:9000/` |
 | Gateway | 9001 | `http://localhost:9001/actuator/health` |
-| Platform | 9002 | `http://localhost:9002/actuator/health` |
 | Eureka | 9003 | `http://localhost:9003/actuator/health` |
-| Workforce | 9004 | `http://localhost:9004/actuator/health` |
-| Payroll | 9005 | `http://localhost:9005/actuator/health` |
-| Finance | 9006 | `http://localhost:9006/actuator/health` |
+
+Platform 9002, Workforce 9004, Payroll 9005, and Finance 9006 are internal `horizon` network ports and are intentionally not published on the host. Their health checks run inside their containers. Use Gateway for application APIs; use an explicit development-only Compose override if direct diagnostics are necessary.
 
 The browser sends relative `/api/...` requests to nginx on port 9000. Nginx proxies those requests to Gateway over the internal `horizon` network. Backend services use the Eureka, Platform, and Workforce Compose service names rather than `localhost`.
 

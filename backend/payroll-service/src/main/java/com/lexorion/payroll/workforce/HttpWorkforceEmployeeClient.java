@@ -21,12 +21,15 @@ public class HttpWorkforceEmployeeClient implements WorkforceEmployeeClient {
     static final String ROLE = "X-Lexorion-Trusted-Role";
     private final RestClient client;
     private final AuthorityRequestContext requests;
+    private final String serviceToken;
 
     public HttpWorkforceEmployeeClient(@Qualifier("serviceRestClientBuilder") RestClient.Builder builder,
             @Value("${lexorion.workforce-service-url:http://workforce-service}") String baseUrl,
-            AuthorityRequestContext requests) {
+            AuthorityRequestContext requests,
+            @Value("${lexorion.service-auth.payroll-token}") String serviceToken) {
         this.client = builder.baseUrl(baseUrl).build();
         this.requests = requests;
+        this.serviceToken = serviceToken;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class HttpWorkforceEmployeeClient implements WorkforceEmployeeClient {
                     .uri("/internal/workforce/employees/{employeeCode}/verification", employeeCode)
                     .header(HttpHeaders.AUTHORIZATION, credentials.bearerToken())
                     .header(HttpHeaders.HOST, credentials.host())
+                    .header("X-Lexorion-Service-Token", serviceToken)
                     .header("X-Lexorion-Organization", context.organizationSlug())
                     .header("X-Lexorion-Workspace", context.workspaceKey())
                     .header(ORGANIZATION_ID, context.organizationId().toString())

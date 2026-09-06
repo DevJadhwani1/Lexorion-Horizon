@@ -8,7 +8,7 @@ The root `Jenkinsfile` defines the Lexorion Horizon continuous-integration pipel
 - Git, configured by the Jenkins SCM job
 - Java 21
 - Node.js and npm compatible with the committed lockfile (Node 24 is recommended)
-- Docker Engine with the Docker Compose v2 plugin
+- Docker Engine with the Docker Compose v2 plugin (also used by PostgreSQL Testcontainers)
 - Permission for the Jenkins agent to use Docker
 - Pipeline, Git, JUnit, and Artifact Manager functionality available in Jenkins
 
@@ -20,7 +20,7 @@ Maven does not need to be installed globally. Every backend module uses its comm
 2. Compile all six backend modules in parallel.
 3. Test all six backend modules in parallel and publish Surefire reports.
 4. Install frontend dependencies with `npm ci`.
-5. Run frontend lint.
+5. Run frontend lint and a high-severity production dependency audit.
 6. Run frontend TypeScript checking.
 7. Build and archive the frontend production output.
 8. Build all seven images with Docker Compose.
@@ -31,6 +31,6 @@ Any failed command fails its stage and the pipeline. Application containers are 
 
 ## Database and deployment scope
 
-CI does not start, create, migrate, seed, or otherwise manage PostgreSQL. Backend tests use their existing test configuration, and the Docker images are built without launching the database-backed services. This avoids requiring the currently absent Workforce, Payroll, and Finance databases.
+CI does not modify or depend on a shared PostgreSQL instance. Critical migration tests start disposable PostgreSQL 16 Testcontainers, apply Flyway from an empty schema, and remove the containers after the suite. Other backend tests retain isolated test configuration. Docker images are built without launching the application stack.
 
 No credentials are embedded in the pipeline. Production deployment and registry publication are intentionally not automated in this milestone.

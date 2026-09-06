@@ -1,2 +1,2 @@
 package com.lexorion.workforce.tenant;
-public enum WorkforceRole { OWNER, ADMIN, MANAGER, MEMBER }
+public enum WorkforceRole { ADMIN, MANAGER, EMPLOYEE }

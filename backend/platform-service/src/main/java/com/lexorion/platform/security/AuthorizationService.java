@@ -1,7 +1,7 @@
 package com.lexorion.platform.security;
 
-import com.lexorion.platform.membership.entity.OrganizationRole;
-import com.lexorion.platform.membership.repository.OrganizationMembershipRepository;
+import com.lexorion.horizon.membership.entity.OrganizationRole;
+import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -35,7 +35,7 @@ public class AuthorizationService {
          OrganizationAuthority organization = (OrganizationAuthority)user.organizations().get(organizationId);
          if (organization != null && organization.status().allowsTenantManagement()) {
             OrganizationRole role = organization.role();
-            return role == OrganizationRole.OWNER || role == OrganizationRole.ADMIN;
+            return role == OrganizationRole.ADMIN;
          } else {
             return false;
          }

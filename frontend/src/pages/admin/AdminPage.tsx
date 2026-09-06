@@ -1,7 +1,281 @@
-import{useEffect,useState,type FormEvent}from"react";import{useParams}from"react-router-dom";import{ApiError}from"../../api/types";import{getEffectiveEntitlements,type EffectiveEntitlements}from"../../features/entitlements/entitlementApi";import{changeMemberRole,createInvitation,getInvitations,getMembers,getOrganization,removeMember,revokeInvitation,updateOrganization,updateSettings,type Invitation,type Member,type Organization}from"../../features/admin/adminApi";import{Badge}from"../../components/ui/Badge";import{Button}from"../../components/ui/Button";import{Empty,Notice,Page}from"../../components/ui/Page";
-export function AdminPage(){const{section="organization"}=useParams(),[data,setData]=useState<unknown>(null),[error,setError]=useState(""),[loading,setLoading]=useState(true),[email,setEmail]=useState(""),[role,setRole]=useState("MEMBER");const load=async()=>{setLoading(true);setError("");try{setData(await(section==="members"?getMembers():section==="invitations"?getInvitations():section==="entitlements"?getEffectiveEntitlements():getOrganization()));}catch(e){setError(e instanceof ApiError?e.message:"Unable to load administration data");}finally{setLoading(false)}};useEffect(()=>{void load()},[section]);if(loading)return <Page title={title(section)}><p>Loading…</p></Page>;if(error)return <Page title={title(section)}><Notice>{error}</Notice></Page>;
- if(section==="members")return <Page title="Members" description="Membership roles are enforced by Platform."><Table headers={["Name","Email","Role","Status","Actions"]}>{(data as Member[]).map(m=><tr key={m.membershipId}><td>{m.fullName}</td><td>{m.email}</td><td><select value={m.role} onChange={e=>void changeMemberRole(m.membershipId,e.target.value).then(load)}>{["OWNER","ADMIN","MANAGER","MEMBER"].map(x=><option key={x}>{x}</option>)}</select></td><td><Badge label={m.status} variant={m.status==="ACTIVE"?"success":"neutral"}/></td><td><Button variant="destructive" onClick={()=>confirm("Remove this membership?")&&void removeMember(m.membershipId).then(load)}>Remove</Button></td></tr>)}</Table></Page>;
- if(section==="invitations")return <Page title="Invitations"><form className="toolbar" onSubmit={(e:FormEvent)=>{e.preventDefault();void createInvitation(email,role).then(()=>{setEmail("");return load()}).catch(x=>setError(x instanceof Error?x.message:"Failed"))}}><input type="email" required placeholder="person@example.com" value={email} onChange={e=>setEmail(e.target.value)}/><select value={role} onChange={e=>setRole(e.target.value)}>{["ADMIN","MANAGER","MEMBER"].map(x=><option key={x}>{x}</option>)}</select><Button variant="primary">Invite</Button></form>{error&&<Notice>{error}</Notice>}<Table headers={["Email","Role","Status","Expires","Action"]}>{(data as Invitation[]).map(i=><tr key={i.invitationId}><td>{i.email}</td><td>{i.role}</td><td><Badge label={i.status}/></td><td>{new Date(i.expiresAt).toLocaleDateString()}</td><td><Button onClick={()=>void revokeInvitation(i.invitationId).then(load)}>Revoke</Button></td></tr>)}</Table></Page>;
- if(section==="entitlements")return <Page title="Entitlements" description="Effective plans and capabilities returned by Platform.">{(data as EffectiveEntitlements).length===0?<Empty>No active entitlements.</Empty>:(data as EffectiveEntitlements).map(p=><article className="card" key={p.productKey}><h3>{p.productKey} · {p.planName}</h3>{p.entitlements.map(e=><p key={e.key}><code>{e.key}</code>: {String(e.booleanValue??e.integerValue)}</p>)}</article>)}</Page>;
- const org=data as Organization;return <Page title={section==="settings"?"Settings":"Organization"}><form className="form-grid" onSubmit={(e:FormEvent)=>{e.preventDefault();const values=Object.fromEntries(new FormData(e.currentTarget as HTMLFormElement));void(section==="settings"?updateSettings(values):updateOrganization(values)).then(load).catch(x=>setError(x instanceof Error?x.message:"Failed"))}}>{section==="settings"?<>{field("timeZone",org.settings.timeZone)}{field("locale",org.settings.locale)}{field("country",org.settings.country)}{field("currency",org.settings.currency)}{field("brandingDisplayName",org.settings.brandingDisplayName??"")}</>:<>{field("name",org.name)}{field("legalName",org.legalName??"")}{field("primaryEmail",org.primaryEmail,"email")}{field("primaryPhone",org.primaryPhone??"")}{field("industry",org.industry??"")}{field("website",org.website??"")}</>}<Button variant="primary">Save</Button></form>{error&&<Notice>{error}</Notice>}</Page>}
-const field=(name:string,value:string,type="text")=><label key={name}>{name.replaceAll(/([A-Z])/g," $1")}<input name={name} type={type} defaultValue={value}/></label>;const title=(s:string)=>s[0].toUpperCase()+s.slice(1);export function Table({headers,children}:{headers:string[];children:React.ReactNode}){return <div className="table-wrap"><table><thead><tr>{headers.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{children}</tbody></table></div>}
+import { useEffect, useState, type FormEvent } from "react";
+import { useParams } from "react-router-dom";
+import { ApiError } from "../../api/types";
+import {
+  getEffectiveEntitlements,
+  type EffectiveEntitlements,
+} from "../../features/entitlements/entitlementApi";
+import {
+  changeMemberRole,
+  createInvitation,
+  getInvitations,
+  getMembers,
+  getOrganization,
+  removeMember,
+  revokeInvitation,
+  updateOrganization,
+  updateSettings,
+  type Invitation,
+  type Member,
+  type Organization,
+} from "../../features/admin/adminApi";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Empty, Notice, Page } from "../../components/ui/Page";
+export function AdminPage({ sectionKey }: { sectionKey?: string }) {
+  const { section: routeSection } = useParams(),
+    section = sectionKey ?? routeSection ?? "organization",
+    [data, setData] = useState<unknown>(null),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(true),
+    [email, setEmail] = useState(""),
+    [role, setRole] = useState("EMPLOYEE");
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setData(
+        await (section === "members"
+          ? getMembers()
+          : section === "invitations"
+            ? getInvitations()
+            : section === "entitlements"
+              ? getEffectiveEntitlements()
+              : getOrganization()),
+      );
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? e.message
+          : "Unable to load administration data",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    void load();
+  }, [section]);
+  if (loading)
+    return (
+      <Page title={title(section)}>
+        <p>Loading…</p>
+      </Page>
+    );
+  if (error)
+    return (
+      <Page title={title(section)}>
+        <Notice>{error}</Notice>
+      </Page>
+    );
+  if (section === "members")
+    return (
+      <Page
+        title="Members"
+        description="Membership roles are enforced by Platform."
+      >
+        {(data as Member[]).length ? (
+          <Table headers={["Name", "Email", "Role", "Status", "Actions"]}>
+            {(data as Member[]).map((m) => (
+              <tr key={m.membershipId}>
+                <td>{m.fullName}</td>
+                <td>{m.email}</td>
+                <td>
+                  <select
+                    value={m.role}
+                    onChange={(e) =>
+                      confirm(
+                        `Change ${m.fullName}'s role to ${e.target.value}?`,
+                      ) &&
+                      void changeMemberRole(m.membershipId, e.target.value)
+                        .then(load)
+                        .catch((x) => setError((x as Error).message))
+                    }
+                  >
+                    {["ADMIN", "MANAGER", "EMPLOYEE"].map((x) => (
+                      <option key={x}>{x}</option>
+                    ))}
+                  </select>
+                </td>
+                <td>
+                  <Badge
+                    label={m.status}
+                    variant={m.status === "ACTIVE" ? "success" : "neutral"}
+                  />
+                </td>
+                <td>
+                  <Button
+                    variant="destructive"
+                    onClick={() =>
+                      confirm("Remove this membership?") &&
+                      void removeMember(m.membershipId)
+                        .then(load)
+                        .catch((x) => setError((x as Error).message))
+                    }
+                  >
+                    Remove
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        ) : (
+          <Empty>No organization members.</Empty>
+        )}
+      </Page>
+    );
+  if (section === "invitations")
+    return (
+      <Page title="Invitations">
+        <form
+          className="toolbar"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            void createInvitation(email, role)
+              .then(() => {
+                setEmail("");
+                return load();
+              })
+              .catch((x) =>
+                setError(x instanceof Error ? x.message : "Failed"),
+              );
+          }}
+        >
+          <input
+            type="email"
+            required
+            placeholder="person@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <select value={role} onChange={(e) => setRole(e.target.value)}>
+            {["ADMIN", "MANAGER", "EMPLOYEE"].map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+          <Button variant="primary">Invite</Button>
+        </form>
+        {error && <Notice>{error}</Notice>}
+        <Table headers={["Email", "Role", "Status", "Expires", "Action"]}>
+          {(data as Invitation[]).map((i) => (
+            <tr key={i.invitationId}>
+              <td>{i.email}</td>
+              <td>{i.role}</td>
+              <td>
+                <Badge label={i.status} />
+              </td>
+              <td>{new Date(i.expiresAt).toLocaleDateString()}</td>
+              <td>
+                <Button
+                  onClick={() =>
+                    void revokeInvitation(i.invitationId).then(load)
+                  }
+                >
+                  Revoke
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      </Page>
+    );
+  if (section === "entitlements")
+    return (
+      <Page
+        title="Entitlements"
+        description="Effective plans and capabilities returned by Platform."
+      >
+        {(data as EffectiveEntitlements).length === 0 ? (
+          <Empty>No active entitlements.</Empty>
+        ) : (
+          (data as EffectiveEntitlements).map((p) => (
+            <article className="card" key={p.productKey}>
+              <h3>
+                {p.productKey} · {p.planName}
+              </h3>
+              {p.entitlements.map((e) => (
+                <p key={e.key}>
+                  <code>{e.key}</code>:{" "}
+                  {String(e.booleanValue ?? e.integerValue)}
+                </p>
+              ))}
+            </article>
+          ))
+        )}
+      </Page>
+    );
+  const org = data as Organization;
+  return (
+    <Page title={section === "settings" ? "Settings" : "Organization"}>
+      <form
+        className="form-grid"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          const values = Object.fromEntries(
+            new FormData(e.currentTarget as HTMLFormElement),
+          );
+          void (
+            section === "settings"
+              ? updateSettings(values)
+              : updateOrganization(values)
+          )
+            .then(load)
+            .catch((x) => setError(x instanceof Error ? x.message : "Failed"));
+        }}
+      >
+        {section === "settings" ? (
+          <>
+            {field("timeZone", org.settings.timeZone)}
+            {field("locale", org.settings.locale)}
+            {field("country", org.settings.country)}
+            {field("currency", org.settings.currency)}
+            {field(
+              "brandingDisplayName",
+              org.settings.brandingDisplayName ?? "",
+            )}
+          </>
+        ) : (
+          <>
+            {field("name", org.name)}
+            {field("legalName", org.legalName ?? "")}
+            {field("primaryEmail", org.primaryEmail, "email")}
+            {field("primaryPhone", org.primaryPhone ?? "")}
+            {field("industry", org.industry ?? "")}
+            {field("website", org.website ?? "")}
+          </>
+        )}
+        <Button variant="primary">Save</Button>
+      </form>
+      {error && <Notice>{error}</Notice>}
+    </Page>
+  );
+}
+const field = (name: string, value: string, type = "text") => (
+  <label key={name}>
+    {name.replaceAll(/([A-Z])/g, " $1")}
+    <input name={name} type={type} defaultValue={value} />
+  </label>
+);
+const title = (s: string) => s[0].toUpperCase() + s.slice(1);
+export function Table({
+  headers,
+  children,
+}: {
+  headers: string[];
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {headers.map((h) => (
+              <th key={h}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}

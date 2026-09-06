@@ -1,9 +1,9 @@
 package com.lexorion.platform.user.controller;
 
-import com.lexorion.platform.user.dto.CreateUserRequest;
-import com.lexorion.platform.user.dto.UpdateUserRequest;
-import com.lexorion.platform.user.dto.UserResponse;
-import com.lexorion.platform.user.service.UserService;
+import com.lexorion.core.user.dto.CreateUserRequest;
+import com.lexorion.core.user.dto.UpdateUserRequest;
+import com.lexorion.core.user.dto.UserResponse;
+import com.lexorion.core.user.service.UserService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;

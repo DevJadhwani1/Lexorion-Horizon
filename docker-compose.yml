@@ -32,8 +32,10 @@ services:
       PLATFORM_PORT: 9002
       DB_NAME: ${PLATFORM_DB_NAME:-platform_db}
       JWT_SECRET:
+      WORKFORCE_SERVICE_TOKEN:
+      PAYROLL_SERVICE_TOKEN:
     extra_hosts: ["host.docker.internal:host-gateway"]
-    ports: ["9002:9002"]
+    expose: ["9002"]
     networks: [horizon]
     depends_on:
       eureka: {condition: service_healthy}
@@ -48,8 +50,10 @@ services:
       WORKFORCE_PORT: 9004
       DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
       LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
+      WORKFORCE_SERVICE_TOKEN:
+      PAYROLL_SERVICE_TOKEN:
     extra_hosts: ["host.docker.internal:host-gateway"]
-    ports: ["9004:9004"]
+    expose: ["9004"]
     networks: [horizon]
     depends_on:
       eureka: {condition: service_healthy}
@@ -66,8 +70,9 @@ services:
       DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
       LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
       LEXORION_WORKFORCE_SERVICE_URL: http://workforce:9004
+      PAYROLL_SERVICE_TOKEN:
     extra_hosts: ["host.docker.internal:host-gateway"]
-    ports: ["9005:9005"]
+    expose: ["9005"]
     networks: [horizon]
     depends_on:
       eureka: {condition: service_healthy}
@@ -84,7 +89,7 @@ services:
       FINANCE_PORT: 9006
       DB_NAME: ${FINANCE_DB_NAME:-lexorion_finance}
     extra_hosts: ["host.docker.internal:host-gateway"]
-    ports: ["9006:9006"]
+    expose: ["9006"]
     networks: [horizon]
     depends_on:
       eureka: {condition: service_healthy}
@@ -107,7 +112,7 @@ services:
 
   frontend:
     build: ./frontend
-    ports: ["9000:9000"]
+    ports: ["80:9000", "9000:9000"]
     networks: [horizon]
     depends_on:
       gateway: {condition: service_healthy}

@@ -1,0 +1,10 @@
+package com.lexorion.payroll.api;
+import com.lexorion.payroll.domain.*;import jakarta.validation.Valid;import jakarta.validation.constraints.*;import java.math.BigDecimal;import java.time.*;import java.util.*;
+public final class SalaryTemplateDtos{private SalaryTemplateDtos(){}
+ public record TemplateComponentRequest(@NotBlank String componentKey,@NotNull@DecimalMin("0.0000")@Digits(integer=15,fraction=4)BigDecimal value,@Null UUID componentId,@Null UUID workspaceId){}
+ public record CreateSalaryTemplate(@NotBlank String templateKey,@NotBlank@Size(max=150)String displayName,@Size(max=500)String description,@NotBlank@Pattern(regexp="^[A-Z]{3}$")String currency,@NotNull PayFrequency payFrequency,@NotNull SalaryTemplateStatus status,@NotNull LocalDate effectiveFrom,LocalDate effectiveTo,@NotEmpty List<@Valid TemplateComponentRequest>components,@Null UUID id,@Null UUID organizationId,@Null UUID workspaceId,@Null UUID userId,@Null String role){}
+ public record UpdateSalaryTemplate(@Size(min=1,max=150)String displayName,@Size(max=500)String description,String currency,PayFrequency payFrequency,SalaryTemplateStatus status,LocalDate effectiveFrom,LocalDate effectiveTo,List<@Valid TemplateComponentRequest>components,@Null UUID id,@Null UUID organizationId,@Null UUID workspaceId,@Null UUID userId,@Null String role){}
+ public record AssignSalaryTemplate(@NotBlank String profileKey,@NotNull @Min(1) Integer versionNumber,@NotNull LocalDate effectiveFrom,LocalDate effectiveTo,@Null UUID id,@Null UUID employeeId,@Null UUID templateId,@Null UUID workspaceId,@Null UUID organizationId,@Null UUID userId,@Null String role){}
+ public record TemplateComponentResponse(String componentKey,String displayName,ComponentCategory category,AmountType amountType,OccurrenceType occurrenceType,Taxability taxability,BigDecimal value){}
+ public record SalaryTemplateResponse(String templateKey,String displayName,String description,String currency,PayFrequency payFrequency,SalaryTemplateStatus status,LocalDate effectiveFrom,LocalDate effectiveTo,List<TemplateComponentResponse>components,Instant createdAt,Instant updatedAt){}
+}

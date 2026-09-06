@@ -1,0 +1,6 @@
+package com.lexorion.payroll.repository;
+import com.lexorion.payroll.domain.*;import java.time.LocalDate;import java.util.*;import org.springframework.data.jpa.repository.*;import org.springframework.data.repository.query.Param;
+public interface PayrollLedgerEntryRepository extends JpaRepository<PayrollLedgerEntry,UUID>{
+ boolean existsByWorkspaceIdAndPayRunId(UUID workspaceId,UUID payRunId);
+ @Query("select e from PayrollLedgerEntry e where e.workspace.id=:workspaceId and e.payRun.status=com.lexorion.payroll.domain.PayRunStatus.FINALIZED and e.status=com.lexorion.payroll.domain.PayrollLedgerEntryStatus.FINALIZED and e.payrollEmployee.employeeCode=:employeeCode and (:fromDate is null or e.periodEnd>=:fromDate) and (:toDate is null or e.periodStart<=:toDate) and (:payRunKey is null or e.payRun.payRunKey=:payRunKey) and (:type is null or e.type=:type) order by e.periodEnd desc,e.payRun.payRunKey desc,e.createdAt asc,e.sourceReference asc")List<PayrollLedgerEntry>search(@Param("workspaceId")UUID workspaceId,@Param("employeeCode")String employeeCode,@Param("fromDate")LocalDate fromDate,@Param("toDate")LocalDate toDate,@Param("payRunKey")String payRunKey,@Param("type")PayrollLedgerEntryType type);
+}

@@ -19,7 +19,7 @@ public class InternalWorkforceVerificationController {
     }
 
     @GetMapping("/internal/workforce/employees/{employeeCode}/verification")
-    @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "[INTERNAL] Verify a workspace-scoped Workforce employee for Payroll",
             description = "Internal service boundary. Revalidates forwarded user authority with Platform and returns only employeeCode, existence, and Workforce employment status.")
     public VerificationResponse verify(@PathVariable String employeeCode,

@@ -186,7 +186,7 @@ PostgreSQL is an external prerequisite and is not a Docker Compose service. Comp
 
 ## Security model
 
-Platform implements JWT authentication. Authenticated requests carry organization/tenant and workspace context, while role-based rules use the `OWNER`, `ADMIN`, `MANAGER`, and `MEMBER` roles. Tenant- and workspace-scoped authorization prevents one context from being treated as another.
+Platform implements JWT authentication. Authenticated requests carry organization/tenant and workspace context, while role-based rules use the `ADMIN`, `ADMIN`, `MANAGER`, and `EMPLOYEE` roles. Tenant- and workspace-scoped authorization prevents one context from being treated as another.
 
 Workforce and Payroll validate trusted authority through Platform, and Payroll also verifies employees through Workforce. Trusted organization, workspace, user, and role context is established and validated by backend services; client-supplied trusted-authority headers are not an authority mechanism.
 

@@ -22,6 +22,7 @@ public class CalculationLine extends Auditable {
     @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16) private OccurrenceType occurrence;
     @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16) private Taxability taxability;
     @Column(name = "configured_value", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal configuredValue;
+    @Column(name = "percentage_basis", updatable = false, length = 64) private String percentageBasis;
     @Column(name = "calculated_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal calculatedAmount;
     @Column(nullable = false, updatable = false, length = 3) private String currency;
 }

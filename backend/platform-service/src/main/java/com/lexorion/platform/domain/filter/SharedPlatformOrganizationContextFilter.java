@@ -36,6 +36,11 @@ public class SharedPlatformOrganizationContextFilter extends OncePerRequestFilte
       this.sharedPlatformHostname = hostnameNormalizer.normalize(properties.getSharedPlatformHostname());
    }
 
+   @Override
+   protected boolean shouldNotFilter(HttpServletRequest request) {
+      return request.getRequestURI().startsWith("/api/core/");
+   }
+
    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
       boolean establishedSharedContext = false;
 

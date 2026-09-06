@@ -35,8 +35,9 @@ class HttpWorkforceEmployeeClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         requests = new AuthorityRequestContext();
         requests.set(new AuthorityRequestContext.Credentials("Bearer owner", "horizon.lexorion.in", "alpha"));
-        client = new HttpWorkforceEmployeeClient(builder, "http://workforce-service", requests);
-        context = new TrustedPayrollContext(WORKSPACE, "a", ORGANIZATION, "alpha", "OWNER", USER);
+        client = new HttpWorkforceEmployeeClient(builder, "http://workforce-service", requests,
+                "test-payroll-service-token-32-bytes-minimum");
+        context = new TrustedPayrollContext(WORKSPACE, "a", ORGANIZATION, "alpha", "ADMIN", USER);
     }
 
     @AfterEach void clear() { requests.clear(); }
@@ -45,12 +46,13 @@ class HttpWorkforceEmployeeClientTest {
     void sendsOnlyTrustedAuthorityAndMapsMinimumResponse() {
         server.expect(once(), requestTo("http://workforce-service/internal/workforce/employees/EMP-1/verification"))
                 .andExpect(header("Authorization", "Bearer owner"))
+                .andExpect(header("X-Lexorion-Service-Token", "test-payroll-service-token-32-bytes-minimum"))
                 .andExpect(header("X-Lexorion-Workspace", "a"))
                 .andExpect(header("X-Lexorion-Organization", "alpha"))
                 .andExpect(header("X-Lexorion-Trusted-Organization-Id", ORGANIZATION.toString()))
                 .andExpect(header("X-Lexorion-Trusted-Workspace-Id", WORKSPACE.toString()))
                 .andExpect(header("X-Lexorion-Trusted-User-Id", USER.toString()))
-                .andExpect(header("X-Lexorion-Trusted-Role", "OWNER"))
+                .andExpect(header("X-Lexorion-Trusted-Role", "ADMIN"))
                 .andRespond(withSuccess("{\"employeeCode\":\"EMP-1\",\"exists\":true,\"employmentStatus\":\"ACTIVE\"}", MediaType.APPLICATION_JSON));
 
         var result = client.verify("EMP-1", context);

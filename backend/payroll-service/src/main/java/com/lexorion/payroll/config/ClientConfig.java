@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.slf4j.MDC;
 
 @Configuration
 public class ClientConfig {
@@ -25,6 +26,10 @@ public class ClientConfig {
         SimpleClientHttpRequestFactory requests = new SimpleClientHttpRequestFactory();
         requests.setConnectTimeout(connectTimeout);
         requests.setReadTimeout(readTimeout);
-        return RestClient.builder().requestFactory(requests);
+        return RestClient.builder().requestFactory(requests).requestInterceptor((request, body, execution) -> {
+            String correlationId = MDC.get("correlationId");
+            if (correlationId != null) request.getHeaders().set("X-Correlation-ID", correlationId);
+            return execution.execute(request, body);
+        });
     }
 }

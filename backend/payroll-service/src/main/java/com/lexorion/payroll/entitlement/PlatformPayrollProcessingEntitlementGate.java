@@ -17,12 +17,15 @@ import org.springframework.web.client.RestClientException;
 public class PlatformPayrollProcessingEntitlementGate implements PayrollProcessingEntitlementGate {
     private final RestClient client;
     private final AuthorityRequestContext requests;
+    private final String serviceToken;
 
     public PlatformPayrollProcessingEntitlementGate(@Qualifier("serviceRestClientBuilder") RestClient.Builder builder,
             @Value("${lexorion.platform-service-url}") String baseUrl,
-            AuthorityRequestContext requests) {
+            AuthorityRequestContext requests,
+            @Value("${lexorion.service-auth.payroll-token}") String serviceToken) {
         this.client = builder.baseUrl(baseUrl).build();
         this.requests = requests;
+        this.serviceToken = serviceToken;
     }
 
     @Override
@@ -34,6 +37,7 @@ public class PlatformPayrollProcessingEntitlementGate implements PayrollProcessi
                     .uri("/internal/payroll/workspaces/{key}/capabilities/payroll-processing", context.workspaceKey())
                     .header(HttpHeaders.AUTHORIZATION, credentials.bearerToken())
                     .header(HttpHeaders.HOST, credentials.host())
+                    .header("X-Lexorion-Service-Token", serviceToken)
                     .header("X-Lexorion-Organization", context.organizationSlug())
                     .exchange((request, result) -> map(result.getStatusCode(), result.bodyTo(CapabilityResponse.class)));
             if (response == null || !"payroll.processing".equals(response.capability()) || !response.allowed()) {

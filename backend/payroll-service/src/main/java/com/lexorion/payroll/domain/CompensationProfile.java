@@ -25,6 +25,8 @@ public class CompensationProfile extends Auditable {
     @Column(name = "effective_to", updatable = false) private LocalDate effectiveTo;
     @Enumerated(EnumType.STRING) @Column(name = "profile_status", nullable = false, updatable = false, length = 16)
     private CompensationProfileStatus status;
+    @Column(name = "source_template_key", updatable = false, length = 64) private String sourceTemplateKey;
+    @Column(name = "source_template_version", updatable = false) private Integer sourceTemplateVersion;
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = false)
     @OrderBy("id ASC") private List<ComponentAssignment> assignments = new ArrayList<>();
 }

@@ -26,6 +26,7 @@ class ApiGatewayApplicationTests {
         assertRoute(1, "/api/tenant/**", "lb://PLATFORM-SERVICE");
         assertRoute(2, "/api/workforce/**", "lb://WORKFORCE-SERVICE");
         assertRoute(3, "/api/payroll/**", "lb://PAYROLL-SERVICE");
+        assertRoute(5, "/api/core/**", "lb://PLATFORM-SERVICE");
         assertRoute(4, "/api/finance/**", "lb://FINANCE-SERVICE");
     }
 
@@ -39,6 +40,20 @@ class ApiGatewayApplicationTests {
                 .isEqualTo("RemoveRequestHeader=X-Lexorion-Trusted-User-Id");
         assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.default-filters[3]"))
                 .isEqualTo("RemoveRequestHeader=X-Lexorion-Trusted-Role");
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.default-filters[4]"))
+                .isEqualTo("RemoveRequestHeader=X-Lexorion-Service-Token");
+    }
+
+    @Test
+    void contextAwareRoutesPreserveTheOriginalRequestHost() {
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[0].filters[0]"))
+                .isEqualTo("PreserveHostHeader");
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[1].filters[0]"))
+                .isEqualTo("PreserveHostHeader");
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[2].filters[0]"))
+                .isEqualTo("PreserveHostHeader");
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[3].filters[0]"))
+                .isEqualTo("PreserveHostHeader");
     }
 
     private void assertRoute(int index, String path, String uri) {

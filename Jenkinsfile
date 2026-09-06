@@ -74,6 +74,14 @@ pipeline {
             }
         }
 
+        stage('Frontend Dependency Audit') {
+            steps {
+                dir('frontend') {
+                    sh 'npm audit --omit=dev --audit-level=high'
+                }
+            }
+        }
+
         stage('Frontend Typecheck') {
             steps {
                 dir('frontend') {

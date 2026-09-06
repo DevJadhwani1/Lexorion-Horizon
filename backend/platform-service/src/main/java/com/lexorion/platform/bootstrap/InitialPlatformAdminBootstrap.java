@@ -1,12 +1,12 @@
 package com.lexorion.platform.bootstrap;
 
 import com.lexorion.platform.platformaccess.dto.CreatePlatformAccessRequest;
-import com.lexorion.platform.platformaccess.entity.PlatformRole;
-import com.lexorion.platform.platformaccess.repository.PlatformAccessRepository;
+import com.lexorion.core.platformaccess.entity.PlatformRole;
+import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
 import com.lexorion.platform.platformaccess.service.PlatformAccessService;
-import com.lexorion.platform.user.dto.CreateUserRequest;
-import com.lexorion.platform.user.dto.UserResponse;
-import com.lexorion.platform.user.service.UserService;
+import com.lexorion.core.user.dto.CreateUserRequest;
+import com.lexorion.core.user.dto.UserResponse;
+import com.lexorion.core.user.service.UserService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Comparator;

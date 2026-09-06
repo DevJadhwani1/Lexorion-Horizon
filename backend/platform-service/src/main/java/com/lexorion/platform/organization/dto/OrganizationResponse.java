@@ -1,7 +1,7 @@
 package com.lexorion.platform.organization.dto;
 
-import com.lexorion.platform.organization.entity.Organization;
-import com.lexorion.platform.organization.entity.OrganizationStatus;
+import com.lexorion.core.organization.entity.Organization;
+import com.lexorion.core.organization.entity.OrganizationStatus;
 import java.time.Instant;
 import java.util.UUID;
 
