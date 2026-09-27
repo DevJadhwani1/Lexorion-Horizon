@@ -261,8 +261,10 @@ function EmployeeProfile({
               setError("");
               const form = new FormData(event.currentTarget as HTMLFormElement);
               const values: Record<string, unknown> = Object.fromEntries(Array.from(form.entries()).filter(([key, value]) =>
-                value !== "" || key === "middleName" || key === "phone",
+                value !== "" || key === "middleName" || key === "phone" || key === "departmentKey" || key === "designationKey",
               ));
+              if (form.get("departmentKey") === "") values.departmentKey = null;
+              if (form.get("designationKey") === "") values.designationKey = null;
               if (form.get("reportingManagerEmployeeCode") === "") values.reportingManagerEmployeeCode = null;
               void updateEmployee(employee.employeeCode, values).then(reload)
                 .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to update employee"));
