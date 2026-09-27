@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/types";
 import {
   addPayRunEmployee,
@@ -238,6 +238,7 @@ function PayrollDashboard({ employeeCount }: { employeeCount: number }) {
 }
 function EmployeeForm({ reload }: { reload(): Promise<void> }) {
   const [searchParams] = useSearchParams(), [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
   const initialCode = searchParams.get("employee") ?? "";
   return (
     <details className="card">
@@ -250,7 +251,10 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
           const b = Object.fromEntries(
             new FormData(e.currentTarget as HTMLFormElement),
           );
-          void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(reload).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to configure Payroll employee")).finally(() => setBusy(false));
+          void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(async () => {
+            await reload();
+            navigate(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`);
+          }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to configure Payroll employee")).finally(() => setBusy(false));
         }}
       >
         {error && <Notice>{error}</Notice>}
