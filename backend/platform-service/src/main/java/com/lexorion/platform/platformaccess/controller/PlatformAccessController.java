@@ -1,10 +1,10 @@
 package com.lexorion.platform.platformaccess.controller;
 
-import com.lexorion.platform.platformaccess.dto.CreatePlatformAccessRequest;
-import com.lexorion.platform.platformaccess.dto.PlatformAccessResponse;
-import com.lexorion.platform.platformaccess.dto.UpdatePlatformAccessStatusRequest;
-import com.lexorion.platform.platformaccess.dto.UpdatePlatformRoleRequest;
-import com.lexorion.platform.platformaccess.service.PlatformAccessService;
+import com.lexorion.core.platformaccess.dto.CreatePlatformAccessRequest;
+import com.lexorion.core.platformaccess.dto.PlatformAccessResponse;
+import com.lexorion.core.platformaccess.dto.UpdatePlatformAccessStatusRequest;
+import com.lexorion.core.platformaccess.dto.UpdatePlatformRoleRequest;
+import com.lexorion.core.platformaccess.service.PlatformAccessService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;

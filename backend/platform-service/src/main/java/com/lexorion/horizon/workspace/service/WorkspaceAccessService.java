@@ -46,6 +46,7 @@ public class WorkspaceAccessService {
     public OrganizationWorkspace requireAccessibleWorkspace(String workspaceKey) {
         TenantAccessContext context = contextHolder.get()
                 .orElseThrow(() -> new AccessDeniedException("Active tenant membership is required"));
+        requireActiveMembership(context);
         coreAccess.requireAccess(context.userId(), context.organizationId(), "horizon");
         OrganizationWorkspace workspace = repository.findTenantWorkspace(context.organizationId(), workspaceKey)
                 .orElseThrow(() -> new AccessDeniedException("Workspace is not accessible"));
@@ -57,8 +58,17 @@ public class WorkspaceAccessService {
     @Transactional(readOnly = true)
     public OrganizationWorkspace requireAccessibleWorkspace(String key, String productKey) {
         var workspace = requireAccessibleWorkspace(key);
+        if ("workforce".equals(productKey) || "payroll".equals(productKey)) {
+            if (!entitlementService.hasEntitlement(workspace, productKey + ".enabled"))
+                throw new com.lexorion.horizon.entitlement.exception.EntitlementDeniedException("Product entitlement is disabled");
+            return workspace;
+        }
         entitlementService.requireEffectivePlan(workspace, productKey);
         return workspace;
+    }
+    private void requireActiveMembership(TenantAccessContext context) {
+        if (context.membershipStatus() != com.lexorion.horizon.membership.entity.MembershipStatus.ACTIVE)
+            throw new AccessDeniedException("Active organization membership is required");
     }
     private WorkspaceResponse response(OrganizationWorkspace workspace) {
         var enabled = workspace.availableProducts().stream().filter(p -> productAccessible(workspace, p.getKey()))
@@ -67,11 +77,17 @@ public class WorkspaceAccessService {
         return new WorkspaceResponse(workspace.getKey(), workspace.getDisplayName(), workspace.getStatus(), enabled.getFirst().key(), enabled.getFirst().displayName(), enabled);
     }
     private boolean productAccessible(OrganizationWorkspace workspace, String productKey) {
+        if ("workforce".equals(productKey) || "payroll".equals(productKey))
+            return entitlementService.hasEntitlement(workspace, productKey + ".enabled");
         try { entitlementService.requireEffectivePlan(workspace, productKey); return true; }
         catch (AccessDeniedException denied) { return false; }
     }
 
     private boolean isAccessible(OrganizationWorkspace workspace) {
-        return workspace.getStatus() == WorkspaceStatus.ACTIVE && workspace.availableProducts().stream().anyMatch(p -> productAccessible(workspace, p.getKey()));
+        return workspace.getStatus() == WorkspaceStatus.ACTIVE && workspace.availableProducts().stream().anyMatch(p -> {
+            if (p.getStatus() != ProductStatus.ACTIVE) return false;
+            try { return productAccessible(workspace, p.getKey()); }
+            catch (AccessDeniedException denied) { return false; }
+        });
     }
 }

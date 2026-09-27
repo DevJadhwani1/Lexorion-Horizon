@@ -46,7 +46,7 @@ public class CurrentUserService {
       readOnly = true
    )
    public List<CurrentUserOrganizationResponse> getOrganizations(UUID authenticatedUserId) {
-      return this.membershipRepository.findForUserByStatusOrdered(authenticatedUserId, MembershipStatus.ACTIVE).stream().map((membership) -> {
+      return this.membershipRepository.findForUserByStatusOrdered(authenticatedUserId, MembershipStatus.ACTIVE).stream().filter(membership -> membership.getRole() != null).map((membership) -> {
          Organization organization = membership.getOrganization();
          return new CurrentUserOrganizationResponse(organization.getId(), organization.getName(), organization.getSlug(), membership.getRole(), membership.getStatus(), organization.getStatus());
       }).toList();

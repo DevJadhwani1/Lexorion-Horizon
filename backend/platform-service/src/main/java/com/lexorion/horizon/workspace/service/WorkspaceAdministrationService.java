@@ -118,7 +118,7 @@ public class WorkspaceAdministrationService {
     }
     private void requireCapacity(TenantAccessContext context, String productKey) {
         long active = workspaceRepository.findTenantWorkspaces(context.organizationId()).stream().filter(w -> w.getStatus() == WorkspaceStatus.ACTIVE).count();
-        entitlements.requireWorkspaceCapacity(productKey, active + 1);
+        entitlements.requireWorkspaceCapacity(context.organizationId(), active + 1);
     }
 
     private Organization lockMutableOrganization(TenantAccessContext context) {

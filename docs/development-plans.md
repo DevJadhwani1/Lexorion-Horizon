@@ -15,4 +15,4 @@ Locked specification as of 2026-09-06. This supersedes earlier development plan 
 
 ## Implementation status
 
-This document records the locked development specification. The current implementation still seeds product-specific plans and assigns plans per product. Aligning the catalog, assignments, and employee/workspace entitlement enforcement with this specification remains pending; recording this decision does not change runtime behavior.
+The runtime catalog now seeds only the platform-owned Starter and Business plans, and organizations hold one commercial plan assignment. Workforce and Payroll availability plus employee and workspace limits derive from that assignment. Existing product-specific assignment rows are retained in the legacy archive table by migration `V8__organization_plan_assignment.sql`. PostgreSQL V1–V8 clean and V7 upgrade paths passed both the Testcontainers migration test and `LocalPostgresMigrationTest` against temporary PostgreSQL databases.

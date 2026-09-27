@@ -1,6 +1,6 @@
-package com.lexorion.platform.organization.service;
+package com.lexorion.core.organization.service;
 
-import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
+import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.Locale;

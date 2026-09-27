@@ -1,4 +1,4 @@
-package com.lexorion.platform.organization.exception;
+package com.lexorion.core.organization.exception;
 
 public class InvalidTenantSlugException extends RuntimeException {
    public InvalidTenantSlugException(String message) {

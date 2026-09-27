@@ -1,11 +1,11 @@
-package com.lexorion.platform.platformaccess.service;
+package com.lexorion.core.platformaccess.service;
 
 import com.lexorion.core.exception.DuplicateResourceException;
 import com.lexorion.core.exception.ResourceNotFoundException;
-import com.lexorion.platform.platformaccess.dto.CreatePlatformAccessRequest;
-import com.lexorion.platform.platformaccess.dto.PlatformAccessResponse;
-import com.lexorion.platform.platformaccess.dto.UpdatePlatformAccessStatusRequest;
-import com.lexorion.platform.platformaccess.dto.UpdatePlatformRoleRequest;
+import com.lexorion.core.platformaccess.dto.CreatePlatformAccessRequest;
+import com.lexorion.core.platformaccess.dto.PlatformAccessResponse;
+import com.lexorion.core.platformaccess.dto.UpdatePlatformAccessStatusRequest;
+import com.lexorion.core.platformaccess.dto.UpdatePlatformRoleRequest;
 import com.lexorion.core.platformaccess.entity.PlatformAccess;
 import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
 import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;

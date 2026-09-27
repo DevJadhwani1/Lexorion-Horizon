@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Order(20)
 public class ProductCatalogSeeder implements ApplicationRunner {
-   private static final List<Seed> INITIAL_CATALOG = List.of(new Seed("horizon", "Horizon", "Lexorion's core organization and administration platform."), new Seed("workforce", "Workforce", "People and workforce operations."), new Seed("payroll", "Payroll", "Payroll processing and administration."), new Seed("finance", "Finance", "Finance operations and reporting."));
+   private static final List<Seed> INITIAL_CATALOG = List.of(new Seed("horizon", "Horizon", "Horizon administration module (legacy module catalog)."), new Seed("workforce", "Workforce", "People and workforce operations."), new Seed("payroll", "Payroll", "Payroll processing and administration."), new Seed("finance", "Finance", "Finance operations and reporting."));
    private final ProductRepository repository;
 
    public ProductCatalogSeeder(ProductRepository repository) {

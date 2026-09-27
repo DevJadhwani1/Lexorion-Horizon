@@ -1,18 +1,26 @@
 import { ApiError } from "./types";
-import { session } from "./session";
+import { session, usesSharedSessionCookie } from "./session";
 
 export interface RequestOptions extends Omit<RequestInit, "body"> { body?: unknown; authenticated?: boolean; organizationScoped?: boolean; workspaceScoped?: boolean; retryOnUnauthorized?: boolean; }
-interface TokenResponse { accessToken: string; refreshToken: string; }
+interface TokenResponse { accessToken: string; refreshToken: string | null; }
 let refreshPromise: Promise<boolean> | null = null;
+const authRequest = (path: string) => /^\/api\/(core|platform)\/auth\/(login|refresh|logout)$/.test(path);
 const reportError=(error:ApiError)=>window.dispatchEvent(new CustomEvent("lexorion:api-error",{detail:error.message}));
 
 async function refreshAccess(): Promise<boolean> {
-  const refreshToken = session.refresh(); if (!refreshToken) return false;
+  const refreshToken = session.refresh(); if (!refreshToken && !usesSharedSessionCookie()) return false;
   try {
-    const response = await fetch("/api/platform/auth/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ refreshToken }) });
-    if (!response.ok) return false;
-    const tokens = await response.json() as TokenResponse; session.setTokens(tokens.accessToken, tokens.refreshToken); return true;
-  } catch { return false; }
+    const response = await fetch("/api/core/auth/refresh", { method: "POST", credentials: usesSharedSessionCookie() ? "include" : "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(usesSharedSessionCookie() ? {} : { refreshToken }) });
+    if (!response.ok) {
+      if (response.status >= 500) throw new ApiError(response.status, "The authentication service is temporarily unavailable.");
+      return false;
+    }
+    const tokens = await response.json() as TokenResponse; session.setTokens(tokens.accessToken, tokens.refreshToken ?? ""); return true;
+  } catch (error) {
+    if ((error as Error).name === "AbortError") throw error;
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(0, "The authentication service is unavailable. Try again.");
+  }
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -20,15 +28,27 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const headers = new Headers(init.headers);
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (authenticated && session.access()) headers.set("Authorization", `Bearer ${session.access()}`);
+  if (authRequest(path) && usesSharedSessionCookie()) headers.delete("Authorization");
   if (organizationScoped && session.organization()) headers.set("X-Lexorion-Organization", session.organization()!);
   if (workspaceScoped && session.workspace()) headers.set("X-Lexorion-Workspace", session.workspace()!);
   let response: Response;
-  try { response = await fetch(path, { ...init, headers, body: body === undefined ? undefined : JSON.stringify(body) }); }
-  catch (error) { if ((error as Error).name === "AbortError") throw error; const apiError=new ApiError(0,"The Horizon API is unavailable. Check the Gateway and try again.");reportError(apiError);throw apiError; }
+  const requestBody = body === undefined ? undefined : JSON.stringify(body);
+  const request = () => fetch(path, { ...init, credentials: usesSharedSessionCookie() ? "include" : init.credentials, headers, body: requestBody });
+  try { response = await request(); }
+  catch (error) { if ((error as Error).name === "AbortError") throw error; const apiError=new ApiError(0,"The Lexorion API is unavailable. Check the Gateway and try again.");reportError(apiError);throw apiError; }
   if (response.status === 401 && authenticated && retryOnUnauthorized) {
     refreshPromise ??= refreshAccess().finally(() => { refreshPromise = null; });
-    if (await refreshPromise) return apiRequest<T>(path, { ...options, retryOnUnauthorized: false });
+    if (await refreshPromise) {
+      const refreshedHeaders = new Headers(init.headers);
+      if (body !== undefined) refreshedHeaders.set("Content-Type", "application/json");
+      if (session.access()) refreshedHeaders.set("Authorization", `Bearer ${session.access()}`);
+      if (authRequest(path) && usesSharedSessionCookie()) refreshedHeaders.delete("Authorization");
+      if (organizationScoped && session.organization()) refreshedHeaders.set("X-Lexorion-Organization", session.organization()!);
+      if (workspaceScoped && session.workspace()) refreshedHeaders.set("X-Lexorion-Workspace", session.workspace()!);
+      response = await fetch(path, { ...init, credentials: usesSharedSessionCookie() ? "include" : init.credentials, headers: refreshedHeaders, body: requestBody });
+    } else {
     session.clearTokens(); window.dispatchEvent(new Event("lexorion:session-expired"));
+    }
   }
   if (!response.ok) {
     let details: unknown; try { details = await response.json(); } catch { details = undefined; }
@@ -36,6 +56,6 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     const message = typeof details === "object" && details && "message" in details ? String((details as {message: unknown}).message) : fallback[response.status]??`Request failed (${response.status}).`;
     const apiError=new ApiError(response.status,message,details);reportError(apiError);throw apiError;
   }
-  if (response.status === 204) return undefined as T;
+  if (response.status === 204 || response.headers.get("content-length") === "0") return undefined as T;
   return response.json() as Promise<T>;
 }

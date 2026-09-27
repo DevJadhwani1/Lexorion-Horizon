@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface OrganizationWorkspaceRepository extends JpaRepository<OrganizationWorkspace, UUID> {
+    @Query("select distinct workspace.id from OrganizationWorkspace workspace join workspace.products product where workspace.organization.id = :organizationId and product.key = 'workforce'")
+    List<UUID> findWorkforceWorkspaceIds(@Param("organizationId") UUID organizationId);
+
     boolean existsByOrganizationIdAndKey(UUID organizationId, String key);
 
     @Query("""

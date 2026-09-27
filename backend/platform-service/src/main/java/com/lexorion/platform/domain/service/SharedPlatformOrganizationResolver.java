@@ -10,7 +10,7 @@ import com.lexorion.horizon.membership.entity.MembershipStatus;
 import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
 import com.lexorion.core.organization.entity.Organization;
 import com.lexorion.core.organization.repository.OrganizationRepository;
-import com.lexorion.platform.organization.service.TenantSlugService;
+import com.lexorion.core.organization.service.TenantSlugService;
 import com.lexorion.platform.security.AuthenticatedUser;
 import java.util.Optional;
 import java.util.UUID;

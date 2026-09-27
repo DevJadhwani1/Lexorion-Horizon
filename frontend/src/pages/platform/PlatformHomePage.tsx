@@ -59,7 +59,7 @@ export function PlatformHomePage() {
           {state("products", <ul className="platform-record-list">{data.products?.slice(0, 5).map(product => <li key={product.key}><div><strong>{product.displayName}</strong><small>{product.description || product.key}</small></div><StatusBadge value={product.status} /></li>)}</ul>, !data.products?.length)}
         </section>
         <section className="platform-section"><header><div><span className="eyebrow">Configuration</span><h2>Plans</h2></div><Link className="platform-section-link" to={appPath("/app/platform/plans")}>View plans →</Link></header>
-          {state("plans", <ul className="platform-record-list">{data.plans?.slice(0, 5).map(plan => <li key={plan.key}><div><strong>{plan.displayName}</strong><small>{plan.productKey ? data.products?.find(product => product.key === plan.productKey)?.displayName ?? plan.productKey : "No product specified"} · {plan.entitlements.length} entitlements</small></div><StatusBadge value={plan.status} /></li>)}</ul>, !data.plans?.length)}
+          {state("plans", <ul className="platform-record-list">{data.plans?.slice(0, 5).map(plan => <li key={plan.key}><div><strong>{plan.displayName}</strong><small>{plan.productKey ? data.products?.find(product => product.key === plan.productKey)?.displayName ?? plan.productKey : "Platform owned · organization plan"} · {plan.entitlements.length} entitlements</small></div><StatusBadge value={plan.status} /></li>)}</ul>, !data.plans?.length)}
         </section>
       </div>
     </div>

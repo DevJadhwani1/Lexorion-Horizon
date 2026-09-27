@@ -24,11 +24,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrganizationController {
    private final OrganizationService organizationService;
    private final com.lexorion.horizon.entitlement.service.PlanAssignmentService assignments;
-   private final com.lexorion.horizon.entitlement.service.EntitlementService entitlements;
 
-   public OrganizationController(OrganizationService organizationService, com.lexorion.horizon.entitlement.service.PlanAssignmentService assignments, com.lexorion.horizon.entitlement.service.EntitlementService entitlements) {
+   public OrganizationController(OrganizationService organizationService, com.lexorion.horizon.entitlement.service.PlanAssignmentService assignments) {
       this.organizationService = organizationService;
-      this.assignments = assignments; this.entitlements = entitlements;
+      this.assignments = assignments;
    }
 
    @PostMapping
@@ -54,7 +53,7 @@ public class OrganizationController {
    @org.springframework.transaction.annotation.Transactional
    @PreAuthorize("hasAuthority('PLATFORM_ACCESS')")
    public OrganizationResponse update(@PathVariable UUID id, @RequestBody @Valid UpdateOrganizationRequest request) {
-      if (request.planKey() != null) assignments.assignPlatformOrganization(id, request.planKey(), entitlements);
+      if (request.planKey() != null) assignments.assignPlatformOrganization(id, request.planKey());
       return this.organizationService.update(id, request);
    }
 

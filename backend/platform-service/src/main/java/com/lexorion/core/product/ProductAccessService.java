@@ -18,14 +18,19 @@ public class ProductAccessService {
     private final CoreProductRepository products;
     private final ProductAccessRepository grants;
     private final Clock clock;
+    private final com.lexorion.core.audit.AuditRecorder audit;
     public ProductAccessService(CoreIdentityService identities, OrganizationRepository organizations,
-            CoreProductRepository products, ProductAccessRepository grants, Clock clock) {
+            CoreProductRepository products, ProductAccessRepository grants, Clock clock, com.lexorion.core.audit.AuditRecorder audit) {
+        this.audit = audit;
         this.identities = identities; this.organizations = organizations; this.products = products;
         this.grants = grants; this.clock = clock;
     }
-    public void requireAccess(UUID userId, UUID organizationId, String productKey) {
+    public AccessContext requireAccess(UUID userId, UUID organizationId, String productKey) {
         requireAssociation(userId, organizationId);
         if (!isEffective(organizationId, productKey)) throw new AccessDeniedException("Product access is not valid");
+        var product = products.findById(productKey).orElseThrow();
+        var grant = grants.findByOrganizationIdAndProductKey(organizationId, productKey).orElseThrow();
+        return new AccessContext(userId, organizationId, product.getId(), productKey, grant.getValidUntil());
     }
     public List<ProductAccess> accessibleProducts(UUID userId, UUID organizationId) {
         requireAssociation(userId, organizationId);
@@ -54,7 +59,9 @@ public class ProductAccessService {
             throw new IllegalArgumentException("validUntil must be after validFrom");
         var grant = grants.findByOrganizationIdAndProductKey(organizationId, productKey).orElseGet(ProductAccessGrant::new);
         grant.setOrganizationId(organizationId); grant.setProductKey(productKey); grant.setStatus(status);
-        grant.setValidFrom(validFrom); grant.setValidUntil(validUntil); grants.save(grant);
+        grant.setValidFrom(validFrom); grant.setValidUntil(validUntil); grants.saveAndFlush(grant);
+        audit.record(actorId, "PRODUCT_ACCESS_UPDATE", "PRODUCT_ACCESS", grant.getId().toString(), "SUCCESS");
     }
+    public record AccessContext(UUID userId, UUID organizationId, UUID productId, String productKey, Instant validUntil) {}
     public record ProductAccess(String productKey, String displayName, Instant validUntil) {}
 }

@@ -16,11 +16,13 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+   private final com.lexorion.core.security.CoreIdentityService identities;
    private final JwtService jwtService;
    private final AuthenticatedUserService authenticatedUserService;
    private final AuthenticationEntryPoint authenticationEntryPoint;
 
-   public JwtAuthenticationFilter(JwtService jwtService, AuthenticatedUserService authenticatedUserService, AuthenticationEntryPoint authenticationEntryPoint) {
+   public JwtAuthenticationFilter(JwtService jwtService, AuthenticatedUserService authenticatedUserService, AuthenticationEntryPoint authenticationEntryPoint, com.lexorion.core.security.CoreIdentityService identities) {
+      this.identities = identities;
       this.jwtService = jwtService;
       this.authenticatedUserService = authenticatedUserService;
       this.authenticationEntryPoint = authenticationEntryPoint;
@@ -30,10 +32,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String header = request.getHeader("Authorization");
       if (header != null && header.startsWith("Bearer ")) {
          try {
-            AuthenticatedUser principal = this.authenticatedUserService.load(this.jwtService.validateAndGetUserId(header.substring(7)));
+            var userId = this.jwtService.validateAndGetUserId(header.substring(7));
+            java.security.Principal principal;
+            boolean operator;
+            if (request.getRequestURI().startsWith("/api/core/")) {
+               var identity = identities.load(userId);
+               principal = identity;
+               operator = identity.coreOperator();
+            } else {
+               var horizonUser = authenticatedUserService.load(userId);
+               principal = horizonUser;
+               operator = horizonUser.platformAccess();
+            }
             List<SimpleGrantedAuthority> authorities = new ArrayList();
             authorities.add(new SimpleGrantedAuthority("AUTHENTICATED"));
-            if (principal.platformAccess()) {
+            if (operator) {
                authorities.add(new SimpleGrantedAuthority("PLATFORM_ACCESS"));
             }
 

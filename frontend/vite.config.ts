@@ -6,9 +6,9 @@ export default defineConfig({
   server: {
     port: 9000,
     strictPort: true,
-    allowedHosts: ["horizon.lexorion.in", "admin.horizon.lexorion.in"],
+    allowedHosts: ["horizon.lexorion.in", "admin.horizon.lexorion.in", "core.lexorion.in"],
     headers: { "Cache-Control": "no-store" },
     proxy: { "/api": { target: "http://localhost:9001", changeOrigin: false } },
   },
-  preview: { port: 9000, strictPort: true, allowedHosts: ["horizon.lexorion.in", "admin.horizon.lexorion.in"], headers: { "Cache-Control": "no-store" } }
+  preview: { port: 9000, strictPort: true, allowedHosts: ["horizon.lexorion.in", "admin.horizon.lexorion.in", "core.lexorion.in"], headers: { "Cache-Control": "no-store" } }
 });

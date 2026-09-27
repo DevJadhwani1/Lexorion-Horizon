@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty false",
-    "lint": "oxlint src"
+    "lint": "oxlint src",
+    "test": "vitest run --environment jsdom"
   },
   "dependencies": {
     "react": "19.2.8",
@@ -15,12 +16,15 @@
     "react-router-dom": "7.18.2"
   },
   "devDependencies": {
+    "@testing-library/react": "16.3.3",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@vitejs/plugin-react": "6.0.5",
+    "jsdom": "30.0.1",
     "oxlint": "1.77.0",
     "typescript": "6.0.3",
-    "vite": "8.2.1"
+    "vite": "8.2.1",
+    "vitest": "5.0.0"
   }
 }

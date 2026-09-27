@@ -1,5 +1,9 @@
-<?xml version="1.0"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="14 10 108 108">
-  <polygon fill="#0B0F17" points="57,20 79,20 47,108 24,108"></polygon>
-  <polygon fill="#1F6CFF" points="73,83 112,83 102,108 63,108"></polygon>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108" fill="none">
+  <title>Horizon Icon (Master - Transparent)</title>
+  <g id="horizon-mark" transform="translate(10, 10)">
+    <polygon id="back" points="44,0 86.286,20 44,40 1.714,20" fill="#1A3A7A"/>
+    <polygon id="middle" points="44,24 86.286,44 44,64 1.714,44" fill="#1F6CFF"/>
+    <polygon id="front" points="44,48 86.286,68 44,88 1.714,68" fill="#F7FAFC"/>
+  </g>
 </svg>

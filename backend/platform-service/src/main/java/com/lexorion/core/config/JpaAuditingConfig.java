@@ -1,4 +1,4 @@
-package com.lexorion.platform.config;
+package com.lexorion.core.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

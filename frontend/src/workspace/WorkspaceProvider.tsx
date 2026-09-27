@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getAccessibleWorkspaces, type OrganizationWorkspace } from "../features/admin/workspaceApi";
+import { getProductAccess } from "../core/coreApi";
 import { ApiError } from "../api/types";
 import { session } from "../api/session";
 import { useAuth } from "../auth/AuthProvider";
@@ -35,6 +36,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
+      const products = await getProductAccess(organization.organizationId);
+      if (!products.some((product) => product.productKey === "horizon")) {
+        setWorkspaces([]);
+        session.setWorkspace(null);
+        setKey(null);
+        setError("Horizon access is not active for this organization.");
+        return;
+      }
       const items = await getAccessibleWorkspaces();
       setWorkspaces(items);
       if (storedKey && !items.some((item) => item.key === storedKey)) {

@@ -5,4 +5,5 @@ import java.util.UUID;
  * tenant context and the resolved Workforce workspace. UUIDs are persistence identities for the
  * trusted service boundary only and must never be routed through the public Gateway.
  */
-public record InternalWorkforceContextResponse(UUID workspaceId, String workspaceKey, UUID organizationId, String organizationSlug, String role, UUID userId) { }
+public record InternalWorkforceContextResponse(UUID workspaceId, String workspaceKey, UUID organizationId, String organizationSlug, String role, UUID userId,
+        java.util.List<UUID> organizationWorkspaceIds, int employeeLimit) { }

@@ -69,3 +69,8 @@ PostgreSQL is an external dependency and is not included in Docker Compose. See 
 ## License
 
 This repository is maintained for academic purposes as part of the Lexorion Horizon project.
+
+Core architecture and API contracts: [Lexorion Core foundation](docs/lexorion-core-foundation.md).
+Core Console local and production routing: [Deployment](docs/core-console-deployment.md).
+
+Architecture status: **Lexorion Core V1 — FINAL / LOCKED**. [Final boundary lock report](docs/lexorion-core-v1-boundary-lock.md).

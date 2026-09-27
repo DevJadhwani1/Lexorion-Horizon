@@ -15,4 +15,5 @@ public interface EmployeeRepository extends JpaRepository<Employee,UUID>{
  Optional<Employee> findByWorkspaceIdAndCodeAndPlatformUserId(UUID workspaceId,String code,UUID platformUserId);
  Optional<Employee> findByWorkspaceIdAndCodeAndReportingManagerPlatformUserId(UUID workspaceId,String code,UUID platformUserId);
  List<Employee> findByWorkspaceIdOrderByCodeAsc(UUID workspaceId);Optional<Employee> findByWorkspaceIdAndCode(UUID workspaceId,String code);boolean existsByWorkspaceIdAndCode(UUID workspaceId,String code);boolean existsByWorkspaceIdAndReportingManagerId(UUID workspaceId,UUID reportingManagerId);long countByWorkspaceIdAndStatus(UUID workspaceId,EmploymentStatus status);
+ long countByWorkspaceIdInAndStatus(java.util.Collection<UUID> workspaceIds,EmploymentStatus status);
 }

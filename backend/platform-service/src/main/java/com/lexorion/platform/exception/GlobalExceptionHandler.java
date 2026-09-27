@@ -11,8 +11,8 @@ import com.lexorion.horizon.entitlement.exception.InvalidEntitlementValueExcepti
 import com.lexorion.horizon.entitlement.exception.InvalidPlanAssignmentException;
 import com.lexorion.horizon.invitation.exception.InvalidInvitationException;
 import com.lexorion.horizon.invitation.exception.InvitationConflictException;
-import com.lexorion.platform.organization.exception.InvalidLifecycleTransitionException;
-import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
+import com.lexorion.core.organization.exception.InvalidLifecycleTransitionException;
+import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import com.lexorion.horizon.organizationsettings.exception.InvalidOrganizationSettingsException;
 import com.lexorion.horizon.tenantadmin.exception.TenantAdministrationConflictException;
 import com.lexorion.horizon.workspace.exception.InvalidWorkspaceException;

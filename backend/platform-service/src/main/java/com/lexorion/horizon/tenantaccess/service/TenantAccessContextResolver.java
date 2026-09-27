@@ -16,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantAccessContextResolver {
    private final OrganizationContextHolder organizationContextHolder;
    private final OrganizationMembershipRepository membershipRepository;
+   private final com.lexorion.core.product.ProductAccessService coreAccess;
 
-   public TenantAccessContextResolver(OrganizationContextHolder organizationContextHolder, OrganizationMembershipRepository membershipRepository) {
+   public TenantAccessContextResolver(OrganizationContextHolder organizationContextHolder, OrganizationMembershipRepository membershipRepository, com.lexorion.core.product.ProductAccessService coreAccess) {
+      this.coreAccess = coreAccess;
       this.organizationContextHolder = organizationContextHolder;
       this.membershipRepository = membershipRepository;
    }
@@ -37,7 +39,12 @@ public class TenantAccessContextResolver {
             }
 
             OrganizationContext organization = (OrganizationContext)organizationContext.get();
-            return this.membershipRepository.findByUserIdAndOrganizationIdAndStatus(user.userId(), organization.organizationId(), MembershipStatus.ACTIVE).map((membership) -> new TenantAccessContext(user.userId(), organization.organizationId(), organization.organizationSlug(), membership.getRole(), membership.getStatus(), user.platformAccess()));
+            try {
+               coreAccess.requireAccess(user.userId(), organization.organizationId(), "horizon");
+            } catch (org.springframework.security.access.AccessDeniedException denied) {
+               return Optional.empty();
+            }
+            return this.membershipRepository.findByUserIdAndOrganizationIdAndStatus(user.userId(), organization.organizationId(), MembershipStatus.ACTIVE).filter(membership -> membership.getRole() != null).map((membership) -> new TenantAccessContext(user.userId(), organization.organizationId(), organization.organizationSlug(), membership.getRole(), membership.getStatus(), user.platformAccess()));
          }
       }
 

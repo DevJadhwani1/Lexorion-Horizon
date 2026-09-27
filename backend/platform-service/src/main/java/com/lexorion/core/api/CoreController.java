@@ -29,19 +29,24 @@ public class CoreController {
     }
     @GetMapping("/products") public List<ProductSummary> products() {
         return products.findAll().stream().sorted(java.util.Comparator.comparing(CoreProduct::getKey))
-                .map(p -> new ProductSummary(p.getKey(), p.getDisplayName(), p.isActive())).toList();
+                .map(p -> new ProductSummary(p.getId(), p.getKey(), p.getDisplayName(), p.isActive())).toList();
     }
     @GetMapping("/me/organizations/{organizationId}/products")
     public List<ProductAccessService.ProductAccess> access(Principal principal, @PathVariable UUID organizationId) {
         return access.accessibleProducts(id(principal), organizationId);
     }
+    @GetMapping("/me/organizations/{organizationId}/products/{productKey}/context")
+    public ProductAccessService.AccessContext context(Principal principal, @PathVariable UUID organizationId, @PathVariable String productKey) {
+        return access.requireAccess(id(principal), organizationId, productKey);
+    }
     @PutMapping("/organizations/{organizationId}/products/{productKey}")
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     public void update(Principal principal, @PathVariable UUID organizationId, @PathVariable String productKey,
             @RequestBody @Valid GrantRequest request) {
         access.updateGrant(id(principal), organizationId, productKey, request.status(), request.validFrom(), request.validUntil());
     }
     private UUID id(Principal principal) { return UUID.fromString(principal.getName()); }
     public record OrganizationSummary(UUID id, String name, String status) {}
-    public record ProductSummary(String key, String displayName, boolean active) {}
+    public record ProductSummary(UUID id, String key, String displayName, boolean active) {}
     public record GrantRequest(@NotNull ProductAccessGrant.Status status, Instant validFrom, Instant validUntil) {}
 }

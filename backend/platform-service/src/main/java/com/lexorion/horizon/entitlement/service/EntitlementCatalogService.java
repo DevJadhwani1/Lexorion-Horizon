@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
     private final PlanRepository plans; private final EntitlementDefinitionRepository definitions; private final PlanEntitlementRepository values;
     public EntitlementCatalogService(PlanRepository plans, EntitlementDefinitionRepository definitions, PlanEntitlementRepository values) { this.plans = plans; this.definitions = definitions; this.values = values; }
     @Transactional(readOnly = true) public List<PlanCatalogResponse> plans() { return plans.findByStatusOrderByDisplayNameAsc(CatalogStatus.ACTIVE).stream()
-        .filter(plan -> plan.getProduct() == null)
+        .filter(plan -> plan.getProduct() == null && (plan.getKey().equals("starter") || plan.getKey().equals("business")))
         .map(plan -> PlanCatalogResponse.from(plan, values.findForPlan(plan.getId()).stream()
             .filter(value -> value.getDefinition().getStatus() == CatalogStatus.ACTIVE)
             .map(value -> new EffectiveEntitlementResponse.Value(value.getDefinition().getKey(), value.getDefinition().getValueType().name(), value.getBooleanValue(), value.getIntegerValue())).toList())).toList(); }

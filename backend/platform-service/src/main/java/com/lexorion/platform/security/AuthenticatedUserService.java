@@ -30,7 +30,7 @@ public class AuthenticatedUserService {
    public AuthenticatedUser load(UUID userId) {
       var identity = identities.load(userId);
       Map<UUID, OrganizationAuthority> organizations = membershipRepository.findByUserIdAndStatus(userId, MembershipStatus.ACTIVE)
-            .stream().collect(Collectors.toUnmodifiableMap(m -> m.getOrganization().getId(),
+            .stream().filter(m -> m.getRole() != null).collect(Collectors.toUnmodifiableMap(m -> m.getOrganization().getId(),
                   m -> new OrganizationAuthority(m.getRole(), m.getOrganization().getStatus())));
       return new AuthenticatedUser(identity.userId(), identity.email(), organizations, identity.coreOperator());
    }

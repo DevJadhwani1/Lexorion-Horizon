@@ -10,7 +10,7 @@ import com.lexorion.platform.domain.service.HostnameNormalizer;
 import com.lexorion.platform.domain.service.RequestHostnameExtractor;
 import com.lexorion.platform.domain.service.SharedPlatformOrganizationResolver;
 import com.lexorion.platform.exception.ApiError;
-import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
+import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

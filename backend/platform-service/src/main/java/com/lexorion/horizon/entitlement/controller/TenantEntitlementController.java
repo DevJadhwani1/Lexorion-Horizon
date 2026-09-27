@@ -12,8 +12,6 @@ public class TenantEntitlementController {
     public TenantEntitlementController(EntitlementService entitlements, PlanAssignmentService assignments) { this.entitlements = entitlements; this.assignments = assignments; }
     @GetMapping("/entitlements") @PreAuthorize("@tenantAuthorization.hasAnyRole(T(com.lexorion.horizon.membership.entity.OrganizationRole).ADMIN)")
     public List<EffectiveEntitlementResponse> effective() { return entitlements.effectiveForCurrentOrganization(); }
-    @PostMapping("/plan-assignments/{productKey}") @PreAuthorize("@tenantAuthorization.hasAnyRole(T(com.lexorion.horizon.membership.entity.OrganizationRole).ADMIN)")
-    public ResponseEntity<EffectiveEntitlementResponse> assign(@PathVariable String productKey, @Valid @RequestBody AssignPlanRequest request) { return ResponseEntity.status(HttpStatus.CREATED).body(assignments.assign(productKey, request, entitlements)); }
-    @DeleteMapping("/plan-assignments/{productKey}") @PreAuthorize("@tenantAuthorization.hasAnyRole(T(com.lexorion.horizon.membership.entity.OrganizationRole).ADMIN)")
-    public ResponseEntity<Void> deactivate(@PathVariable String productKey) { assignments.deactivate(productKey); return ResponseEntity.noContent().build(); }
+    @PutMapping("/plan-assignment") @PreAuthorize("@tenantAuthorization.hasAnyRole(T(com.lexorion.horizon.membership.entity.OrganizationRole).ADMIN)")
+    public EffectiveEntitlementResponse assign(@Valid @RequestBody AssignPlanRequest request) { return assignments.assign(request.planKey()); }
 }

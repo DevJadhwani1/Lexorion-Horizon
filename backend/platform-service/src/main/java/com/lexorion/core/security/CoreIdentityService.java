@@ -30,5 +30,8 @@ public class CoreIdentityService {
                 .map(m -> m.getOrganizationId()).collect(Collectors.toUnmodifiableSet());
         return new Identity(userId, user.getEmail(), organizations, operator);
     }
-    public record Identity(UUID userId, String email, Set<UUID> organizationIds, boolean coreOperator) {}
+    public record Identity(UUID userId, String email, Set<UUID> organizationIds, boolean coreOperator) implements java.security.Principal {
+        public Identity { organizationIds = Set.copyOf(organizationIds); }
+        @Override public String getName() { return userId.toString(); }
+    }
 }

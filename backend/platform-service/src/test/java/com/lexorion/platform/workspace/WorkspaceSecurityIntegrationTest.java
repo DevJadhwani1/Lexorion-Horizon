@@ -83,7 +83,7 @@ class WorkspaceSecurityIntegrationTest {
         membership(alpha, admin, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
         membership(alpha, manager, OrganizationRole.MANAGER, MembershipStatus.ACTIVE);
         membership(alpha, member, OrganizationRole.EMPLOYEE, MembershipStatus.ACTIVE);
-        assign(alpha, "workforce", "workforce-starter");
+        assign(alpha, "workforce", "starter");
     }
     @AfterEach void tearDown() { cleanTenantData(); resetProducts(); }
 
@@ -195,10 +195,10 @@ class WorkspaceSecurityIntegrationTest {
                 .andExpect(status().isBadRequest());
         create(owner, "valid", "Valid", "missing-product", "alpha").andExpect(status().isBadRequest());
         create(owner, "valid", "Valid", "workforce", "alpha").andExpect(status().isCreated());
-        create(owner, "valid", "Duplicate", "finance", "alpha").andExpect(status().isConflict());
+        create(owner, "valid", "Duplicate", "payroll", "alpha").andExpect(status().isConflict());
         User betaOwner = user("owner@beta.test"); membership(beta, betaOwner, OrganizationRole.ADMIN, MembershipStatus.ACTIVE);
-        assign(beta, "finance", "finance-starter");
-        create(betaOwner, "valid", "Beta Valid", "finance", "beta").andExpect(status().isCreated());
+        assign(beta, "payroll", "business");
+        create(betaOwner, "valid", "Beta Valid", "payroll", "beta").andExpect(status().isCreated());
     }
 
     @Test
@@ -259,8 +259,8 @@ class WorkspaceSecurityIntegrationTest {
         value.setKey(key); value.setDisplayName(name); value.setStatus(WorkspaceStatus.ACTIVE); return workspaces.saveAndFlush(value);
     }
     private void assign(Organization org, String productKey, String planKey) {
-        OrganizationPlanAssignment value = new OrganizationPlanAssignment(); value.setOrganization(org);
-        value.setProduct(product(productKey)); value.setPlan(plans.findByKey(planKey).orElseThrow());
+        OrganizationPlanAssignment value = planAssignments.findForOrganization(org.getId()).orElseGet(OrganizationPlanAssignment::new); value.setOrganization(org);
+        value.setPlan(plans.findByKey(planKey).orElseThrow());
         value.setStatus(AssignmentStatus.ACTIVE); planAssignments.saveAndFlush(value);
     }
     private Organization organization(String name, String slug, OrganizationStatus status) {

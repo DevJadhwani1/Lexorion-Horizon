@@ -191,7 +191,7 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
           (data as EffectiveEntitlements).map((p) => (
             <article className="card" key={p.productKey}>
               <h3>
-                {p.productKey} · {p.planName}
+                {p.planName} · organization plan
               </h3>
               {p.entitlements.map((e) => (
                 <p key={e.key}>

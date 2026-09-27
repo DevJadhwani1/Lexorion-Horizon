@@ -7,4 +7,5 @@ public interface PlanEntitlementRepository extends JpaRepository<PlanEntitlement
     @Query("select pe from PlanEntitlement pe join fetch pe.definition where pe.plan.id = :planId order by pe.definition.key")
     List<PlanEntitlement> findForPlan(@Param("planId") UUID planId);
     boolean existsByPlanIdAndDefinitionId(UUID planId, UUID definitionId);
+    java.util.Optional<PlanEntitlement> findByPlanIdAndDefinitionId(UUID planId, UUID definitionId);
 }

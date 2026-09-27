@@ -4,6 +4,7 @@ import com.lexorion.horizon.tenantaccess.context.TenantAccessContextHolder;
 import com.lexorion.horizon.workspace.dto.*;
 import com.lexorion.horizon.workspace.entity.OrganizationWorkspace;
 import com.lexorion.horizon.workspace.service.WorkspaceAccessService;
+import com.lexorion.horizon.workspace.repository.OrganizationWorkspaceRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.web.bind.annotation.*;
@@ -19,16 +20,10 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
 @RestController @Validated @RequestMapping("/internal/workforce/workspaces")
 public class InternalWorkforceAuthorityController {
-    private final WorkspaceAccessService workspaces; private final EntitlementService entitlements; private final TenantAccessContextHolder contexts; private final UserRepository users; private final OrganizationMembershipRepository memberships;
-    public InternalWorkforceAuthorityController(WorkspaceAccessService workspaces, EntitlementService entitlements, TenantAccessContextHolder contexts, UserRepository users, OrganizationMembershipRepository memberships) { this.workspaces = workspaces; this.entitlements = entitlements; this.contexts = contexts; this.users = users; this.memberships = memberships; }
+    private final WorkspaceAccessService workspaces; private final OrganizationWorkspaceRepository workspaceRepository; private final EntitlementService entitlements; private final TenantAccessContextHolder contexts; private final UserRepository users; private final OrganizationMembershipRepository memberships;
+    public InternalWorkforceAuthorityController(WorkspaceAccessService workspaces, OrganizationWorkspaceRepository workspaceRepository, EntitlementService entitlements, TenantAccessContextHolder contexts, UserRepository users, OrganizationMembershipRepository memberships) { this.workspaces = workspaces; this.workspaceRepository = workspaceRepository; this.entitlements = entitlements; this.contexts = contexts; this.users = users; this.memberships = memberships; }
     @GetMapping("/{workspaceKey}/context") public InternalWorkforceContextResponse context(@PathVariable @Pattern(regexp="^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$") String workspaceKey) {
         OrganizationWorkspace workspace = workforceWorkspace(workspaceKey);
-        var context = contexts.get().orElseThrow();
-        return response(workspace, context);
-    }
-    @PostMapping("/{workspaceKey}/employee-limit") public InternalWorkforceContextResponse employeeLimit(@PathVariable @Pattern(regexp="^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$") String workspaceKey, @Valid @RequestBody InternalLimitRequest request) {
-        OrganizationWorkspace workspace = workforceWorkspace(workspaceKey);
-        entitlements.requireIntegerLimit(workspace, "workforce.employee_limit", request.requestedValue());
         var context = contexts.get().orElseThrow();
         return response(workspace, context);
     }
@@ -44,10 +39,17 @@ public class InternalWorkforceAuthorityController {
     public record UserResolutionResponse(UUID userId) {}
     private InternalWorkforceContextResponse response(OrganizationWorkspace workspace, com.lexorion.horizon.tenantaccess.context.TenantAccessContext context) {
         if (!workspace.getOrganization().getId().equals(context.organizationId())) throw new AccessDeniedException("Workspace is not accessible");
-        return new InternalWorkforceContextResponse(workspace.getId(), workspace.getKey(), workspace.getOrganization().getId(), context.organizationSlug(), context.membershipRole().name(), context.userId());
+        var organizationId = workspace.getOrganization().getId();
+        var organizationWorkspaceIds = workspaceRepository.findWorkforceWorkspaceIds(organizationId);
+        if (organizationWorkspaceIds.isEmpty()) organizationWorkspaceIds = java.util.List.of(workspace.getId());
+        return new InternalWorkforceContextResponse(workspace.getId(), workspace.getKey(), organizationId, context.organizationSlug(),
+                context.membershipRole().name(), context.userId(), organizationWorkspaceIds,
+                entitlements.getOrganizationEmployeeLimit(organizationId));
     }
     private OrganizationWorkspace workforceWorkspace(String key) {
         OrganizationWorkspace workspace = workspaces.requireAccessibleWorkspace(key, "workforce");
+        if (workspace.availableProducts().stream().noneMatch(product -> "workforce".equals(product.getKey())))
+            throw new AccessDeniedException("Workspace is not enabled for Workforce");
         return workspace;
     }
 }

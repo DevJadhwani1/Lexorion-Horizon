@@ -12,11 +12,12 @@ import com.lexorion.platform.organization.dto.UpdateOrganizationRequest;
 import com.lexorion.platform.organization.dto.UpdateOrganizationStatusRequest;
 import com.lexorion.core.organization.entity.Organization;
 import com.lexorion.core.organization.entity.OrganizationStatus;
-import com.lexorion.platform.organization.exception.InvalidLifecycleTransitionException;
-import com.lexorion.platform.organization.exception.InvalidTenantSlugException;
+import com.lexorion.core.organization.exception.InvalidLifecycleTransitionException;
+import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import com.lexorion.core.organization.repository.OrganizationRepository;
 import com.lexorion.core.user.entity.User;
 import com.lexorion.core.user.service.UserService;
+import com.lexorion.core.organization.service.TenantSlugService;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class OrganizationService {
+   private final com.lexorion.core.organization.service.CoreOrganizationService coreOrganizations;
    private final OrganizationRepository organizationRepository;
    private final OrganizationMembershipRepository membershipRepository;
    private final UserService userService;
@@ -35,7 +37,8 @@ public class OrganizationService {
    private final Clock clock;
    private final com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon;
 
-   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock, com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon) {
+   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock, com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon, com.lexorion.core.organization.service.CoreOrganizationService coreOrganizations) {
+      this.coreOrganizations = coreOrganizations;
       this.horizon = horizon;
       this.organizationRepository = organizationRepository;
       this.membershipRepository = membershipRepository;
@@ -45,34 +48,13 @@ public class OrganizationService {
    }
 
    public OrganizationResponse create(CreateOrganizationRequest request) {
-      if (this.organizationRepository.existsByOrganizationCode(request.organizationCode())) {
-         throw new DuplicateResourceException("Organization code already in use: " + request.organizationCode());
-      } else {
-         String slug = this.tenantSlugService.normalizeOrGenerate(request.slug(), request.name());
-         if (this.organizationRepository.existsBySlug(slug)) {
-            throw new DuplicateResourceException("Tenant slug already in use: " + slug);
-         } else {
-            User owner = this.userService.getEntity(request.ownerUserId());
-            Organization organization = new Organization();
-            organization.setName(request.name());
-            organization.setLegalName(request.legalName());
-            organization.setOrganizationCode(request.organizationCode());
-            organization.setSlug(slug);
-            organization.setPrimaryEmail(request.primaryEmail());
-            organization.setPrimaryPhone(request.primaryPhone());
-            organization.setStatus(OrganizationStatus.PENDING);
-            organization = (Organization)this.organizationRepository.save(organization);
-            OrganizationMembership ownership = new OrganizationMembership();
-            ownership.setOrganization(organization);
-            ownership.setUser(owner);
-            ownership.setRole(OrganizationRole.ADMIN);
-            ownership.setStatus(MembershipStatus.ACTIVE);
-            ownership.setJoinedAt(this.clock.instant());
-            this.membershipRepository.save(ownership);
-            this.horizon.enroll(organization.getId());
-            return OrganizationResponse.from(organization);
-         }
-      }
+      var organization = coreOrganizations.create(new com.lexorion.core.organization.service.CoreOrganizationService.CreateOrganization(
+            request.name(), request.organizationCode(), request.slug(), request.primaryEmail(), request.ownerUserId()));
+      organization.setLegalName(request.legalName()); organization.setPrimaryPhone(request.primaryPhone());
+      var ownership = membershipRepository.findByUserIdAndOrganizationIdAndStatus(request.ownerUserId(), organization.getId(), MembershipStatus.ACTIVE).orElseThrow();
+      ownership.setRole(OrganizationRole.ADMIN); membershipRepository.saveAndFlush(ownership);
+      horizon.enroll(organization.getId());
+      return OrganizationResponse.from(organizationRepository.saveAndFlush(organization));
    }
 
    @Transactional(
@@ -117,56 +99,9 @@ public class OrganizationService {
    }
 
    void transition(Organization organization, OrganizationStatus target, Instant now) {
-      OrganizationStatus current = organization.getStatus();
-      boolean var10000;
-      switch (current) {
-         case PENDING:
-            var10000 = target == OrganizationStatus.TRIAL || target == OrganizationStatus.ACTIVE || target == OrganizationStatus.CANCELLED;
-            break;
-         case TRIAL:
-            var10000 = target == OrganizationStatus.ACTIVE || target == OrganizationStatus.SUSPENDED || target == OrganizationStatus.CANCELLED;
-            break;
-         case ACTIVE:
-            var10000 = target == OrganizationStatus.SUSPENDED || target == OrganizationStatus.CANCELLED;
-            break;
-         case SUSPENDED:
-            var10000 = target == OrganizationStatus.ACTIVE || target == OrganizationStatus.CANCELLED;
-            break;
-         case CANCELLED:
-         case TERMINATED:
-            var10000 = false;
-            break;
-         default:
-            throw new MatchException((String)null, (Throwable)null);
-      }
-
-      boolean allowed = var10000;
-      if (!allowed) {
-         String var10002 = String.valueOf(current);
-         throw new InvalidLifecycleTransitionException("Organization lifecycle cannot transition from " + var10002 + " to " + String.valueOf(target));
-      } else {
-         organization.setStatus(target);
-         switch (target) {
-            case PENDING:
-            case TERMINATED:
-               throw new IllegalStateException("Unsupported lifecycle target: " + String.valueOf(target));
-            case TRIAL:
-               organization.setTrialStartedAt(now);
-               organization.setTrialEndsAt(now.plus(Duration.ofDays(14L)));
-               break;
-            case ACTIVE:
-               if (organization.getActivatedAt() == null) {
-                  organization.setActivatedAt(now);
-               }
-               break;
-            case SUSPENDED:
-               organization.setSuspendedAt(now);
-               break;
-            case CANCELLED:
-               organization.setCancelledAt(now);
-         }
-
-      }
+      new com.lexorion.core.organization.service.OrganizationLifecycleService().transition(organization, target, now);
+      // Preserve the existing Horizon onboarding trial policy outside Core.
+      if (target == OrganizationStatus.TRIAL) organization.setTrialEndsAt(now.plus(Duration.ofDays(14)));
    }
 
    public void backfillMissingSlugs() {

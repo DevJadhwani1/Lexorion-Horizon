@@ -29,6 +29,8 @@ import com.lexorion.horizon.workspace.entity.*;
 import com.lexorion.horizon.workspace.repository.OrganizationWorkspaceRepository;
 import com.lexorion.horizon.tenantaccess.context.*;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,6 +41,8 @@ import org.springframework.test.web.servlet.*;
 
 @SpringBootTest @AutoConfigureMockMvc
 class EntitlementSecurityIntegrationTest {
+    @Autowired com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon;
+    @Autowired com.lexorion.core.product.ProductAccessRepository coreGrants;
     private static final String HOST = "horizon.lexorion.in", PASSWORD = "correct-password";
     @Autowired MockMvc mvc; @Autowired UserRepository users; @Autowired OrganizationRepository organizations;
     @Autowired OrganizationMembershipRepository memberships; @Autowired OrganizationWorkspaceRepository workspaces;
@@ -59,44 +63,40 @@ class EntitlementSecurityIntegrationTest {
     @AfterEach void teardown() { clean(); resetCatalog(); }
 
     @Test void booleanCapabilitiesGrantOnlyForActiveTrueWellFormedValues() {
-        assignDirect(alpha, "workforce", "workforce-growth"); OrganizationWorkspace workspace = workspace(alpha, "workforce", "people");
+        assignDirect(alpha, "business"); OrganizationWorkspace workspace = workspace(alpha, "workforce", "people");
         withOwnerContext();
         try {
-            assertThat(entitlementService.hasEntitlement(workspace, "workforce.attendance")).isTrue();
-            entitlementService.requireEntitlement(workspace, "workforce.attendance");
-            PlanEntitlement attendance = value("workforce-growth", "workforce.attendance"); attendance.setBooleanValue(false); planEntitlements.saveAndFlush(attendance);
-            assertThat(entitlementService.hasEntitlement(workspace, "workforce.attendance")).isFalse();
-            assertThatThrownBy(() -> entitlementService.requireEntitlement(workspace, "workforce.attendance")).isInstanceOf(EntitlementDeniedException.class);
+            assertThat(entitlementService.hasEntitlement(workspace, "workforce.enabled")).isTrue();
+            entitlementService.requireEntitlement(workspace, "workforce.enabled");
+            PlanEntitlement attendance = value("business", "workforce.enabled"); attendance.setBooleanValue(false); planEntitlements.saveAndFlush(attendance);
+            assertThat(entitlementService.hasEntitlement(workspace, "workforce.enabled")).isFalse();
+            assertThatThrownBy(() -> entitlementService.requireEntitlement(workspace, "workforce.enabled")).isInstanceOf(EntitlementDeniedException.class);
             assertThat(entitlementService.hasEntitlement(workspace, "workforce.missing")).isFalse();
-            EntitlementDefinition definition = definitions.findByKey("workforce.leave").orElseThrow(); definition.setStatus(CatalogStatus.INACTIVE); definitions.saveAndFlush(definition);
-            assertThat(entitlementService.hasEntitlement(workspace, "workforce.leave")).isFalse();
-            assertThatThrownBy(() -> entitlementService.hasEntitlement(workspace, "finance.invoicing")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+            EntitlementDefinition definition = definitions.findByKey("payroll.enabled").orElseThrow(); definition.setStatus(CatalogStatus.INACTIVE); definitions.saveAndFlush(definition);
+            assertThat(entitlementService.hasEntitlement(workspace, "payroll.enabled")).isFalse();
+            assertThat(entitlementService.hasEntitlement(workspace, "finance.invoicing")).isFalse();
             assertThatThrownBy(() -> entitlementService.hasEntitlement(workspace, "Bad Key")).isInstanceOf(InvalidEntitlementValueException.class);
         } finally { tenantContexts.clear(); }
     }
 
     @Test void integerLimitsEnforceBelowEqualAboveMissingInactiveAndInvalidValues() {
-        assignDirect(alpha, "workforce", "workforce-starter"); OrganizationWorkspace workspace = workspace(alpha, "workforce", "people");
+        assignDirect(alpha, "starter"); OrganizationWorkspace workspace = workspace(alpha, "workforce", "people");
         withOwnerContext();
         try {
-            assertThat(entitlementService.getIntegerLimit(workspace, "workforce.employee_limit")).isEqualTo(25);
-            entitlementService.requireIntegerLimit(workspace, "workforce.employee_limit", 24);
-            entitlementService.requireIntegerLimit(workspace, "workforce.employee_limit", 25);
-            assertThatThrownBy(() -> entitlementService.requireIntegerLimit(workspace, "workforce.employee_limit", 26)).isInstanceOf(EntitlementDeniedException.class);
-            assertThatThrownBy(() -> entitlementService.requireIntegerLimit(workspace, "workforce.employee_limit", -1)).isInstanceOf(InvalidEntitlementValueException.class);
+            assertThat(entitlementService.getIntegerLimit(workspace, "platform.employee_limit")).isEqualTo(25);
             assertThatThrownBy(() -> entitlementService.getIntegerLimit(workspace, "workforce.missing_limit")).isInstanceOf(EntitlementDeniedException.class);
-            EntitlementDefinition definition = definitions.findByKey("workforce.employee_limit").orElseThrow(); definition.setStatus(CatalogStatus.INACTIVE); definitions.saveAndFlush(definition);
-            assertThatThrownBy(() -> entitlementService.getIntegerLimit(workspace, "workforce.employee_limit")).isInstanceOf(EntitlementDeniedException.class);
-            definition.setStatus(CatalogStatus.ACTIVE); definitions.saveAndFlush(definition); PlanEntitlement value = value("workforce-starter", "workforce.employee_limit"); value.setIntegerValue(-1); planEntitlements.saveAndFlush(value);
-            assertThatThrownBy(() -> entitlementService.getIntegerLimit(workspace, "workforce.employee_limit")).isInstanceOf(InvalidEntitlementValueException.class);
+            EntitlementDefinition definition = definitions.findByKey("platform.employee_limit").orElseThrow(); definition.setStatus(CatalogStatus.INACTIVE); definitions.saveAndFlush(definition);
+            assertThatThrownBy(() -> entitlementService.getIntegerLimit(workspace, "platform.employee_limit")).isInstanceOf(EntitlementDeniedException.class);
+            definition.setStatus(CatalogStatus.ACTIVE); definitions.saveAndFlush(definition); PlanEntitlement value = value("starter", "platform.employee_limit"); value.setIntegerValue(-1); planEntitlements.saveAndFlush(value);
+            assertThatThrownBy(() -> entitlementService.getIntegerLimit(workspace, "platform.employee_limit")).isInstanceOf(InvalidEntitlementValueException.class);
         } finally { tenantContexts.clear(); }
     }
 
     @Test void catalogUsesStableKeysAndNeverDisclosesUuids() throws Exception {
         tenant(get("/api/platform/plans"), owner, "alpha", HOST).andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.key == 'starter')]").isNotEmpty()).andExpect(jsonPath("$[0].id").doesNotExist()).andExpect(jsonPath("$[0].productId").doesNotExist());
+                .andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[?(@.key == 'starter')]").isNotEmpty()).andExpect(jsonPath("$[?(@.key == 'business')]").isNotEmpty()).andExpect(jsonPath("$[0].id").doesNotExist()).andExpect(jsonPath("$[0].productId").doesNotExist());
         tenant(get("/api/platform/entitlements"), admin, "alpha", HOST).andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.key == 'workforce.employee_limit')]").isNotEmpty()).andExpect(jsonPath("$[0].id").doesNotExist());
+                .andExpect(jsonPath("$[?(@.key == 'platform.employee_limit')]").isNotEmpty()).andExpect(jsonPath("$[0].id").doesNotExist());
     }
 
     @Test void platformOperatorCanReadCatalogsWithoutOrganizationContext() throws Exception {
@@ -121,16 +121,16 @@ class EntitlementSecurityIntegrationTest {
                 .andExpect(jsonPath("$[?(@.key == '" + key + "')].entitlements[?(@.key == 'platform.workspace_limit')].integerValue").value(org.hamcrest.Matchers.hasItem(workspaceLimit)));
             String slug = key.equals("starter") ? "alpha" : "beta";
             if (slug.equals("beta")) membership(beta, owner, OrganizationRole.ADMIN);
-            assign(owner, "workforce", key, slug).andExpect(status().isCreated())
+            assign(owner, key, slug).andExpect(status().isOk())
                 .andExpect(jsonPath("$.entitlements[?(@.key == 'workforce.enabled')].booleanValue").value(org.hamcrest.Matchers.hasItem(true)))
                 .andExpect(jsonPath("$.entitlements[?(@.key == 'payroll.enabled')].booleanValue").value(org.hamcrest.Matchers.hasItem(true)));
-            assign(owner, "payroll", key, slug).andExpect(status().isCreated());
-            assign(owner, "finance", key, slug).andExpect(status().isBadRequest());
+            assign(owner, key, slug).andExpect(status().isOk());
+            tenant(post("/api/tenant/plan-assignments/finance").contentType(MediaType.APPLICATION_JSON).content("{\"planKey\":\"" + key + "\"}"), owner, slug, HOST).andExpect(status().isNotFound());
             tenant(get("/api/tenant/entitlements"), owner, slug, HOST).andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(1));
         }
-        assign(manager, "workforce", "starter", "alpha").andExpect(status().isForbidden());
-        assign(member, "payroll", "starter", "alpha").andExpect(status().isForbidden());
+        assign(manager, "starter", "alpha").andExpect(status().isForbidden());
+        assign(member, "starter", "alpha").andExpect(status().isForbidden());
     }
 
     @Test void platformProvisioningPreservesMembershipAndEnforcesConfiguredWorkspaceQuota() throws Exception {
@@ -149,7 +149,7 @@ class EntitlementSecurityIntegrationTest {
             request(patch(path + "/status").contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ACTIVE\"}"), platform, null, HOST).andExpect(status().isOk());
             request(get("/api/platform/me/organizations"), owner, null, HOST).andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.slug == '" + slug + "')].membershipRole").value(org.hamcrest.Matchers.hasItem("ADMIN")));
-            tenant(get("/api/tenant/entitlements"), owner, slug, HOST).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+            tenant(get("/api/tenant/entitlements"), owner, slug, HOST).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1));
             int quota = planKey.equals("starter") ? 1 : 3;
             for (int i = 0; i < quota; i++) {
                 tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON).content("{\"key\":\"work-" + i + "\",\"displayName\":\"Work\",\"productKey\":\"workforce\"}"), owner, slug, HOST).andExpect(status().isCreated());
@@ -172,7 +172,7 @@ class EntitlementSecurityIntegrationTest {
         for (String planKey : java.util.List.of("starter", "business")) {
             String slug = planKey.equals("starter") ? "alpha" : "beta";
             if (slug.equals("beta")) membership(beta, owner, OrganizationRole.ADMIN);
-            assign(owner, "workforce", planKey, slug).andExpect(status().isCreated());
+            assign(owner, planKey, slug).andExpect(status().isOk());
             String body = "{\"key\":\"shared\",\"displayName\":\"Shared\",\"productKeys\":[\"workforce\",\"payroll\"]}";
             tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON).content(body), owner, slug, HOST)
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.products.length()").value(2));
@@ -184,61 +184,78 @@ class EntitlementSecurityIntegrationTest {
             String extra = body.replace("shared", "second");
             tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON).content(extra), owner, slug, HOST)
                 .andExpect(planKey.equals("starter") ? status().isForbidden() : status().isCreated());
-            tenant(patch("/api/tenant/workspaces/shared").contentType(MediaType.APPLICATION_JSON).content("{\"productKeys\":[\"workforce\",\"payroll\",\"finance\"]}"), owner, slug, HOST).andExpect(status().isForbidden());
-            tenant(get("/api/tenant/workspaces/shared"), owner, slug, HOST).andExpect(status().isOk()).andExpect(jsonPath("$.products.length()").value(2));
+            tenant(patch("/api/tenant/workspaces/shared").contentType(MediaType.APPLICATION_JSON).content("{\"productKeys\":[\"workforce\",\"payroll\",\"finance\"]}"), owner, slug, HOST).andExpect(status().isOk());
+            tenant(get("/api/tenant/workspaces/shared"), owner, slug, HOST).andExpect(status().isOk()).andExpect(jsonPath("$.products.length()").value(3));
         }
         tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON).content("{\"key\":\"denied\",\"displayName\":\"Denied\",\"productKeys\":[\"workforce\",\"payroll\"]}"), manager, "alpha", HOST).andExpect(status().isForbidden());
         tenant(get("/internal/workforce/workspaces/shared/context"), member, "beta", HOST).andExpect(status().isForbidden());
         tenant(get("/internal/workforce/workspaces/shared/context"), member, "alpha", HOST).andExpect(status().isOk());
         PlanEntitlement enabled = value("starter", "payroll.enabled"); enabled.setBooleanValue(false); planEntitlements.saveAndFlush(enabled);
-        tenant(get("/api/tenant/workspaces/shared"), member, "alpha", HOST).andExpect(status().isOk()).andExpect(jsonPath("$.products.length()").value(1));
+        tenant(get("/api/tenant/workspaces/shared"), member, "alpha", HOST).andExpect(status().isOk())
+            .andExpect(jsonPath("$.products[*].key").value(org.hamcrest.Matchers.hasItem("workforce")))
+            .andExpect(jsonPath("$.products[*].key").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("payroll"))));
         mvc.perform(get("/internal/payroll/workspaces/shared/context").header("Host", HOST).header("Authorization", "Bearer " + token(member))
             .header("X-Lexorion-Organization", "alpha").header("X-Lexorion-Service-Token", "test-payroll-service-token-32-bytes-minimum"))
             .andExpect(status().isForbidden());
         enabled.setBooleanValue(true); planEntitlements.saveAndFlush(enabled);
     }
 
+    @Test void concurrentBusinessWorkspaceCreationCannotExceedOrganizationCapacity() throws Exception {
+        assign(owner, "business", "alpha").andExpect(status().isOk());
+        String accessToken = token(owner);
+        for (String key : List.of("capacity-1", "capacity-2"))
+            tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"key\":\"" + key + "\",\"displayName\":\"Capacity\",\"productKey\":\"workforce\"}"), owner, "alpha", HOST)
+                    .andExpect(status().isCreated());
+        CompletableFuture<Integer> third = CompletableFuture.supplyAsync(() -> workspaceCreateStatus(accessToken, "capacity-3"));
+        CompletableFuture<Integer> fourth = CompletableFuture.supplyAsync(() -> workspaceCreateStatus(accessToken, "capacity-4"));
+        assertThat(List.of(third.join(), fourth.join())).containsExactlyInAnyOrder(201, 403);
+        assertThat(workspaces.findTenantWorkspaces(alpha.getId()).stream()
+                .filter(workspace -> workspace.getStatus() == WorkspaceStatus.ACTIVE)).hasSize(3);
+    }
+
     @Test void ownerAndAdminCanAssignAndReadButDuplicateAndCrossProductAreRejected() throws Exception {
-        assign(owner, "workforce", "workforce-starter", "alpha").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.productKey").value("workforce")).andExpect(jsonPath("$.planKey").value("workforce-starter"))
-                .andExpect(jsonPath("$.id").doesNotExist()).andExpect(jsonPath("$.entitlements[?(@.key == 'workforce.employee_limit')].integerValue").value(25));
-        assign(admin, "workforce", "workforce-growth", "alpha").andExpect(status().isConflict());
-        assign(owner, "finance", "workforce-starter", "alpha").andExpect(status().isBadRequest());
-        tenant(get("/api/tenant/entitlements"), admin, "alpha", HOST).andExpect(status().isOk()).andExpect(jsonPath("$[0].planKey").value("workforce-starter"));
+        assign(owner, "starter", "alpha").andExpect(status().isOk())
+                .andExpect(jsonPath("$.productKey").value("organization")).andExpect(jsonPath("$.planKey").value("starter"))
+                .andExpect(jsonPath("$.id").doesNotExist()).andExpect(jsonPath("$.entitlements[?(@.key == 'platform.employee_limit')].integerValue").value(25));
+        assign(admin, "business", "alpha").andExpect(status().isOk());
+        tenant(get("/api/tenant/entitlements"), admin, "alpha", HOST).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1)).andExpect(jsonPath("$[0].planKey").value("business"));
+        tenant(post("/api/tenant/plan-assignments/workforce").contentType(MediaType.APPLICATION_JSON).content("{\"planKey\":\"starter\"}"), owner, "alpha", HOST).andExpect(status().isNotFound());
+        tenant(post("/api/tenant/plan-assignments/payroll").contentType(MediaType.APPLICATION_JSON).content("{\"planKey\":\"business\"}"), owner, "alpha", HOST).andExpect(status().isNotFound());
     }
 
     @Test void rejectsInactivePlanAndAllIdentifierInjection() throws Exception {
-        Plan plan = plan("workforce-starter"); plan.setStatus(CatalogStatus.INACTIVE); plans.saveAndFlush(plan);
-        assign(owner, "workforce", "workforce-starter", "alpha").andExpect(status().isBadRequest());
-        String body = "{\"planKey\":\"workforce-growth\",\"organizationId\":\"" + beta.getId() + "\",\"productId\":\"" + product("workforce").getId() + "\",\"planId\":\"" + plan.getId() + "\",\"workspaceId\":\"" + beta.getId() + "\",\"entitlementId\":\"" + plan.getId() + "\"}";
-        tenant(post("/api/tenant/plan-assignments/workforce").contentType(MediaType.APPLICATION_JSON).content(body), owner, "alpha", HOST).andExpect(status().isBadRequest());
+        Plan plan = plan("starter"); plan.setStatus(CatalogStatus.INACTIVE); plans.saveAndFlush(plan);
+        assign(owner, "starter", "alpha").andExpect(status().isBadRequest());
+        String body = "{\"planKey\":\"business\",\"organizationId\":\"" + beta.getId() + "\",\"productId\":\"" + product("workforce").getId() + "\",\"planId\":\"" + plan.getId() + "\",\"workspaceId\":\"" + beta.getId() + "\",\"entitlementId\":\"" + plan.getId() + "\"}";
+        tenant(put("/api/tenant/plan-assignment").contentType(MediaType.APPLICATION_JSON).content(body), owner, "alpha", HOST).andExpect(status().isOk());
     }
 
     @Test void managerMemberAndPlatformAuthorityCannotReadOrMutateTenantCommercialState() throws Exception {
-        assign(manager, "workforce", "workforce-starter", "alpha").andExpect(status().isForbidden());
-        assign(member, "workforce", "workforce-starter", "alpha").andExpect(status().isForbidden());
+        assign(manager, "starter", "alpha").andExpect(status().isForbidden());
+        assign(member, "starter", "alpha").andExpect(status().isForbidden());
         tenant(get("/api/tenant/entitlements"), manager, "alpha", HOST).andExpect(status().isForbidden());
         User platform = user("platform@test"); PlatformAccess access = new PlatformAccess(); access.setUser(platform); access.setRole(PlatformRole.SUPER_ADMIN); access.setStatus(PlatformAccessStatus.ACTIVE); access.setGrantedAt(Instant.now()); platformAccess.saveAndFlush(access);
         tenant(get("/api/tenant/entitlements"), platform, "alpha", HOST).andExpect(status().isForbidden());
         tenant(post("/api/platform/plans").contentType(MediaType.APPLICATION_JSON).content("{}"), member, "alpha", HOST).andExpect(status().isMethodNotAllowed());
-        tenant(patch("/api/platform/entitlements/workforce.attendance").contentType(MediaType.APPLICATION_JSON).content("{}"), member, "alpha", HOST).andExpect(status().isNotFound());
+        tenant(patch("/api/platform/entitlements/workforce.enabled").contentType(MediaType.APPLICATION_JSON).content("{}"), member, "alpha", HOST).andExpect(status().isNotFound());
     }
 
     @Test void effectiveEntitlementsAreExactlyTenantScoped() throws Exception {
-        assignDirect(alpha, "workforce", "workforce-starter"); assignDirect(beta, "finance", "finance-starter");
+        assignDirect(alpha, "starter"); assignDirect(beta, "business");
         User dual = user("dual@test"); membership(alpha, dual, OrganizationRole.ADMIN); membership(beta, dual, OrganizationRole.ADMIN);
-        tenant(get("/api/tenant/entitlements"), dual, "alpha", HOST).andExpect(status().isOk()).andExpect(jsonPath("$[0].productKey").value("workforce")).andExpect(jsonPath("$[?(@.productKey == 'finance')]").isEmpty());
-        tenant(get("/api/tenant/entitlements"), dual, "beta", HOST).andExpect(status().isOk()).andExpect(jsonPath("$[0].productKey").value("finance"));
+        tenant(get("/api/tenant/entitlements"), dual, "alpha", HOST).andExpect(status().isOk()).andExpect(jsonPath("$[0].planKey").value("starter"));
+        tenant(get("/api/tenant/entitlements"), dual, "beta", HOST).andExpect(status().isOk()).andExpect(jsonPath("$[0].planKey").value("business"));
     }
 
     @Test void workspaceAccessFailsClosedForMissingInactivePlanAndInactiveProduct() throws Exception {
         workspace(alpha, "workforce", "people");
         tenant(get("/api/tenant/workspaces/people"), member, "alpha", HOST).andExpect(status().isForbidden());
-        OrganizationPlanAssignment assignment = assignDirect(alpha, "workforce", "workforce-starter");
+        OrganizationPlanAssignment assignment = assignDirect(alpha, "starter");
         tenant(get("/api/tenant/workspaces/people"), member, "alpha", HOST).andExpect(status().isOk());
         assignment.setStatus(AssignmentStatus.INACTIVE); assignments.saveAndFlush(assignment);
         tenant(get("/api/tenant/workspaces/people"), member, "alpha", HOST).andExpect(status().isForbidden());
-        assignment.setStatus(AssignmentStatus.ACTIVE); assignments.saveAndFlush(assignment); Plan plan = plan("workforce-starter"); plan.setStatus(CatalogStatus.INACTIVE); plans.saveAndFlush(plan);
+        assignment.setStatus(AssignmentStatus.ACTIVE); assignments.saveAndFlush(assignment); Plan plan = plan("starter"); plan.setStatus(CatalogStatus.INACTIVE); plans.saveAndFlush(plan);
         tenant(get("/api/tenant/workspaces/people"), member, "alpha", HOST).andExpect(status().isForbidden());
         plan.setStatus(CatalogStatus.ACTIVE); plans.saveAndFlush(plan); Product product = product("workforce"); product.setStatus(ProductStatus.INACTIVE); products.saveAndFlush(product);
         tenant(get("/api/tenant/workspaces/people"), member, "alpha", HOST).andExpect(status().isForbidden());
@@ -252,23 +269,20 @@ class EntitlementSecurityIntegrationTest {
     }
 
     @Test void internalWorkforceContractValidatesWorkspaceAndEmployeeLimitWithoutPublicIds() throws Exception {
-        assignDirect(alpha, "workforce", "workforce-starter"); OrganizationWorkspace people = workspace(alpha, "workforce", "people");
+        assignDirect(alpha, "starter"); OrganizationWorkspace people = workspace(alpha, "workforce", "people");
         tenant(get("/internal/workforce/workspaces/people/context"), member, "alpha", HOST).andExpect(status().isOk())
                 .andExpect(jsonPath("$.workspaceId").value(people.getId().toString()))
                 .andExpect(jsonPath("$.workspaceKey").value("people"))
                 .andExpect(jsonPath("$.organizationId").value(alpha.getId().toString()))
                 .andExpect(jsonPath("$.organizationSlug").value("alpha"))
                 .andExpect(jsonPath("$.role").value("EMPLOYEE"))
-                .andExpect(jsonPath("$.userId").value(member.getId().toString()));
-        tenant(post("/internal/workforce/workspaces/people/employee-limit").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"requestedValue\":25}"), owner, "alpha", HOST).andExpect(status().isOk());
-        tenant(post("/internal/workforce/workspaces/people/employee-limit").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"requestedValue\":26}"), owner, "alpha", HOST).andExpect(status().isForbidden());
+                .andExpect(jsonPath("$.userId").value(member.getId().toString()))
+                .andExpect(jsonPath("$.employeeLimit").value(25)).andExpect(jsonPath("$.organizationWorkspaceIds[0]").value(people.getId().toString()));
         tenant(get("/internal/workforce/workspaces/people/context"), owner, "beta", HOST).andExpect(status().isForbidden());
     }
 
     @Test void internalWorkforceContractRejectsSpoofedAuthorityAndInaccessibleWorkspaces() throws Exception {
-        assignDirect(alpha, "workforce", "workforce-starter"); OrganizationWorkspace people = workspace(alpha, "workforce", "people");
+        assignDirect(alpha, "starter"); OrganizationWorkspace people = workspace(alpha, "workforce", "people");
         mvc.perform(get("/internal/workforce/workspaces/people/context").header("Host", HOST)
                 .header("Authorization", "Bearer " + token(owner)).header("X-Lexorion-Organization", "alpha"))
                 .andExpect(status().isUnauthorized());
@@ -276,7 +290,7 @@ class EntitlementSecurityIntegrationTest {
         tenant(get("/internal/workforce/workspaces/Bad Key/context"), owner, "alpha", HOST).andExpect(status().isBadRequest());
         tenant(post("/internal/workforce/workspaces/people/employee-limit").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"requestedValue\":1,\"organizationId\":\"" + beta.getId() + "\",\"workspaceId\":\"" + people.getId()
-                        + "\",\"userId\":\"" + member.getId() + "\",\"role\":\"ADMIN\"}"), owner, "alpha", HOST).andExpect(status().isBadRequest());
+                        + "\",\"userId\":\"" + member.getId() + "\",\"role\":\"ADMIN\"}"), owner, "alpha", HOST).andExpect(status().isNotFound());
         tenant(get("/internal/workforce/workspaces/people/context").header("X-User-ID", member.getId())
                 .header("X-Organization-ID", beta.getId()).header("X-Workspace-ID", beta.getId()).header("X-Role", "EMPLOYEE"), owner, "alpha", HOST)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.userId").value(owner.getId().toString()))
@@ -289,21 +303,29 @@ class EntitlementSecurityIntegrationTest {
     }
 
     @Test void internalWorkforceContractRejectsNonWorkforceAndInactiveMembership() throws Exception {
-        assignDirect(alpha, "finance", "finance-starter"); workspace(alpha, "finance", "ledger");
+        assignDirect(alpha, "starter"); workspace(alpha, "payroll", "ledger");
         tenant(get("/internal/workforce/workspaces/ledger/context"), owner, "alpha", HOST).andExpect(status().isForbidden());
-        assignDirect(alpha, "workforce", "workforce-starter"); workspace(alpha, "workforce", "people");
+        assignDirect(alpha, "starter"); workspace(alpha, "workforce", "people");
         OrganizationMembership membership = memberships.findAll().stream().filter(value -> value.getUser().getId().equals(member.getId())
                 && value.getOrganization().getId().equals(alpha.getId())).findFirst().orElseThrow();
         membership.setStatus(MembershipStatus.INACTIVE); memberships.saveAndFlush(membership);
         tenant(get("/internal/workforce/workspaces/people/context"), member, "alpha", HOST).andExpect(status().isForbidden());
     }
 
-    private ResultActions assign(User actor, String product, String plan, String slug) throws Exception { return tenant(post("/api/tenant/plan-assignments/" + product).contentType(MediaType.APPLICATION_JSON).content("{\"planKey\":\"" + plan + "\"}"), actor, slug, HOST); }
+    private ResultActions assign(User actor, String plan, String slug) throws Exception { return tenant(put("/api/tenant/plan-assignment").contentType(MediaType.APPLICATION_JSON).content("{\"planKey\":\"" + plan + "\"}"), actor, slug, HOST); }
     private ResultActions tenant(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder req, User actor, String slug, String host) throws Exception { return request(req, actor, slug, host); }
     private ResultActions request(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder req, User actor, String slug, String host) throws Exception { req.header("Host", host).header("X-Lexorion-Service-Token", "test-workforce-service-token-32-bytes-minimum"); if (actor != null) req.header("Authorization", "Bearer " + token(actor)); if (slug != null) req.header("X-Lexorion-Organization", slug); return mvc.perform(req); }
     private String token(User user) throws Exception { MvcResult result = mvc.perform(post("/api/platform/auth/login").header("Host", HOST).contentType(MediaType.APPLICATION_JSON).content("{\"email\":\"" + user.getEmail() + "\",\"password\":\"" + PASSWORD + "\"}")).andExpect(status().isOk()).andReturn(); return JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken"); }
+    private int workspaceCreateStatus(String accessToken, String key) {
+        try {
+            return mvc.perform(post("/api/tenant/workspaces").header("Host", HOST).header("Authorization", "Bearer " + accessToken)
+                    .header("X-Lexorion-Organization", "alpha").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"key\":\"" + key + "\",\"displayName\":\"Capacity\",\"productKey\":\"workforce\"}"))
+                    .andReturn().getResponse().getStatus();
+        } catch (Exception ex) { throw new IllegalStateException(ex); }
+    }
     private Product product(String key) { return products.findByKey(key).orElseThrow(); } private Plan plan(String key) { return plans.findByKey(key).orElseThrow(); }
-    private OrganizationPlanAssignment assignDirect(Organization org, String productKey, String planKey) { OrganizationPlanAssignment a = new OrganizationPlanAssignment(); a.setOrganization(org); a.setProduct(product(productKey)); a.setPlan(plan(planKey)); a.setStatus(AssignmentStatus.ACTIVE); return assignments.saveAndFlush(a); }
+    private OrganizationPlanAssignment assignDirect(Organization org, String planKey) { OrganizationPlanAssignment a = assignments.findForOrganization(org.getId()).orElseGet(OrganizationPlanAssignment::new); a.setOrganization(org); a.setPlan(plan(planKey)); a.setStatus(AssignmentStatus.ACTIVE); return assignments.saveAndFlush(a); }
     private OrganizationWorkspace workspace(Organization org, String productKey, String key) { OrganizationWorkspace w = new OrganizationWorkspace(); w.setOrganization(org); w.setProduct(product(productKey)); w.setKey(key); w.setDisplayName("People"); w.setStatus(WorkspaceStatus.ACTIVE); return workspaces.saveAndFlush(w); }
     private PlanEntitlement value(String planKey, String entitlementKey) { return planEntitlements.findForPlan(plan(planKey).getId()).stream().filter(v -> v.getDefinition().getKey().equals(entitlementKey)).findFirst().orElseThrow(); }
     private void withOwnerContext() { tenantContexts.set(new TenantAccessContext(owner.getId(), alpha.getId(), alpha.getSlug(), OrganizationRole.ADMIN, MembershipStatus.ACTIVE, false)); }
@@ -311,6 +333,8 @@ class EntitlementSecurityIntegrationTest {
     private User user(String email) { User u = new User(); u.setEmail(email); u.setFirstName("Test"); u.setLastName("User"); u.setPasswordHash(encoder.encode(PASSWORD)); u.setStatus(UserStatus.ACTIVE); return users.saveAndFlush(u); }
     private void membership(Organization org, User user, OrganizationRole role) { OrganizationMembership m = new OrganizationMembership(); m.setOrganization(org); m.setUser(user); m.setRole(role); m.setStatus(MembershipStatus.ACTIVE); m.setJoinedAt(Instant.now()); memberships.saveAndFlush(m); }
     private void whiteLabel(Organization org, String host) { OrganizationDomain d = new OrganizationDomain(); d.setOrganization(org); d.setHostname(host); d.setDomainType(DomainType.CUSTOM_DOMAIN); d.setAccessMode(DomainAccessMode.WHITE_LABEL); d.setVerificationStatus(DomainVerificationStatus.VERIFIED); d.setActive(true); d.setPrimaryDomain(true); d.setVerifiedAt(Instant.now()); domains.saveAndFlush(d); }
-    private void resetCatalog() { plans.findAll().forEach(p -> { p.setStatus(CatalogStatus.ACTIVE); plans.save(p); }); definitions.findAll().forEach(d -> { d.setStatus(CatalogStatus.ACTIVE); definitions.save(d); }); products.findAll().forEach(p -> { p.setStatus(ProductStatus.ACTIVE); products.save(p); }); }
+    private void resetCatalog() { plans.findAll().forEach(p -> { p.setStatus((p.getKey().equals("starter") || p.getKey().equals("business")) && p.getProduct() == null ? CatalogStatus.ACTIVE : CatalogStatus.INACTIVE); plans.save(p); }); definitions.findAll().forEach(d -> { d.setStatus(CatalogStatus.ACTIVE); definitions.save(d); }); products.findAll().forEach(p -> { p.setStatus(ProductStatus.ACTIVE); products.save(p); }); resetValue("starter", "platform.employee_limit", 25); resetValue("starter", "platform.workspace_limit", 1); resetValue("business", "platform.employee_limit", 100); resetValue("business", "platform.workspace_limit", 3); for (String key : List.of("starter", "business")) { resetBoolean(key, "workforce.enabled", true); resetBoolean(key, "payroll.enabled", true); resetBoolean(key, "payroll.processing", true); } }
+    private void resetValue(String planKey, String entitlementKey, int number) { PlanEntitlement value = value(planKey, entitlementKey); value.setIntegerValue(number); value.setBooleanValue(null); planEntitlements.save(value); }
+    private void resetBoolean(String planKey, String entitlementKey, boolean enabled) { PlanEntitlement value = value(planKey, entitlementKey); value.setBooleanValue(enabled); value.setIntegerValue(null); planEntitlements.save(value); }
     private void clean() { refreshTokens.deleteAll(); invitations.deleteAll(); workspaces.deleteAll(); assignments.deleteAll(); domains.deleteAll(); memberships.deleteAll(); settings.deleteAll(); platformAccess.deleteAll(); coreGrants.deleteAll(); organizations.deleteAll(); users.deleteAll(); }
 }

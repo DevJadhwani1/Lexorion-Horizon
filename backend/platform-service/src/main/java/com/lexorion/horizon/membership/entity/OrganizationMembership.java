@@ -19,6 +19,7 @@ import lombok.Generated;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
+@jakarta.persistence.SecondaryTable(name = "horizon_membership_roles", pkJoinColumns = @jakarta.persistence.PrimaryKeyJoinColumn(name = "membership_id"))
 @Table(
    name = "organization_memberships",
    uniqueConstraints = {@UniqueConstraint(
@@ -54,7 +55,7 @@ public class OrganizationMembership extends Auditable {
    private User user;
    @Enumerated(EnumType.STRING)
    @Column(
-      nullable = false,
+      table = "horizon_membership_roles",
       length = 20
    )
    private OrganizationRole role;

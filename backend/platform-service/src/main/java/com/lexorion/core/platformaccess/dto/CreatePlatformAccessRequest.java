@@ -1,4 +1,4 @@
-package com.lexorion.platform.platformaccess.dto;
+package com.lexorion.core.platformaccess.dto;
 
 import com.lexorion.core.platformaccess.entity.PlatformRole;
 import jakarta.validation.constraints.NotNull;

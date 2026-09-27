@@ -1,9 +1,9 @@
 package com.lexorion.platform.bootstrap;
 
-import com.lexorion.platform.platformaccess.dto.CreatePlatformAccessRequest;
+import com.lexorion.core.platformaccess.dto.CreatePlatformAccessRequest;
 import com.lexorion.core.platformaccess.entity.PlatformRole;
 import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
-import com.lexorion.platform.platformaccess.service.PlatformAccessService;
+import com.lexorion.core.platformaccess.service.PlatformAccessService;
 import com.lexorion.core.user.dto.CreateUserRequest;
 import com.lexorion.core.user.dto.UserResponse;
 import com.lexorion.core.user.service.UserService;

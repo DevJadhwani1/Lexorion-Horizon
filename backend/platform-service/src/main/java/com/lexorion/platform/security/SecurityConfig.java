@@ -34,7 +34,6 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableMethodSecurity
 @EnableConfigurationProperties({SecurityProperties.class, DomainProperties.class, InvitationProperties.class})
 public class SecurityConfig {
    @Bean
@@ -48,8 +47,8 @@ public class SecurityConfig {
    }
 
    @Bean
-   JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, AuthenticatedUserService authenticatedUserService, AuthenticationEntryPoint authenticationEntryPoint) {
-      return new JwtAuthenticationFilter(jwtService, authenticatedUserService, authenticationEntryPoint);
+   JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, AuthenticatedUserService authenticatedUserService, AuthenticationEntryPoint authenticationEntryPoint, com.lexorion.core.security.CoreIdentityService identities) {
+      return new JwtAuthenticationFilter(jwtService, authenticatedUserService, authenticationEntryPoint, identities);
    }
 
    @Bean

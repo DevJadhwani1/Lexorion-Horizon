@@ -1,5 +1,5 @@
-export const PLATFORM_HOST = "admin.horizon.lexorion.in";
 export const CLIENT_HOST = "horizon.lexorion.in";
+export const PLATFORM_HOST = "admin.horizon.lexorion.in";
 
 export type ConsoleHost = "platform" | "client" | "local";
 
