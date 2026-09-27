@@ -16,9 +16,11 @@ interface OverviewData {
   entitlements: EffectiveEntitlements;
   activeWorkspaces: number | null;
   employeeCount: number | null;
+  workforceEmployeeCodes: string[];
   currentEmployee: Employee | null;
   team: Team | null;
   payrollEmployees: number | null;
+  payrollEmployeeCodes: string[];
   payRuns: PayRun[];
 }
 
@@ -35,19 +37,20 @@ export function HomePage() {
     setLoading(true);
     const load = async () => {
       if (role === "ADMIN") {
-        const [profile, entitlements, workspaces, workforceEmployees, payrollEmployees, payRuns] = await Promise.all([
+        const [profile, entitlements, workspaces, workforceEmployees, workforceRecords, payrollEmployees, payRuns] = await Promise.all([
           getOrganization(), getEffectiveEntitlements(), getOrganizationWorkspaces(),
           workforceEnabled ? getEmployees("status=ACTIVE&size=1") : Promise.resolve(null),
+          workforceEnabled && payrollEnabled ? getActiveWorkforceCodes() : Promise.resolve([]),
           payrollEnabled ? getPayrollEmployees() : Promise.resolve(null),
           payrollEnabled ? getPayRuns(0, 5) : Promise.resolve(null),
         ]);
         return { organizationStatus: profile.status, entitlements, activeWorkspaces: workspaces.filter((item) => item.status === "ACTIVE").length,
-          employeeCount: workforceEmployees?.totalElements ?? null, currentEmployee: null, team: null,
-          payrollEmployees: payrollEmployees?.length ?? null, payRuns: payRuns?.content ?? [] };
+          employeeCount: workforceEmployees?.totalElements ?? null, workforceEmployeeCodes: workforceRecords, currentEmployee: null, team: null,
+          payrollEmployees: payrollEmployees?.length ?? null, payrollEmployeeCodes: payrollEmployees?.map((employee) => employee.employeeCode) ?? [], payRuns: payRuns?.content ?? [] };
       }
       const currentEmployee = workforceEnabled ? await getMe() : null;
       const team = workforceEnabled && role === "MANAGER" ? await getTeam() : null;
-      return { organizationStatus: organization.organizationStatus, entitlements: [], activeWorkspaces: null, employeeCount: null, currentEmployee, team, payrollEmployees: null, payRuns: [] };
+      return { organizationStatus: organization.organizationStatus, entitlements: [], activeWorkspaces: null, employeeCount: null, workforceEmployeeCodes: [], currentEmployee, team, payrollEmployees: null, payrollEmployeeCodes: [], payRuns: [] };
     };
     void load().then(setData).catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load organization overview."))
       .finally(() => setLoading(false));
@@ -72,9 +75,12 @@ export function HomePage() {
   const planNames = [...new Set(data.entitlements.map((item) => item.planName))];
   const employeeLimit = getEntitlementLimit(data.entitlements, "platform.employee_limit");
   const workspaceLimit = getEntitlementLimit(data.entitlements, "platform.workspace_limit");
+  const payrollEmployeeCodes = new Set(data.payrollEmployeeCodes);
+  const unconfiguredPayrollCode = data.workforceEmployeeCodes.find((code) => !payrollEmployeeCodes.has(code));
   const attention = role === "ADMIN" ? [
     workforceEnabled && data.employeeCount === 0 ? { text: "No active Workforce employees are configured.", to: "/app/workforce/employees" } : null,
     payrollEnabled && data.payrollEmployees === 0 ? { text: "No employees are configured for Payroll.", to: "/app/payroll/employees" } : null,
+    workforceEnabled && payrollEnabled && unconfiguredPayrollCode ? { text: "Some active Workforce employees are not configured for Payroll.", to: `/app/payroll/employees?employee=${encodeURIComponent(unconfiguredPayrollCode)}` } : null,
     payrollEnabled && data.payrollEmployees !== null && data.payrollEmployees > 0 && data.payRuns.length === 0 ? { text: "Payroll employees exist, but no pay runs have been created.", to: "/app/payroll/pay-runs" } : null,
   ].filter((item): item is { text: string; to: string } => item !== null) : [];
   return <Page title={organization.organizationName} description="Horizon Organization Console">
@@ -99,3 +105,12 @@ function ProductSummary({ name, productKey, role, count }: { name: string; produ
   return <article><div><Badge label="Enabled" variant="success" /><h3>{name}</h3>{count !== null && <p>{count} configured employee{count === 1 ? "" : "s"}</p>}</div>{route && <Link to={appPath(route)}>Open {name} →</Link>}</article>;
 }
 function usage(current: number, limit: number | null) { return limit === null ? String(current) : `${current} / ${limit}`; }
+async function getActiveWorkforceCodes(): Promise<string[]> {
+  const first = await getEmployees("status=ACTIVE&size=100");
+  const codes = first.content.map((employee) => employee.employeeCode);
+  for (let page = 1; page < first.totalPages; page++) {
+    const next = await getEmployees(`status=ACTIVE&page=${page}&size=100`);
+    codes.push(...next.content.map((employee) => employee.employeeCode));
+  }
+  return codes;
+}
