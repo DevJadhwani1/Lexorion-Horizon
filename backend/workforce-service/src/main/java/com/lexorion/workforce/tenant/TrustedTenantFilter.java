@@ -21,6 +21,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
             TrustedWorkforceContext context=authority.validate(workspace,token,request.getHeader(HttpHeaders.HOST),request.getHeader("X-Lexorion-Organization"));
             if(context==null||!workspace.equals(context.workspaceKey())){response.sendError(403,"Workspace access denied");return;}
             contexts.set(context); credentials.set(new AuthorityRequestContext.Credentials(token,request.getHeader(HttpHeaders.HOST),request.getHeader("X-Lexorion-Organization"))); SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(context.workspaceKey(),null,List.of(new SimpleGrantedAuthority("ROLE_"+context.role().name())))); chain.doFilter(request,response);
-        }catch(RuntimeException ex){response.sendError(403,"Workspace access denied");}finally{contexts.clear();credentials.clear();SecurityContextHolder.clearContext();}
+        }catch(RuntimeException ex){ex.printStackTrace(); response.sendError(403,"Workspace access denied");}finally{contexts.clear();credentials.clear();SecurityContextHolder.clearContext();}
     }
 }

@@ -70,7 +70,7 @@ services:
       <<: *database-environment
       WORKFORCE_PORT: 9004
       DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
-      LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
+      LEXORION_PLATFORM_SERVICE_URL: http://platform-service
       WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
       PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
     extra_hosts: ["host.docker.internal:host-gateway"]
@@ -90,8 +90,8 @@ services:
       <<: *database-environment
       PAYROLL_PORT: 9005
       DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
-      LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
-      LEXORION_WORKFORCE_SERVICE_URL: http://workforce:9004
+      LEXORION_PLATFORM_SERVICE_URL: http://platform-service
+      LEXORION_WORKFORCE_SERVICE_URL: http://workforce-service
       PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9005"]

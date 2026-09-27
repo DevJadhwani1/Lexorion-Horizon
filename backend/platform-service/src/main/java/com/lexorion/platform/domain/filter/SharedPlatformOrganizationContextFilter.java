@@ -50,7 +50,7 @@ public class SharedPlatformOrganizationContextFilter extends OncePerRequestFilte
          if (hostnameContext.isPresent()) {
             this.rejectConflictingWhiteLabelSelection(selection, (OrganizationContext)hostnameContext.get());
          } else if (selection != null) {
-            if (!this.isSharedPlatformRequest(request)) {
+            if (!this.isSharedPlatformRequest(request) && !request.getRequestURI().startsWith("/internal/")) {
                throw new InvalidOrganizationSelectionException("Organization selection header is only accepted on the shared platform host");
             }
 
