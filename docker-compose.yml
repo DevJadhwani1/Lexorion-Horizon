@@ -51,6 +51,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-local_jwt_secret_must_be_at_least_32_characters_long_for_hs256_to_work_properly}
       WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
       PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
+      LEXORION_BOOTSTRAP_ENABLED: "true"
+      LEXORION_BOOTSTRAP_EMAIL: "admin@lexorion.in"
+      LEXORION_BOOTSTRAP_PASSWORD: "password123"
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9002"]
     networks: [horizon]
