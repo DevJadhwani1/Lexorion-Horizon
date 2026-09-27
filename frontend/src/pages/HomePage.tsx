@@ -57,7 +57,14 @@ export function HomePage() {
   if (!organization) return <Page title="Overview"><Notice tone="info">Choose an organization from the header to enter its Organization Console.</Notice></Page>;
   if (workspace.loading) return <Page title="Overview"><Notice tone="info">Loading available workspaces…</Notice></Page>;
   if (workspace.error) return <Page title="Overview"><Notice>{workspace.error}</Notice></Page>;
-  if (workspace.workspaces.length === 0) return <Page title="Overview"><Notice tone="info">No active workspaces are available for this organization.</Notice></Page>;
+  if (workspace.workspaces.length === 0) return <Page title="Overview" description={organization.organizationName}>
+    <Notice tone="info">
+      <p>No active workspaces are available for this organization.</p>
+      {role === "ADMIN"
+        ? <Link className="button primary" to={appPath("/app/admin/workspaces")}>Set up a workspace</Link>
+        : <p>Ask an organization administrator to provision a workspace and grant you access.</p>}
+    </Notice>
+  </Page>;
   if (!selected) return <Page title="Overview"><Notice tone="info">Choose an active workspace to open its Workforce and Payroll capabilities.</Notice></Page>;
   if (error) return <Page title="Overview"><Notice>{error}</Notice></Page>;
   if (loading || !data) return <Page title="Overview"><Notice tone="info">Loading organization overview…</Notice></Page>;
