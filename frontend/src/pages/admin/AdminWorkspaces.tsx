@@ -23,6 +23,7 @@ export function AdminWorkspaces() {
   const [effective, setEffective] = useState<EffectiveEntitlements>([]);
   const [products, setProducts] = useState<ProductCatalogItem[]>([]);
   const [workspaces, setWorkspaces] = useState<OrganizationWorkspace[]>([]);
+  const [productEdits, setProductEdits] = useState<Record<string, string[]>>({});
   const [key, setKey] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [productKeys, setProductKeys] = useState<string[]>([]);
@@ -70,6 +71,7 @@ export function AdminWorkspaces() {
     try {
       const updated = await setOrganizationWorkspaceProducts(workspace.key, nextProducts);
       setWorkspaces((current) => current.map((item) => item.key === updated.key ? updated : item));
+      setProductEdits((current) => { const next = { ...current }; delete next[workspace.key]; return next; });
       await workspaceContext.reload();
     } catch (reason) { setError(reason instanceof ApiError ? reason.message : "Unable to update workspace products"); }
     finally { setBusy(null); }
@@ -94,7 +96,10 @@ export function AdminWorkspaces() {
         <table style={{ width: "100%", borderCollapse: "collapse", color: t.body }}><thead><tr>{["Workspace", "Key", "Products", "Status", "Action"].map((heading) => <th key={heading} style={{ padding: 11, textAlign: "left", borderBottom: `1px solid ${t.border}` }}>{heading}</th>)}</tr></thead>
           <tbody>{workspaces.map((workspace) => <tr key={workspace.key}>
             <td style={{ padding: 11 }}>{workspace.displayName}</td><td style={{ padding: 11 }}><code>{workspace.key}</code></td><td style={{ padding: 11 }}>
-              <label>Enabled products<select aria-label={`Products for ${workspace.displayName}`} multiple value={workspace.products.map(product => product.key)} onChange={(event) => void updateProducts(workspace, Array.from(event.currentTarget.selectedOptions, option => option.value))} disabled={busy !== null || loading} style={field}>{products.map(product => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
+              <form onSubmit={(event) => { event.preventDefault(); void updateProducts(workspace, productEdits[workspace.key] ?? workspace.products.map((product) => product.key)); }}>
+                <label>Enabled products<select aria-label={`Products for ${workspace.displayName}`} multiple value={productEdits[workspace.key] ?? workspace.products.map(product => product.key)} onChange={(event) => setProductEdits((current) => ({ ...current, [workspace.key]: Array.from(event.currentTarget.selectedOptions, option => option.value) }))} disabled={busy !== null || loading} style={field}>{products.map(product => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
+                <Button size="sm" type="submit" disabled={busy !== null || loading || !productEdits[workspace.key]}>Save products</Button>
+              </form>
             </td>
             <td style={{ padding: 11 }}><Badge label={workspace.status} variant={workspace.status === "ACTIVE" ? "success" : "neutral"} /></td>
             <td style={{ padding: 11 }}><Button size="sm" variant={workspace.status === "ACTIVE" ? "destructive" : "secondary"} disabled={busy !== null} onClick={() => void toggle(workspace)}>{workspace.status === "ACTIVE" ? "Deactivate" : "Activate"}</Button></td>
