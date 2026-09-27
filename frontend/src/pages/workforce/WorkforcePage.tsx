@@ -30,6 +30,7 @@ import { Empty, Notice, Page } from "../../components/ui/Page";
 import { Table } from "../admin/AdminPage";
 import { useAuth } from "../../auth/AuthProvider";
 import { appPath } from "../../app/hostRouting";
+import { useWorkspace } from "../../workspace/WorkspaceProvider";
 export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   const { section: routeSection, employeeCode } = useParams(),
     section = sectionKey ?? routeSection ?? "dashboard",
@@ -212,7 +213,8 @@ function EmployeeProfile({
   self?: boolean;
 }) {
   const auth = useAuth(),
-    admin = auth.organization?.membershipRole === "ADMIN";
+    admin = auth.organization?.membershipRole === "ADMIN",
+    workspace = useWorkspace().workspace;
   const [error, setError] = useState(""),
     [history, setHistory] = useState<LifecycleEvent[]>([]),
     [historyLoading, setHistoryLoading] = useState(admin && !self);
@@ -251,6 +253,9 @@ function EmployeeProfile({
           <p>Manager: {employee.reportingManagerEmployeeCode ?? "—"}</p>
         </article>
       </div>
+      {admin && !self && workspace?.products.some((product) => product.key === "payroll") && (
+        <p><Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>View compensation in Payroll</Link></p>
+      )}
       {error && <Notice>{error}</Notice>}
       {admin && !self && (
         <>

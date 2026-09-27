@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/types";
 import {
   addPayRunEmployee,
@@ -237,6 +237,8 @@ function PayrollDashboard({ employeeCount }: { employeeCount: number }) {
   );
 }
 function EmployeeForm({ reload }: { reload(): Promise<void> }) {
+  const [searchParams] = useSearchParams(), [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const initialCode = searchParams.get("employee") ?? "";
   return (
     <details className="card">
       <summary>Configure employee</summary>
@@ -244,13 +246,15 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
         className="form-grid"
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
+          setError(""); setBusy(true);
           const b = Object.fromEntries(
             new FormData(e.currentTarget as HTMLFormElement),
           );
-          void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(reload);
+          void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(reload).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to configure Payroll employee")).finally(() => setBusy(false));
         }}
       >
-        {input("employeeCode")}
+        {error && <Notice>{error}</Notice>}
+        {input("employeeCode", initialCode, "text", { required: true })}
         {input("currency", "USD")}
         <label>
           Frequency
@@ -261,7 +265,7 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
           </select>
         </label>
         {input("effectiveFrom", "", "date")}
-        <Button variant="primary">Create</Button>
+        <Button variant="primary" disabled={busy}>{busy ? "Creating…" : "Create"}</Button>
       </form>
     </details>
   );
@@ -795,27 +799,31 @@ function VersionHistory({
   );
 }
 function EmployeeDetail({ section }: { section: string }) {
-  const [code, setCode] = useState(""),
+  const [searchParams, setSearchParams] = useSearchParams(),
+    [code, setCode] = useState(searchParams.get("employee")?.toUpperCase() ?? ""),
     [data, setData] = useState<
       Profile[] | Calculation[] | LedgerEntry[] | Payslip[] | null
     >(null),
     [employee, setEmployee] = useState<PayrollEmployee | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false);
-  const load = async (filters: Record<string, string> = {}) => {
+  const load = async (employeeCode = code, filters: Record<string, string> = {}) => {
+    const normalizedCode = employeeCode.trim().toUpperCase();
+    if (!normalizedCode) return;
     setError("");
     setLoading(true);
     try {
       const [records, payrollEmployee] = await Promise.all([
         section === "compensation"
-          ? getProfiles(code)
+          ? getProfiles(normalizedCode)
           : section === "calculations"
-            ? getCalculations(code)
+            ? getCalculations(normalizedCode)
             : section === "ledger"
-              ? getLedger(code, filters)
-              : getPayslips(code),
-        getPayrollEmployee(code),
+              ? getLedger(normalizedCode, filters)
+              : getPayslips(normalizedCode),
+        getPayrollEmployee(normalizedCode),
       ]);
+      setCode(normalizedCode);
       setData(records);
       setEmployee(payrollEmployee);
     } catch (x) {
@@ -824,6 +832,14 @@ function EmployeeDetail({ section }: { section: string }) {
       setLoading(false);
     }
   };
+  const requestedEmployee = searchParams.get("employee");
+  useEffect(() => {
+    if (requestedEmployee) {
+      const normalized = requestedEmployee.trim().toUpperCase();
+      setCode(normalized);
+      void load(normalized);
+    }
+  }, [requestedEmployee, section]);
   const title =
     section === "compensation"
       ? "Compensation"
@@ -841,7 +857,8 @@ function EmployeeDetail({ section }: { section: string }) {
         className="toolbar"
         onSubmit={(e) => {
           e.preventDefault();
-          void load();
+          setSearchParams(code ? { employee: code } : {});
+          void load(code);
         }}
       >
         <input
@@ -863,7 +880,7 @@ function EmployeeDetail({ section }: { section: string }) {
           <Badge label={employee.status} />
         </div>
       )}
-      {section === "compensation" && <ProfileForm code={code} reload={load} />}{" "}
+      {section === "compensation" && <ProfileForm code={code} reload={load} employee={employee} />}{" "}
       {section === "calculations" && (
         <form
           className="toolbar"
@@ -889,7 +906,7 @@ function EmployeeDetail({ section }: { section: string }) {
             const values = Object.fromEntries(
               new FormData(event.currentTarget as HTMLFormElement),
             ) as Record<string, string>;
-            void load(values);
+            void load(code, values);
           }}
         >
           <label>
@@ -1115,10 +1132,13 @@ function EmployeeDetail({ section }: { section: string }) {
 function ProfileForm({
   code,
   reload,
+  employee,
 }: {
   code: string;
   reload(): Promise<void>;
+  employee: PayrollEmployee | null;
 }) {
+  const [error, setError] = useState(""), [success, setSuccess] = useState(""), [busy, setBusy] = useState(false);
   return (
     <details className="card">
       <summary>Create compensation profile</summary>
@@ -1126,6 +1146,7 @@ function ProfileForm({
         className="form-grid"
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
+          setError(""); setSuccess(""); setBusy(true);
           const f = new FormData(e.currentTarget as HTMLFormElement);
           const body = {
             profileKey: f.get("profileKey"),
@@ -1140,17 +1161,19 @@ function ProfileForm({
               },
             ],
           };
-          void createProfile(code, body).then(reload);
+          void createProfile(code, body).then(async () => { await reload(); setSuccess("Compensation profile saved to the employee history."); }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to save compensation profile")).finally(() => setBusy(false));
         }}
       >
+        {error && <Notice>{error}</Notice>}
+        {success && <Notice tone="success">{success}</Notice>}
         {input("profileKey")}
         {input("currency", "USD")}
         {input("effectiveFrom", "", "date")}
         {input("effectiveTo", "", "date")}
         {input("componentKey")}
         {input("value", "0", "number")}
-        <Button variant="primary" disabled={!code}>
-          Create
+        <Button variant="primary" disabled={!code || busy || !employee}>
+          {busy ? "Saving…" : "Create"}
         </Button>
       </form>
     </details>

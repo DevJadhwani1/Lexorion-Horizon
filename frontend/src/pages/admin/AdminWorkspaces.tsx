@@ -6,6 +6,7 @@ import {
   createOrganizationWorkspace,
   getOrganizationWorkspaces,
   getProductCatalog,
+  setOrganizationWorkspaceProducts,
   setOrganizationWorkspaceStatus,
   type OrganizationWorkspace,
   type ProductCatalogItem,
@@ -64,6 +65,16 @@ export function AdminWorkspaces() {
     finally { setBusy(null); }
   }
 
+  async function updateProducts(workspace: OrganizationWorkspace, nextProducts: string[]) {
+    setBusy(workspace.key); setError(null);
+    try {
+      const updated = await setOrganizationWorkspaceProducts(workspace.key, nextProducts);
+      setWorkspaces((current) => current.map((item) => item.key === updated.key ? updated : item));
+      await workspaceContext.reload();
+    } catch (reason) { setError(reason instanceof ApiError ? reason.message : "Unable to update workspace products"); }
+    finally { setBusy(null); }
+  }
+
   const field: CSSProperties = { width: "100%", padding: "8px 9px", border: `1px solid ${t.border}`, borderRadius: 7, background: t.field, color: t.ink };
   const limit = getEntitlementLimit(effective, "platform.workspace_limit");
   const active = workspaces.filter(workspace => workspace.status === "ACTIVE").length;
@@ -80,9 +91,11 @@ export function AdminWorkspaces() {
     </form>
     {loading ? <p style={{ color: t.muted }}>Loading workspaces…</p> : workspaces.length === 0 ? <p style={{ color: t.muted }}>No workspaces have been provisioned.</p> :
       <div style={{ marginTop: 14, border: `1px solid ${t.border}`, borderRadius: 10, overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", color: t.body }}><thead><tr>{["Workspace", "Key", "Product", "Status", "Action"].map((heading) => <th key={heading} style={{ padding: 11, textAlign: "left", borderBottom: `1px solid ${t.border}` }}>{heading}</th>)}</tr></thead>
+        <table style={{ width: "100%", borderCollapse: "collapse", color: t.body }}><thead><tr>{["Workspace", "Key", "Products", "Status", "Action"].map((heading) => <th key={heading} style={{ padding: 11, textAlign: "left", borderBottom: `1px solid ${t.border}` }}>{heading}</th>)}</tr></thead>
           <tbody>{workspaces.map((workspace) => <tr key={workspace.key}>
-            <td style={{ padding: 11 }}>{workspace.displayName}</td><td style={{ padding: 11 }}><code>{workspace.key}</code></td><td style={{ padding: 11 }}>{workspace.products.map(product => product.displayName).join(", ")}</td>
+            <td style={{ padding: 11 }}>{workspace.displayName}</td><td style={{ padding: 11 }}><code>{workspace.key}</code></td><td style={{ padding: 11 }}>
+              <label>Enabled products<select aria-label={`Products for ${workspace.displayName}`} multiple value={workspace.products.map(product => product.key)} onChange={(event) => void updateProducts(workspace, Array.from(event.currentTarget.selectedOptions, option => option.value))} disabled={busy !== null || loading} style={field}>{products.map(product => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
+            </td>
             <td style={{ padding: 11 }}><Badge label={workspace.status} variant={workspace.status === "ACTIVE" ? "success" : "neutral"} /></td>
             <td style={{ padding: 11 }}><Button size="sm" variant={workspace.status === "ACTIVE" ? "destructive" : "secondary"} disabled={busy !== null} onClick={() => void toggle(workspace)}>{workspace.status === "ACTIVE" ? "Deactivate" : "Activate"}</Button></td>
           </tr>)}</tbody></table>

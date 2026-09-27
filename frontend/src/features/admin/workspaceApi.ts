@@ -25,3 +25,5 @@ export const createOrganizationWorkspace = (input: { key: string; displayName: s
   apiRequest<OrganizationWorkspace>("/api/tenant/workspaces", { method: "POST", body: input });
 export const setOrganizationWorkspaceStatus = (key: string, status: RegistryStatus) =>
   apiRequest<OrganizationWorkspace>(`/api/tenant/workspaces/${encodeURIComponent(key)}`, { method: "PATCH", body: { status } });
+export const setOrganizationWorkspaceProducts = (key: string, productKeys: string[]) =>
+  apiRequest<OrganizationWorkspace>(`/api/tenant/workspaces/${encodeURIComponent(key)}`, { method: "PATCH", body: { productKeys } });
