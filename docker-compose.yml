@@ -7,13 +7,30 @@ x-backend-healthcheck: &backend-healthcheck
   start_period: 30s
 
 x-database-environment: &database-environment
-  DB_HOST: ${DB_HOST:-host.docker.internal}
+  DB_HOST: ${DB_HOST:-postgres}
   DB_PORT: ${DB_PORT:-5432}
-  DB_USERNAME:
-  DB_PASSWORD:
+  DB_USERNAME: ${DB_USERNAME:-postgres}
+  DB_PASSWORD: ${DB_PASSWORD:-postgres}
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - horizon
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   eureka:
     build: ./backend/eureka-server
     environment:
@@ -31,13 +48,14 @@ services:
       <<: *database-environment
       PLATFORM_PORT: 9002
       DB_NAME: ${PLATFORM_DB_NAME:-platform_db}
-      JWT_SECRET:
-      WORKFORCE_SERVICE_TOKEN:
-      PAYROLL_SERVICE_TOKEN:
+      JWT_SECRET: ${JWT_SECRET:-local_jwt_secret_must_be_at_least_32_characters_long_for_hs256_to_work_properly}
+      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9002"]
     networks: [horizon]
     depends_on:
+      postgres: {condition: service_healthy}
       eureka: {condition: service_healthy}
     healthcheck:
       <<: *backend-healthcheck
@@ -50,12 +68,13 @@ services:
       WORKFORCE_PORT: 9004
       DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
       LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
-      WORKFORCE_SERVICE_TOKEN:
-      PAYROLL_SERVICE_TOKEN:
+      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9004"]
     networks: [horizon]
     depends_on:
+      postgres: {condition: service_healthy}
       eureka: {condition: service_healthy}
       platform: {condition: service_healthy}
     healthcheck:
@@ -70,11 +89,12 @@ services:
       DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
       LEXORION_PLATFORM_SERVICE_URL: http://platform:9002
       LEXORION_WORKFORCE_SERVICE_URL: http://workforce:9004
-      PAYROLL_SERVICE_TOKEN:
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9005"]
     networks: [horizon]
     depends_on:
+      postgres: {condition: service_healthy}
       eureka: {condition: service_healthy}
       platform: {condition: service_healthy}
       workforce: {condition: service_healthy}
@@ -92,6 +112,7 @@ services:
     expose: ["9006"]
     networks: [horizon]
     depends_on:
+      postgres: {condition: service_healthy}
       eureka: {condition: service_healthy}
     healthcheck:
       <<: *backend-healthcheck
@@ -120,7 +141,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9000/"]
+      test: ["CMD", "wget", "-q", "--spider", "--header", "Host: localhost", "http://127.0.0.1:9000/"]
 
 networks:
   horizon:
