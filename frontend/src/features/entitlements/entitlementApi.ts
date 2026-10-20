@@ -34,10 +34,11 @@ export function getEntitlementLimit(snapshot: EffectiveEntitlements, key: string
 }
 
 function findValue(snapshot: EffectiveEntitlements, key: string): EffectiveEntitlementValue | undefined {
-  for (const product of snapshot) {
-    const value = product.entitlements.find((item) => item.key === key);
+  for (const product of Array.isArray(snapshot) ? snapshot : []) {
+    // Treat a missing entitlement list as an empty list. Older platform API
+    // responses can omit it, and callers should not lose the entire page.
+    const value = (Array.isArray(product?.entitlements) ? product.entitlements : []).find((item) => item.key === key);
     if (value) return value;
   }
   return undefined;
 }
-

@@ -1,6 +1,7 @@
 package com.lexorion.platform.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.flywaydb.core.Flyway;import org.junit.jupiter.api.Test;import org.testcontainers.containers.PostgreSQLContainer;import org.testcontainers.junit.jupiter.Container;import org.testcontainers.junit.jupiter.Testcontainers;
+@SuppressWarnings("deprecation")
 @Testcontainers(disabledWithoutDocker=true)
 class PostgresMigrationTest {
     @Container static final PostgreSQLContainer<?> POSTGRES=new PostgreSQLContainer<>("postgres:16-alpine");
@@ -15,7 +16,7 @@ class PostgresMigrationTest {
             sql.execute("INSERT INTO users(id,created_at,updated_at,email,first_name,last_name,password_hash,status) VALUES ('00000000-0000-0000-0000-000000000006',now(),now(),'legacy-user@example.test','Legacy','User','unchanged-hash','ACTIVE')");
             sql.execute("INSERT INTO organization_memberships(id,created_at,updated_at,organization_id,user_id,role,status,joined_at) VALUES ('00000000-0000-0000-0000-000000000007',now(),now(),'00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000006','MANAGER','ACTIVE',now())");
             sql.execute("INSERT INTO organization_plan_assignments(id,created_at,updated_at,organization_id,plan_id,product_id,status) VALUES ('00000000-0000-0000-0000-000000000011',now(),now(),'00000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001','ACTIVE')");
-            assertThat(config.target("latest").load().migrate().migrationsExecuted).isEqualTo(5);
+            assertThat(config.target("latest").load().migrate().migrationsExecuted).isEqualTo(6);
             try (var result = sql.executeQuery("SELECT m.user_id, m.status, r.role FROM organization_memberships m JOIN horizon_membership_roles r ON r.membership_id=m.id WHERE m.id='00000000-0000-0000-0000-000000000007'")) {
                 assertThat(result.next()).isTrue(); assertThat(result.getString(1)).isEqualTo("00000000-0000-0000-0000-000000000006");
                 assertThat(result.getString(2)).isEqualTo("ACTIVE"); assertThat(result.getString(3)).isEqualTo("MANAGER");

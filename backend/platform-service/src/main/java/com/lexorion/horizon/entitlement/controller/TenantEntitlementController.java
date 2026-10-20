@@ -3,10 +3,11 @@ import com.lexorion.horizon.entitlement.dto.*;
 import com.lexorion.horizon.entitlement.service.*;
 import jakarta.validation.Valid;
 import java.util.List;
-import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/tenant")
+
+@RestController
+@RequestMapping("/api/tenant")
 public class TenantEntitlementController {
     private final EntitlementService entitlements; private final PlanAssignmentService assignments;
     public TenantEntitlementController(EntitlementService entitlements, PlanAssignmentService assignments) { this.entitlements = entitlements; this.assignments = assignments; }

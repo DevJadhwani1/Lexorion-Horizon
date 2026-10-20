@@ -12,7 +12,7 @@ export function RegisterPage() {
       <section className="auth-card auth-card-register" aria-labelledby="register-title">
         <Link to="/login" className="auth-back">← <span>Back</span></Link>
         <div className="auth-card-heading auth-register-heading">
-          <h1 id="register-title">Create your Lexorion account</h1>
+          <h1 id="register-title">Create your Horizon account</h1>
           <p>Account registration is managed by your organization.</p>
         </div>
         <div className="auth-registration-notice">

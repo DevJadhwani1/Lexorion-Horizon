@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useWorkspace } from "../workspace/WorkspaceProvider";
 import { AppShell } from "../layout/AppShell";
 import { Notice, Page } from "../components/ui/Page";
+import { InvitationPage } from "../pages/InvitationPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { HomePage } from "../pages/HomePage";
@@ -17,6 +18,7 @@ import { PlatformResourcesPage } from "../pages/platform/PlatformResourcesPage";
 import { PlatformWorkspacesPage } from "../pages/platform/PlatformWorkspacesPage";
 import { useApplicationContext } from "../context/ApplicationContext";
 import { consoleHost } from "./hostRouting";
+import { RouteErrorPage } from "./RouteErrorPage";
 
 function Protected() {
   const auth = useAuth();
@@ -110,7 +112,10 @@ const protectedRoute: RouteObject = host === "platform"
     : { path: "/app", element: <Protected />, children: [{ index: true, element: <ApplicationHome /> }, ...platformRoutes("platform"), ...clientRoutes(true), { path: "*", element: <ContextNotice title="Page not found">This Horizon page does not exist.</ContextNotice> }] };
 
 const router = createBrowserRouter([
+  { errorElement: <RouteErrorPage />, children: [
+  { path: "/invitations/accept", element: <InvitationPage /> },
   { path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> }, protectedRoute,
   { path: "*", element: <Navigate to={host === "local" ? "/app" : "/"} replace /> },
+  ] },
 ]);
 export function Router() { return <RouterProvider router={router} />; }

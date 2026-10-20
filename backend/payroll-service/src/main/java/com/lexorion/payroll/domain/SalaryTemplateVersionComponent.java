@@ -10,6 +10,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
+@SuppressWarnings("deprecation")
 @Check(constraints = "configured_value >= 0 and (percentage_basis is null or percentage_basis <> '')")
 @Table(name = "payroll_salary_template_version_components",
         uniqueConstraints = @UniqueConstraint(name = "uk_salary_template_version_component", columnNames = {"version_id", "component_definition_id"}),

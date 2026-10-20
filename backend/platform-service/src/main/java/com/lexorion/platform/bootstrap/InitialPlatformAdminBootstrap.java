@@ -5,12 +5,13 @@ import com.lexorion.core.platformaccess.entity.PlatformRole;
 import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
 import com.lexorion.core.platformaccess.service.PlatformAccessService;
 import com.lexorion.core.user.dto.CreateUserRequest;
-import com.lexorion.core.user.dto.UserResponse;
+import com.lexorion.core.user.repository.UserRepository;
 import com.lexorion.core.user.service.UserService;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.Comparator;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -26,13 +27,15 @@ public class InitialPlatformAdminBootstrap implements ApplicationRunner {
    private final BootstrapProperties properties;
    private final PlatformAccessRepository platformAccessRepository;
    private final UserService userService;
+   private final UserRepository userRepository;
    private final PlatformAccessService platformAccessService;
    private final Validator validator;
 
-   public InitialPlatformAdminBootstrap(BootstrapProperties properties, PlatformAccessRepository platformAccessRepository, UserService userService, PlatformAccessService platformAccessService, Validator validator) {
+   public InitialPlatformAdminBootstrap(BootstrapProperties properties, PlatformAccessRepository platformAccessRepository, UserService userService, UserRepository userRepository, PlatformAccessService platformAccessService, Validator validator) {
       this.properties = properties;
       this.platformAccessRepository = platformAccessRepository;
       this.userService = userService;
+      this.userRepository = userRepository;
       this.platformAccessService = platformAccessService;
       this.validator = validator;
    }
@@ -40,16 +43,21 @@ public class InitialPlatformAdminBootstrap implements ApplicationRunner {
    @Transactional
    public void run(ApplicationArguments args) {
       if (this.properties.isEnabled()) {
-         CreateUserRequest request = this.validatedRequest();
-         if (!this.platformAccessRepository.existsByRole(PlatformRole.SUPER_ADMIN)) {
-            UserResponse user = this.userService.create(request);
-            this.platformAccessService.grant(new CreatePlatformAccessRequest(user.id(), PlatformRole.SUPER_ADMIN));
+         // Bootstrap is provisioning, never an account repair or privilege restoration path.
+         if (this.userRepository.count() != 0 || this.platformAccessRepository.count() != 0) {
+            throw new IllegalStateException("Bootstrap requires an empty identity store. Disable LEXORION_BOOTSTRAP_ENABLED after initial provisioning; use authenticated administration to recover access.");
          }
+         CreateUserRequest request = this.validatedRequest();
+         UUID userId = this.userService.create(request).id();
+         this.platformAccessService.grant(new CreatePlatformAccessRequest(userId, PlatformRole.SUPER_ADMIN));
       }
    }
 
    private CreateUserRequest validatedRequest() {
-      CreateUserRequest request = new CreateUserRequest(UserService.normalizeEmail(this.properties.getEmail()), "Platform", "Administrator", this.properties.getPassword());
+      CreateUserRequest request = new CreateUserRequest(UserService.normalizeEmail(this.properties.getEmail()), FIRST_NAME, LAST_NAME, this.properties.getPassword());
+      if (request.password() == null || request.password().length() < 12 || request.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+         throw new IllegalStateException("Initial platform administrator bootstrap configuration is invalid: password must be at least 12 characters and at most 72 UTF-8 bytes");
+      }
       Set<ConstraintViolation<CreateUserRequest>> violations = this.validator.validate(request, new Class[0]);
       if (!violations.isEmpty()) {
          String details = (String)violations.stream().sorted(Comparator.comparing((v) -> v.getPropertyPath().toString())).map((v) -> {

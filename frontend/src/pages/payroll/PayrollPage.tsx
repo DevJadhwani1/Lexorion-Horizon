@@ -1,8 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { PayRunPreparation } from "./PayRunPreparation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/types";
 import {
-  addPayRunEmployee,
   assignSalaryTemplate,
   activateSalaryTemplateVersion,
   calculate,
@@ -29,6 +29,7 @@ import {
   getSalaryTemplates,
   getSalaryTemplateVersions,
   processPayRun,
+  recoverPayRun,
   updateComponent,
   updateSalaryTemplate,
   updateSalaryTemplateVersion,
@@ -44,6 +45,7 @@ import {
   type SalaryTemplate,
   type SalaryTemplateVersion,
 } from "../../features/payroll/payrollApi";
+import { workflowLink, workflowReturn } from "../../components/HorizonWorkflowNav";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
@@ -102,7 +104,7 @@ export function PayrollPage({ sectionKey }: { sectionKey?: string }) {
     );
   if (["compensation", "calculations", "ledger", "payslips"].includes(section))
     return <EmployeeDetail section={section} />;
-  if (loading)
+  if (loading && data === null)
     return (
       <Page title="Payroll">
         <p>Loading Payroll data…</p>
@@ -187,9 +189,9 @@ export function PayrollPage({ sectionKey }: { sectionKey?: string }) {
 function PayrollDashboard({ employeeCount }: { employeeCount: number }) {
   const steps = [
     [
-      "1",
+      "Optional",
       "Salary templates",
-      "Define reusable earning and deduction configurations.",
+      "Reuse configurations across employees, or create compensation directly.",
       "salary-templates",
     ],
     [
@@ -253,7 +255,9 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
           );
           void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(async () => {
             await reload();
-            navigate(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`);
+            const next = `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`;
+            const back = workflowReturn(searchParams.toString());
+            navigate(back ? workflowLink(next, back) : next);
           }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to configure Payroll employee")).finally(() => setBusy(false));
         }}
       >
@@ -811,9 +815,12 @@ function EmployeeDetail({ section }: { section: string }) {
     [employee, setEmployee] = useState<PayrollEmployee | null>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false);
+  const loadVersion = useRef(0);
   const load = async (employeeCode = code, filters: Record<string, string> = {}) => {
     const normalizedCode = employeeCode.trim().toUpperCase();
     if (!normalizedCode) return;
+    const version = ++loadVersion.current;
+    setData(null); setEmployee(null);
     setError("");
     setLoading(true);
     try {
@@ -827,13 +834,14 @@ function EmployeeDetail({ section }: { section: string }) {
               : getPayslips(normalizedCode),
         getPayrollEmployee(normalizedCode),
       ]);
+      if (version !== loadVersion.current) return;
       setCode(normalizedCode);
       setData(records);
       setEmployee(payrollEmployee);
     } catch (x) {
-      setError((x as Error).message);
+      if (version === loadVersion.current) setError((x as Error).message);
     } finally {
-      setLoading(false);
+      if (version === loadVersion.current) setLoading(false);
     }
   };
   const requestedEmployee = searchParams.get("employee");
@@ -843,6 +851,7 @@ function EmployeeDetail({ section }: { section: string }) {
       setCode(normalized);
       void load(normalized);
     }
+    return () => { loadVersion.current++; };
   }, [requestedEmployee, section]);
   const title =
     section === "compensation"
@@ -855,13 +864,13 @@ function EmployeeDetail({ section }: { section: string }) {
   return (
     <Page
       title={title}
-      description="Enter a public employee code to view workspace-scoped payroll history."
+      description="Choose an employee in this workspace to configure pay and review payroll results."
     >
       <form
         className="toolbar"
         onSubmit={(e) => {
           e.preventDefault();
-          setSearchParams(code ? { employee: code } : {});
+          setSearchParams(previous => { const next = new URLSearchParams(previous); if (code) next.set("employee", code); else next.delete("employee"); return next; });
           void load(code);
         }}
       >
@@ -869,13 +878,15 @@ function EmployeeDetail({ section }: { section: string }) {
           required
           placeholder="Employee code"
           value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          onChange={(e) => { loadVersion.current++; setCode(e.target.value.toUpperCase()); setEmployee(null); setData(null); setLoading(false); }}
         />
         <Button variant="primary" disabled={loading}>
           {loading ? "Loading…" : "Load employee"}
         </Button>
       </form>
-      {error && <Notice>{error}</Notice>}
+      {error && <Notice>{error}<p><Link to={workflowLink(`${appPath("/app/payroll/employees")}?employee=${encodeURIComponent(code)}`, `${appPath(`/app/payroll/${section}`)}?employee=${encodeURIComponent(code)}`)}>Review payroll employee configuration</Link></p></Notice>}
+      {!code && <Notice tone="info">Choose an employee from <Link to={appPath("/app/payroll/employees")}>Payroll employees</Link> to continue. Payroll enrollment and compensation are required before calculation.</Notice>}
+      {loading && <Notice tone="info">Loading employee history…</Notice>}
       {employee && (
         <div className="employee-context">
           <strong>{employee.employeeCode}</strong>
@@ -884,7 +895,8 @@ function EmployeeDetail({ section }: { section: string }) {
           <Badge label={employee.status} />
         </div>
       )}
-      {section === "compensation" && <ProfileForm code={code} reload={load} employee={employee} />}{" "}
+      {section === "compensation" && <ProfileForm code={employee?.employeeCode ?? ""} reload={load} employee={employee} />}{" "}
+      {section === "calculations" && <Notice tone="info">Calculations preview the full pay period containing the selected date. Recalculation creates a new snapshot and does not pay or consume compensation. Finalize a Pay Run to create ledger entries.</Notice>}
       {section === "calculations" && (
         <form
           className="toolbar"
@@ -893,13 +905,13 @@ function EmployeeDetail({ section }: { section: string }) {
             const date = String(
               new FormData(e.currentTarget as HTMLFormElement).get("date"),
             );
-            void calculate(code, date)
+            void calculate(employee!.employeeCode, date)
               .then(() => load())
               .catch((x) => setError((x as Error).message));
           }}
         >
           <input type="date" name="date" required />
-          <Button>Calculate</Button>
+          <Button disabled={!employee || loading}>Calculate</Button>
         </form>
       )}
       {section === "ledger" && data && (
@@ -945,7 +957,13 @@ function EmployeeDetail({ section }: { section: string }) {
           <Button>Apply filters</Button>
         </form>
       )}
-      {data && data.length === 0 && <Empty>No records.</Empty>}
+      {data && data.length === 0 && <Empty>{section === "compensation" ? "No compensation profiles yet. Create a profile with the employee’s eligible dates and pay components." : section === "calculations" ? "No calculation previews yet. Configure compensation, then choose a date in the intended pay period." : "No finalized results yet. Process and finalize a pay run to create ledger entries and payslips."}</Empty>}
+      {employee && <nav className="toolbar" aria-label="Employee payroll workflow">
+        <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Compensation</Link>
+        <Link to={`${appPath("/app/payroll/calculations")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Preview calculation</Link>
+        <Link to={appPath("/app/payroll/pay-runs")}>Pay runs</Link>
+      </nav>}
+      {section === "compensation" && employee && <p>Compensation uses configured earning or deduction components. <Link to={workflowLink(appPath("/app/payroll/components"), `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Configure pay components</Link> and return here to create the profile. Salary templates are optional.</p>}
       {data &&
         section === "compensation" &&
         (data as Profile[]).map((p) => (
@@ -995,6 +1013,7 @@ function EmployeeDetail({ section }: { section: string }) {
             key={`${c.calculationDate}-${calculationIndex}`}
           >
             <h3>{c.calculationDate}</h3>
+            <p>{c.periodStart && c.periodEnd ? `Period: ${c.periodStart} – ${c.periodEnd}` : "Historical snapshot: period was not recorded"}</p>
             <p>
               Gross {c.grossAmount} · Deductions {c.deductionAmount} · Net{" "}
               {c.netAmount} {c.currency}
@@ -1197,6 +1216,18 @@ function PayRuns({
   const [view, setView] = useState(page);
   useEffect(() => setView(page), [page]);
   const runs = view.content;
+  const [searchParams] = useSearchParams();
+  const requestedRun = searchParams.get("run");
+  useEffect(() => {
+    if (!requestedRun) return;
+    let active = true;
+    setSelected(null); setEmployees([]); setError(""); setBusy(true);
+    void Promise.all([getPayRun(requestedRun), getPayRunEmployees(requestedRun)])
+      .then(([run, included]) => { if (active) { setSelected(run); setEmployees(included); } })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to open Pay Run"); })
+      .finally(() => { if (active) setBusy(false); });
+    return () => { active = false; };
+  }, [requestedRun]);
   const open = async (r: PayRun) => {
     setSelected(r);
     try {
@@ -1214,7 +1245,11 @@ function PayRuns({
       await open(updated);
       await reload();
     } catch (x) {
-      setError(x instanceof ApiError ? x.message : "Unable to update Pay Run");
+      setError((x instanceof ApiError ? x.message : "Unable to update Pay Run") + (selected?.status === "CALCULATED" ? " Refresh the run. If it is still Calculated, retry Finalize; if Finalized, review its ledger." : ""));
+      if (selected) {
+        try { await open(await getPayRun(selected.payRunKey)); }
+        catch { /* Keep the actionable original error if the service is unavailable. */ }
+      }
       await reload();
     } finally {
       setBusy(false);
@@ -1227,7 +1262,7 @@ function PayRuns({
     finally { setBusy(false); }
   };
   return (
-    <Page title="Pay Runs">
+    <Page title="Pay Runs" description="Use a full calendar month or an aligned 7/14-day period. Compensation must cover the whole period. One-time components apply only in the profile’s first period; proration is not supported.">
       <details className="card">
         <summary>Create pay run</summary>
         <form
@@ -1239,7 +1274,7 @@ function PayRuns({
               Object.fromEntries(
                 new FormData(e.currentTarget as HTMLFormElement),
               ),
-            ).then(reload).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to create Pay Run")).finally(() => setBusy(false));
+            ).then(async (run) => { await open(run); await reload(); }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to create Pay Run")).finally(() => setBusy(false));
           }}
         >
           {input("payRunKey")}
@@ -1296,27 +1331,10 @@ function PayRuns({
               <p className="snapshot-note">{payRunGuidance(selected.status)}</p>
             </div>
           </div>
-          {selected.status === "DRAFT" && (
-            <form
-              className="toolbar"
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                const code = String(
-                  new FormData(e.currentTarget as HTMLFormElement).get(
-                    "employeeCode",
-                  ),
-                );
-                setBusy(true);
-                void addPayRunEmployee(selected.payRunKey, code)
-                  .then(() => open(selected))
-                  .catch((x) => setError(x instanceof ApiError ? x.message : "Unable to include employee"))
-                  .finally(() => setBusy(false));
-              }}
-            >
-              <input name="employeeCode" placeholder="Employee code" required />
-              <Button disabled={busy}>Add employee</Button>
-            </form>
-          )}
+          {selected.status === "DRAFT" && <PayRunPreparation key={selected.payRunKey} run={selected} busy={busy}
+            onSaved={async () => { await open(await getPayRun(selected.payRunKey)); await reload(); }}
+            onProcess={() => { if (confirm("Process this pay run?")) void mutate(() => processPayRun(selected.payRunKey)); }} />}
+          {selected.status !== "DRAFT" && <>
           {employees.length ? (
             <Table
               headers={[
@@ -1329,7 +1347,10 @@ function PayRuns({
             >
               {employees.map((e) => (
                 <tr key={e.employeeCode}>
-                  <td>{e.employeeCode}</td>
+                  <td><strong>{e.employeeCode}</strong><br />{selected.status === "FINALIZED" ? <>
+                    <Link to={workflowLink(`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Ledger</Link>{" · "}
+                    <Link to={workflowLink(`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Payslip</Link>
+                  </> : <Link to={workflowLink(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Review compensation</Link>}</td>
                   <td>{money(e.grossAmount, e.currency)}</td>
                   <td>{money(e.deductionAmount, e.currency)}</td>
                   <td>{money(e.netAmount, e.currency)}</td>
@@ -1340,18 +1361,8 @@ function PayRuns({
           ) : (
             <Empty>No employees have been included in this pay run.</Empty>
           )}
+          </>}
           <div className="toolbar">
-            {selected.status === "DRAFT" && (
-              <Button
-                disabled={busy || !employees.length}
-                onClick={() =>
-                  confirm("Process this pay run?") &&
-                  void mutate(() => processPayRun(selected.payRunKey))
-                }
-              >
-                Process
-              </Button>
-            )}
             {selected.status === "CALCULATED" && (
               <Button
                 variant="primary"
@@ -1364,6 +1375,7 @@ function PayRuns({
                 Finalize
               </Button>
             )}
+            {selected.status === "CALCULATED" && <Button disabled={busy} onClick={() => confirm("Return this run to Draft? Previous calculation snapshots remain in history; process again before finalizing.") && void mutate(() => recoverPayRun(selected.payRunKey))}>Reset for recalculation</Button>}
             {selected.status === "FINALIZED" && (
               <Notice tone="success">
                 Finalized payroll is immutable. Use Employee Ledger or Payslips
@@ -1373,9 +1385,10 @@ function PayRuns({
             {selected.status === "PROCESSING" && (
               <Button disabled={busy} onClick={() => void mutate(() => getPayRun(selected.payRunKey))}>Refresh processing state</Button>
             )}
-            {selected.status === "FAILED" && (
-              <Notice>Processing failed. Review the API error and correct the Pay Run before creating a new run.</Notice>
-            )}
+            {(selected.status === "FAILED" || selected.status === "PROCESSING") && <>
+              <Notice>{selected.failureMessage || (selected.status === "FAILED" ? "Processing failed. Correct compensation or service availability, recover to draft, then process again. For incorrect immutable period dates, create a new run." : "Refresh before recovery. Abandoned processing can be recovered after five minutes; an active transaction must finish first.")}</Notice>
+              <Button disabled={busy} onClick={() => void mutate(() => recoverPayRun(selected.payRunKey))}>Recover to draft</Button>
+            </>}
           </div>
         </article>
       )}
@@ -1428,7 +1441,7 @@ const money = (value: number, currency: string) =>
   );
 const payRunGuidance = (status: string) =>
   status === "DRAFT"
-    ? "Add employees, then process the run. Draft membership is editable."
+    ? "Review eligibility for this period, save your employee selection, then process to calculate."
     : status === "PROCESSING"
       ? "Payroll calculations are currently being processed."
       : status === "CALCULATED"

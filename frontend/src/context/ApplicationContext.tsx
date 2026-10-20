@@ -18,7 +18,7 @@ export function ApplicationContextProvider({ children }: { children: ReactNode }
   const auth = useAuth();
   const hasPlatformAccess = Boolean(auth.user?.platformAccess?.active);
   const hostMode = consoleHost();
-  const [mode, setMode] = useState<ApplicationMode>(() => hostMode === "platform" ? "platform" : "client");
+  const [mode, setMode] = useState<ApplicationMode>(() => hostMode === "platform" || hostMode === "local" && session.mode() === "platform" ? "platform" : "client");
 
   useEffect(() => {
     if (!auth.user) {

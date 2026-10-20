@@ -1,0 +1,11 @@
+ALTER TABLE compensation_profiles ADD COLUMN pay_frequency VARCHAR(16);
+UPDATE compensation_profiles SET pay_frequency = (SELECT e.pay_frequency FROM payroll_employees e WHERE e.id = compensation_profiles.payroll_employee_id);
+ALTER TABLE compensation_profiles ALTER COLUMN pay_frequency SET NOT NULL;
+ALTER TABLE payroll_calculations ADD COLUMN period_start DATE;
+ALTER TABLE payroll_calculations ADD COLUMN period_end DATE;
+ALTER TABLE payroll_calculations ADD COLUMN source_profile_key VARCHAR(64);
+ALTER TABLE payroll_calculations ADD COLUMN pay_frequency VARCHAR(16);
+ALTER TABLE payroll_calculation_lines ADD COLUMN source_assignment_id UUID;
+ALTER TABLE payroll_pay_runs ADD COLUMN processing_attempt UUID;
+ALTER TABLE payroll_pay_runs ADD COLUMN processing_started_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE payroll_pay_runs ADD COLUMN failure_message VARCHAR(255);

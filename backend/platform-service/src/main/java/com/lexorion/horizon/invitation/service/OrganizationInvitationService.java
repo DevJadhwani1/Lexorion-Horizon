@@ -43,8 +43,9 @@ public class OrganizationInvitationService {
    private final InvitationDelivery delivery;
    private final InvitationProperties properties;
    private final Clock clock;
+   private final com.lexorion.platform.domain.context.OrganizationContextHolder organizationContext;
 
-   public OrganizationInvitationService(TenantAccessContextHolder tenantContextHolder, OrganizationInvitationRepository invitationRepository, OrganizationMembershipRepository membershipRepository, OrganizationRepository organizationRepository, UserRepository userRepository, InvitationTokenService tokenService, InvitationDelivery delivery, InvitationProperties properties, Clock clock) {
+   public OrganizationInvitationService(TenantAccessContextHolder tenantContextHolder, OrganizationInvitationRepository invitationRepository, OrganizationMembershipRepository membershipRepository, OrganizationRepository organizationRepository, UserRepository userRepository, InvitationTokenService tokenService, InvitationDelivery delivery, InvitationProperties properties, Clock clock, com.lexorion.platform.domain.context.OrganizationContextHolder organizationContext) {
       this.tenantContextHolder = tenantContextHolder;
       this.invitationRepository = invitationRepository;
       this.membershipRepository = membershipRepository;
@@ -54,6 +55,7 @@ public class OrganizationInvitationService {
       this.delivery = delivery;
       this.properties = properties;
       this.clock = clock;
+      this.organizationContext = organizationContext;
    }
 
    public InvitationResponse create(String email, OrganizationRole role) {
@@ -84,10 +86,59 @@ public class OrganizationInvitationService {
          invitation.setExpiresAt(now.plus(this.properties.ttl()));
          invitation.setInvitedBy(inviter);
          invitation = (OrganizationInvitation)this.invitationRepository.saveAndFlush(invitation);
-         this.delivery.deliver(new InvitationDelivery.InvitationMessage(normalizedEmail, organization.getName(), organization.getSlug(), rawToken, invitation.getExpiresAt()));
+         this.deliver(invitation, rawToken);
          return InvitationResponse.from(invitation, now);
       }
    }
+
+   // SMTP acceptance does not prove inbox delivery. On failure the invitation stays visible and retryable.
+   private void deliver(OrganizationInvitation invitation, String rawToken) {
+      invitation.setDeliveryAttemptedAt(clock.instant());
+      try {
+         delivery.deliver(new InvitationDelivery.InvitationMessage(invitation.getNormalizedEmail(),
+               invitation.getOrganization().getName(), invitation.getOrganization().getSlug(), rawToken, invitation.getExpiresAt()));
+         invitation.setDeliveryStatus("SUBMITTED");
+         invitation.setDeliveryError(null);
+      } catch (RuntimeException failure) {
+         invitation.setDeliveryStatus("FAILED");
+         // Provider exceptions may contain credentials or recipient/token data; do not persist or return them.
+         invitation.setDeliveryError("Email submission failed. Check SMTP configuration and retry delivery.");
+      }
+      invitationRepository.saveAndFlush(invitation);
+   }
+
+   public InvitationResponse resend(UUID invitationId) {
+      TenantAccessContext actor = requireAdministrator();
+      lockMutableOrganization(actor.organizationId());
+      OrganizationInvitation invitation = invitationRepository.findTenantInvitation(invitationId, actor.organizationId())
+            .orElseThrow(() -> ResourceNotFoundException.of("Invitation", invitationId));
+      if (invitation.getStatus() != InvitationStatus.PENDING || !invitation.getExpiresAt().isAfter(clock.instant()))
+         throw new InvitationConflictException("Only an unexpired pending invitation can be resent. Create a new invitation instead.");
+      String token = tokenService.generate();
+      invitation.setTokenHash(tokenService.hash(token));
+      deliver(invitation, token);
+      return InvitationResponse.from(invitation, clock.instant());
+   }
+
+   @Transactional(readOnly = true)
+   public InvitationPreview preview(String token) {
+      OrganizationInvitation invitation = pending(token);
+      return new InvitationPreview(invitation.getNormalizedEmail(), invitation.getOrganization().getSlug(),
+            invitation.getOrganization().getName(), userRepository.findByEmailIgnoreCase(invitation.getNormalizedEmail()).isPresent());
+   }
+
+   OrganizationInvitation pending(String token) {
+      OrganizationInvitation invitation = invitationRepository.findByTokenHash(tokenService.hash(token))
+            .orElseThrow(() -> new InvalidInvitationException("Invitation is invalid"));
+      if (invitation.getStatus() != InvitationStatus.PENDING || !invitation.getExpiresAt().isAfter(clock.instant()))
+         throw new InvitationConflictException("Invitation has expired or is no longer pending");
+      if (!invitation.getOrganization().getStatus().allowsTenantAccess())
+         throw new InvitationConflictException("The invited organization is not available");
+      requireMatchingOrganization(invitation);
+      return invitation;
+   }
+
+   public record InvitationPreview(String email, String organizationSlug, String organizationName, boolean accountExists) {}
 
    @Transactional(
       readOnly = true
@@ -117,6 +168,7 @@ public class OrganizationInvitationService {
    public InvitationAcceptanceResponse accept(String rawToken, AuthenticatedUser authenticatedUser) {
       String tokenHash = this.tokenService.hash(rawToken);
       OrganizationInvitation snapshot = (OrganizationInvitation)this.invitationRepository.findByTokenHash(tokenHash).orElseThrow(() -> new InvalidInvitationException("Invitation is invalid"));
+      requireMatchingOrganization(snapshot);
       Organization organization = this.lockMutableOrganizationForAcceptance(snapshot.getOrganization().getId());
       OrganizationInvitation invitation = (OrganizationInvitation)this.invitationRepository.findByTokenHashForUpdate(tokenHash).orElseThrow(() -> new InvalidInvitationException("Invitation is invalid"));
       Instant now = this.clock.instant();
@@ -145,6 +197,13 @@ public class OrganizationInvitationService {
             return new InvitationAcceptanceResponse(organization.getSlug(), organization.getName(), invitation.getIntendedRole());
          }
       }
+   }
+
+   private void requireMatchingOrganization(OrganizationInvitation invitation) {
+      organizationContext.get().ifPresent(context -> {
+         if (!context.organizationId().equals(invitation.getOrganization().getId()))
+            throw new AccessDeniedException("Invitation does not belong to the selected organization");
+      });
    }
 
    private TenantAccessContext requireAdministrator() {

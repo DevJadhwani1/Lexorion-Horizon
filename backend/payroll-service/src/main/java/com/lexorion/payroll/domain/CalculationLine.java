@@ -9,10 +9,12 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "payroll_calculation_lines", indexes = @Index(name = "idx_calculation_line_calculation", columnList = "calculation_id"))
+@SuppressWarnings("deprecation")
 @Check(constraints = "configured_value >= 0 and calculated_amount >= 0")
 @Getter @Setter @NoArgsConstructor
 public class CalculationLine extends Auditable {
     @Id @UuidGenerator private UUID id;
+    @Column(name = "source_assignment_id", updatable = false) private UUID sourceAssignmentId;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "calculation_id", nullable = false, updatable = false) private Calculation calculation;
     @Column(name = "component_key", nullable = false, updatable = false, length = 64) private String componentKey;

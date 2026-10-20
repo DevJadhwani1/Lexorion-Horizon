@@ -57,7 +57,7 @@ public class CompensationService {
             throw new PayrollException(409, "Compensation profile overlaps an existing profile");
         }
         CompensationProfile profile = new CompensationProfile();
-        profile.setPayrollEmployee(employee);
+        profile.setPayrollEmployee(employee); profile.setPayFrequency(employee.getPayFrequency());
         profile.setProfileKey(key);
         profile.setCurrency(PayrollEmployeeService.currency(request.currency()));
         profile.setEffectiveFrom(request.effectiveFrom());
@@ -97,7 +97,7 @@ public class CompensationService {
         if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) throw new PayrollException(400, "effectiveTo cannot precede effectiveFrom");
         if (profiles.findByPayrollEmployeeWorkspaceIdAndPayrollEmployeeEmployeeCodeAndProfileKey(scope.context().workspaceId(), code, key).isPresent()) throw new PayrollException(409, "Compensation profile key already exists");
         if (profiles.countOverlaps(employee.getId(), effectiveFrom, effectiveTo) > 0) throw new PayrollException(409, "Compensation profile overlaps an existing profile");
-        CompensationProfile profile = new CompensationProfile();profile.setPayrollEmployee(employee);profile.setProfileKey(key);profile.setSourceTemplateKey(version.getTemplate().getTemplateKey());profile.setSourceTemplateVersion(version.getVersionNumber());profile.setCurrency(version.getCurrency());profile.setEffectiveFrom(effectiveFrom);profile.setEffectiveTo(effectiveTo);profile.setStatus(CompensationProfileStatus.ACTIVE);
+        CompensationProfile profile = new CompensationProfile();profile.setPayrollEmployee(employee); profile.setPayFrequency(employee.getPayFrequency());profile.setProfileKey(key);profile.setSourceTemplateKey(version.getTemplate().getTemplateKey());profile.setSourceTemplateVersion(version.getVersionNumber());profile.setCurrency(version.getCurrency());profile.setEffectiveFrom(effectiveFrom);profile.setEffectiveTo(effectiveTo);profile.setStatus(CompensationProfileStatus.ACTIVE);
         if (version.getEffectiveTo() != null && (effectiveTo == null || effectiveTo.isAfter(version.getEffectiveTo()))) throw new PayrollException(409, "Assignment effective dates exceed template version");
         for (SalaryTemplateVersionComponent item : version.getComponents()) {ComponentAssignment assignment=new ComponentAssignment();assignment.setProfile(profile);assignment.setDefinition(item.getDefinition());assignment.setValue(item.getValue());snapshot(assignment,item.getDefinition(),item.getPercentageBasis());profile.getAssignments().add(assignment);}
         return response(profiles.saveAndFlush(profile));
@@ -128,7 +128,7 @@ public class CompensationService {
     }
 
     private ProfileResponse response(CompensationProfile profile) {
-        PayFrequency frequency = profile.getPayrollEmployee().getPayFrequency();
+        PayFrequency frequency = profile.getPayFrequency();
         List<AssignmentResponse> items = profile.getAssignments().stream()
                 .sorted(Comparator.comparing(a -> a.getDefinition().getComponentKey()))
                 .map(assignment -> {

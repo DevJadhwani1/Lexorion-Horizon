@@ -1,9 +1,7 @@
 package com.lexorion.platform.organization.service;
 
-import com.lexorion.core.exception.DuplicateResourceException;
 import com.lexorion.core.exception.ResourceNotFoundException;
 import com.lexorion.horizon.membership.entity.MembershipStatus;
-import com.lexorion.horizon.membership.entity.OrganizationMembership;
 import com.lexorion.horizon.membership.entity.OrganizationRole;
 import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
 import com.lexorion.platform.organization.dto.CreateOrganizationRequest;
@@ -12,10 +10,8 @@ import com.lexorion.platform.organization.dto.UpdateOrganizationRequest;
 import com.lexorion.platform.organization.dto.UpdateOrganizationStatusRequest;
 import com.lexorion.core.organization.entity.Organization;
 import com.lexorion.core.organization.entity.OrganizationStatus;
-import com.lexorion.core.organization.exception.InvalidLifecycleTransitionException;
 import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import com.lexorion.core.organization.repository.OrganizationRepository;
-import com.lexorion.core.user.entity.User;
 import com.lexorion.core.user.service.UserService;
 import com.lexorion.core.organization.service.TenantSlugService;
 import java.time.Clock;
@@ -32,6 +28,7 @@ public class OrganizationService {
    private final com.lexorion.core.organization.service.CoreOrganizationService coreOrganizations;
    private final OrganizationRepository organizationRepository;
    private final OrganizationMembershipRepository membershipRepository;
+   @SuppressWarnings("unused")
    private final UserService userService;
    private final TenantSlugService tenantSlugService;
    private final Clock clock;

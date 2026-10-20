@@ -17,9 +17,4 @@ public enum OrganizationStatus {
    public boolean allowsTenantAccess() {
       return this == TRIAL || this == ACTIVE;
    }
-
-   // $FF: synthetic method
-   private static OrganizationStatus[] $values() {
-      return new OrganizationStatus[]{PENDING, TRIAL, ACTIVE, SUSPENDED, CANCELLED, TERMINATED};
-   }
 }

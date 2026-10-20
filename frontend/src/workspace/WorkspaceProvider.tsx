@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getAccessibleWorkspaces, type OrganizationWorkspace } from "../features/admin/workspaceApi";
 import { getProductAccess } from "../core/coreApi";
 import { ApiError } from "../api/types";
@@ -24,11 +24,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [workspaces, setWorkspaces] = useState<OrganizationWorkspace[]>([]);
   const [key, setKey] = useState(session.workspace());
+  const scope = mode === "client" ? organization?.organizationId ?? null : null;
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  const requestVersion = useRef(0);
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
+    const requestScope = scope;
+    const version = ++requestVersion.current;
+    const isCurrent = () => currentScope.current === requestScope && requestVersion.current === version;
     const storedKey = session.workspace();
     setKey(storedKey);
     setError("");
+    setWorkspaces([]);
+    setLoadedScope(requestScope);
     if (mode !== "client" || !organization) {
       setWorkspaces([]);
       setLoading(false);
@@ -37,6 +47,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const products = await getProductAccess(organization.organizationId);
+      if (!isCurrent()) return;
       if (!products.some((product) => product.productKey === "horizon")) {
         setWorkspaces([]);
         session.setWorkspace(null);
@@ -45,36 +56,38 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return;
       }
       const items = await getAccessibleWorkspaces();
+      if (!isCurrent()) return;
       setWorkspaces(items);
       if (storedKey && !items.some((item) => item.key === storedKey)) {
         session.setWorkspace(null);
         setKey(null);
       }
     } catch (reason) {
+      if (!isCurrent()) return;
       setWorkspaces([]);
       setError(reason instanceof ApiError ? reason.message : "Unable to load workspaces.");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
-  }, [mode, organization]);
+  }, [mode, organization, scope]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
   const selectWorkspace = (next: string) => {
-    const selected = next || null;
+    const selected = loadedScope === scope && workspaces.some(item => item.key === next) ? next : null;
     session.setWorkspace(selected);
     setKey(selected);
   };
   const value = useMemo(() => ({
-    loading,
-    error,
-    workspaces,
-    workspace: workspaces.find((item) => item.key === key) ?? null,
+    loading: scope !== loadedScope || loading,
+    error: scope === loadedScope ? error : "",
+    workspaces: scope === loadedScope ? workspaces : [],
+    workspace: scope === loadedScope ? workspaces.find((item) => item.key === key) ?? null : null,
     selectWorkspace,
     reload,
-  }), [loading, error, workspaces, key, reload]);
+  }), [loading, error, workspaces, key, reload, scope, loadedScope]);
 
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

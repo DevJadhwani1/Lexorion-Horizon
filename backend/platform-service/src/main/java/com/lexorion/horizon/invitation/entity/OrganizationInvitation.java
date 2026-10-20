@@ -84,6 +84,19 @@ public class OrganizationInvitation extends Auditable {
    )
    private Instant acceptedAt;
 
+   @Column(name = "delivery_status", nullable = false, length = 20)
+   private String deliveryStatus = "NOT_SENT";
+   @Column(name = "delivery_error", length = 255)
+   private String deliveryError;
+   @Column(name = "delivery_attempted_at")
+   private Instant deliveryAttemptedAt;
+   public String getDeliveryStatus() { return deliveryStatus; }
+   public void setDeliveryStatus(String status) { deliveryStatus = status; }
+   public String getDeliveryError() { return deliveryError; }
+   public void setDeliveryError(String error) { deliveryError = error; }
+   public Instant getDeliveryAttemptedAt() { return deliveryAttemptedAt; }
+   public void setDeliveryAttemptedAt(Instant at) { deliveryAttemptedAt = at; }
+
    @Generated
    public UUID getId() {
       return this.id;

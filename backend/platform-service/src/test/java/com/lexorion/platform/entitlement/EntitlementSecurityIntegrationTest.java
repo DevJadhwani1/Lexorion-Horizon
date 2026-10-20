@@ -200,6 +200,20 @@ class EntitlementSecurityIntegrationTest {
         enabled.setBooleanValue(true); planEntitlements.saveAndFlush(enabled);
     }
 
+    @Test void removingPayrollProductRevokesExistingServiceAuthority() throws Exception {
+        assign(owner, "starter", "alpha").andExpect(status().isOk());
+        tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"key\":\"shared\",\"displayName\":\"Shared\",\"productKeys\":[\"workforce\",\"payroll\"]}"), owner, "alpha", HOST).andExpect(status().isCreated());
+        String bearer=token(owner);
+        for (boolean attached : java.util.List.of(true, false, true)) {
+            tenant(patch("/api/tenant/workspaces/shared").contentType(MediaType.APPLICATION_JSON)
+                .content(attached ? "{\"productKeys\":[\"workforce\",\"payroll\"]}" : "{\"productKeys\":[\"workforce\"]}"), owner, "alpha", HOST).andExpect(status().isOk());
+            mvc.perform(get("/internal/payroll/workspaces/shared/context").header("Host", HOST).header("Authorization", "Bearer " + bearer)
+                .header("X-Lexorion-Organization", "alpha").header("X-Lexorion-Service-Token", "test-payroll-service-token-32-bytes-minimum"))
+                .andExpect(attached ? status().isOk() : status().isForbidden());
+        }
+    }
+
     @Test void concurrentBusinessWorkspaceCreationCannotExceedOrganizationCapacity() throws Exception {
         assign(owner, "business", "alpha").andExpect(status().isOk());
         String accessToken = token(owner);

@@ -6,9 +6,9 @@ import com.lexorion.horizon.membership.entity.OrganizationRole;
 import java.time.Instant;
 import java.util.UUID;
 
-public record InvitationResponse(UUID invitationId, String email, OrganizationRole role, InvitationStatus status, Instant expiresAt, String invitedByEmail, Instant acceptedAt, Instant createdAt) {
+public record InvitationResponse(UUID invitationId, String email, OrganizationRole role, InvitationStatus status, Instant expiresAt, String invitedByEmail, Instant acceptedAt, Instant createdAt, String deliveryStatus, String deliveryError, Instant deliveryAttemptedAt) {
    public static InvitationResponse from(OrganizationInvitation invitation, Instant now) {
       InvitationStatus effectiveStatus = invitation.getStatus() == InvitationStatus.PENDING && !invitation.getExpiresAt().isAfter(now) ? InvitationStatus.EXPIRED : invitation.getStatus();
-      return new InvitationResponse(invitation.getId(), invitation.getNormalizedEmail(), invitation.getIntendedRole(), effectiveStatus, invitation.getExpiresAt(), invitation.getInvitedBy().getEmail(), invitation.getAcceptedAt(), invitation.getCreatedAt());
+      return new InvitationResponse(invitation.getId(), invitation.getNormalizedEmail(), invitation.getIntendedRole(), effectiveStatus, invitation.getExpiresAt(), invitation.getInvitedBy().getEmail(), invitation.getAcceptedAt(), invitation.getCreatedAt(), invitation.getDeliveryStatus(), invitation.getDeliveryError(), invitation.getDeliveryAttemptedAt());
    }
 }

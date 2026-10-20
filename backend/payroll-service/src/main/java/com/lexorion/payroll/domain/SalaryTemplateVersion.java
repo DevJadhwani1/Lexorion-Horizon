@@ -10,6 +10,7 @@ import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
+@SuppressWarnings("deprecation")
 @Check(constraints = "effective_to is null or effective_to >= effective_from")
 @Table(name = "payroll_salary_template_versions",
         uniqueConstraints = @UniqueConstraint(name = "uk_salary_template_version_number", columnNames = {"template_id", "version_number"}),

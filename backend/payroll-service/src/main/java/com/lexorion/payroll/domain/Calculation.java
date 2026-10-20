@@ -12,6 +12,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "payroll_calculations", indexes = {
         @Index(name = "idx_calculation_workspace", columnList = "workspace_id"),
         @Index(name = "idx_calculation_employee_date", columnList = "workspace_id,employee_code,calculation_date")})
+@SuppressWarnings("deprecation")
 @Check(constraints = "gross_amount >= 0 and deduction_amount >= 0 and net_amount >= 0")
 @Getter @Setter @NoArgsConstructor
 public class Calculation extends Auditable {
@@ -20,6 +21,10 @@ public class Calculation extends Auditable {
     @JoinColumn(name = "workspace_id", nullable = false, updatable = false) private PayrollWorkspace workspace;
     @Column(name = "employee_code", nullable = false, updatable = false, length = 64) private String employeeCode;
     @Column(name = "calculation_date", nullable = false, updatable = false) private LocalDate calculationDate;
+    @Column(name = "period_start", updatable = false) private LocalDate periodStart;
+    @Column(name = "period_end", updatable = false) private LocalDate periodEnd;
+    @Column(name = "source_profile_key", updatable = false, length = 64) private String sourceProfileKey;
+    @Enumerated(EnumType.STRING) @Column(name = "pay_frequency", updatable = false, length = 16) private PayFrequency payFrequency;
     @Column(nullable = false, updatable = false, length = 3) private String currency;
     @Column(name = "gross_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal grossAmount;
     @Column(name = "deduction_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal deductionAmount;

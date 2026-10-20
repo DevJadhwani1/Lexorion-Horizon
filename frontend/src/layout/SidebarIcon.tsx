@@ -1,7 +1,8 @@
-export type IconName = "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels";
+export type IconName = "sidebar" | "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels";
 
 export function Icon({ name }: { name: IconName }) {
   const paths = {
+    sidebar: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></>,
     home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,
     admin: <><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8 9h8M8 13h8M8 17h5" /></>,
     workforce: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2" /><path d="M3 20a6 6 0 0 1 12 0M14 16a5 5 0 0 1 7 4" /></>,

@@ -84,9 +84,10 @@ export function AdminWorkspaces() {
   return <AdminScreen sectionKey="workspaces" title="Workspaces">
     <p style={{ color: t.muted, marginTop: 0 }}>Provision products as organization workspaces. Workspace keys are stable tenant-facing identifiers.</p>
     {limit !== null && <p>{active} / {limit} active workspaces · {effective[0]?.planName}</p>}
+    {!loading && products.length === 0 && !error && <p role="status">No products are available under this organization’s current plan. Open Entitlements to review the plan, or ask a Horizon platform administrator to assign one.</p>}
     {error && <div role="alert" style={{ marginBottom: 12, color: SEMANTIC.danger.fg }}>{error}</div>}
     <form onSubmit={(event) => void create(event)} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10, alignItems: "end", border: `1px solid ${t.border}`, borderRadius: 10, padding: 14 }}>
-      <label style={{ color: t.muted, fontSize: 12 }}>Workspace key<input required pattern="[a-z0-9](?:[a-z0-9-]*[a-z0-9])?" value={key} onChange={(event) => setKey(event.target.value.toLowerCase())} style={field} /></label>
+      <label style={{ color: t.muted, fontSize: 12 }}>Workspace key<input required pattern="[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?" value={key} onChange={(event) => setKey(event.target.value.toLowerCase())} style={field} /></label>
       <label style={{ color: t.muted, fontSize: 12 }}>Display name<input required value={displayName} onChange={(event) => setDisplayName(event.target.value)} style={field} /></label>
       <label style={{ color: t.muted, fontSize: 12 }}>Products<select multiple required value={productKeys} onChange={(event) => setProductKeys(Array.from(event.target.selectedOptions, option => option.value))} style={field}>{products.map((product) => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
       <Button type="submit" variant="primary" disabled={loading || full || busy !== null || products.length === 0}>Create workspace</Button>
@@ -97,7 +98,7 @@ export function AdminWorkspaces() {
           <tbody>{workspaces.map((workspace) => <tr key={workspace.key}>
             <td style={{ padding: 11 }}>{workspace.displayName}</td><td style={{ padding: 11 }}><code>{workspace.key}</code></td><td style={{ padding: 11 }}>
               <form onSubmit={(event) => { event.preventDefault(); void updateProducts(workspace, productEdits[workspace.key] ?? workspace.products.map((product) => product.key)); }}>
-                <label>Enabled products<select aria-label={`Products for ${workspace.displayName}`} multiple value={productEdits[workspace.key] ?? workspace.products.map(product => product.key)} onChange={(event) => setProductEdits((current) => ({ ...current, [workspace.key]: Array.from(event.currentTarget.selectedOptions, option => option.value) }))} disabled={busy !== null || loading} style={field}>{products.map(product => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
+                <label>Enabled products<select aria-label={`Products for ${workspace.displayName}`} multiple value={productEdits[workspace.key] ?? workspace.products.map(product => product.key)} onChange={(event) => { const selected = Array.from(event.currentTarget.selectedOptions, option => option.value); setProductEdits((current) => ({ ...current, [workspace.key]: selected })); }} disabled={busy !== null || loading} style={field}>{products.map(product => <option key={product.key} value={product.key}>{product.displayName}</option>)}</select></label>
                 <Button size="sm" type="submit" disabled={busy !== null || loading || !productEdits[workspace.key]}>Save products</Button>
               </form>
             </td>

@@ -16,6 +16,7 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [requestedWorkspace, setRequestedWorkspace] = useState<string | null>(() => new URLSearchParams(window.location.search).get("workspace"));
   const [requestedSlug, setRequestedSlug] = useState<string | null>(() => new URLSearchParams(window.location.search).get("organization"));
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -24,9 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const parameters = new URLSearchParams(window.location.search);
-    const workspace = parameters.get("workspace");
     parameters.delete("organization"); parameters.delete("workspace");
-    if (workspace) session.setWorkspace(workspace);
     if (window.location.search) {
       const query = parameters.toString();
       window.history.replaceState(window.history.state, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
@@ -58,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSlug(selectedSlug);
       session.setOrganization(selectedSlug);
       if (selectedSlug !== storedSlug) session.setWorkspace(null);
+      // WorkspaceProvider verifies this key against the selected organization’s accessible workspaces.
+      if (requested && requestedWorkspace) session.setWorkspace(requestedWorkspace);
+      setRequestedWorkspace(null);
       if (requestedSlug) {
         const parameters = new URLSearchParams(window.location.search);
         parameters.delete("organization");
@@ -74,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [requestedSlug]);
+  }, [requestedSlug, requestedWorkspace]);
 
   useEffect(() => {
     void load();

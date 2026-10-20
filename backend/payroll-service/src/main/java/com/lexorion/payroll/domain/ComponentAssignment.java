@@ -8,6 +8,7 @@ import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
+@SuppressWarnings("deprecation")
 @Check(constraints = "configured_value >= 0")
 @Table(name = "compensation_component_assignments",
         uniqueConstraints = @UniqueConstraint(name = "uk_assignment_profile_component", columnNames = {"profile_id", "component_definition_id"}),

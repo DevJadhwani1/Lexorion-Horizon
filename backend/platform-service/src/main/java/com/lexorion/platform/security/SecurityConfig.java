@@ -15,19 +15,11 @@ import com.lexorion.horizon.invitation.config.InvitationProperties;
 import com.lexorion.horizon.tenantaccess.context.TenantAccessContextHolder;
 import com.lexorion.horizon.tenantaccess.filter.TenantAccessContextFilter;
 import com.lexorion.horizon.tenantaccess.service.TenantAccessContextResolver;
-import java.time.Clock;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -68,6 +60,21 @@ public class SecurityConfig {
 
    @Bean
    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, OrganizationContextFilter organizationContextFilter, SharedPlatformOrganizationContextFilter sharedOrganizationContextFilter, TenantAccessContextFilter tenantAccessContextFilter, InternalServiceIdentityFilter serviceIdentityFilter, AuthenticationEntryPoint entryPoint, AccessDeniedHandler deniedHandler) throws Exception {
-      return (SecurityFilterChain)http.csrf((csrf) -> csrf.disable()).sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).formLogin((form) -> form.disable()).httpBasic((basic) -> basic.disable()).exceptionHandling((errors) -> errors.authenticationEntryPoint(entryPoint).accessDeniedHandler(deniedHandler)).authorizeHttpRequests((requests) -> ((AuthorizeHttpRequestsConfigurer.AuthorizedUrl)((AuthorizeHttpRequestsConfigurer.AuthorizedUrl)requests.requestMatchers(new String[]{"/api/core/auth/login", "/api/core/auth/refresh", "/api/core/auth/logout", "/api/platform/auth/login", "/api/platform/auth/refresh", "/api/platform/auth/logout", "/actuator/health", "/actuator/info"})).permitAll().anyRequest()).authenticated()).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).addFilterBefore(organizationContextFilter, JwtAuthenticationFilter.class).addFilterBefore(serviceIdentityFilter, OrganizationContextFilter.class).addFilterAfter(sharedOrganizationContextFilter, JwtAuthenticationFilter.class).addFilterAfter(tenantAccessContextFilter, SharedPlatformOrganizationContextFilter.class).build();
+      return http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+            .exceptionHandling(errors -> errors.authenticationEntryPoint(entryPoint).accessDeniedHandler(deniedHandler))
+            .authorizeHttpRequests(requests -> requests
+                  .requestMatchers("/api/invitations/preview", "/api/invitations/register", "/api/core/auth/login", "/api/core/auth/refresh", "/api/core/auth/logout", "/api/platform/auth/login", "/api/platform/auth/refresh", "/api/platform/auth/logout", "/actuator/health", "/actuator/info").permitAll()
+                  .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(organizationContextFilter, JwtAuthenticationFilter.class)
+            .addFilterBefore(serviceIdentityFilter, OrganizationContextFilter.class)
+            .addFilterAfter(sharedOrganizationContextFilter, JwtAuthenticationFilter.class)
+            .addFilterAfter(tenantAccessContextFilter, SharedPlatformOrganizationContextFilter.class)
+            .build();
    }
 }

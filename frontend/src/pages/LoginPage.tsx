@@ -43,9 +43,9 @@ function AlternativeMethods() {
         <span>Continue with Google</span>
         <small>Unavailable</small>
       </button>
-      <button type="button" className="auth-provider" disabled title="Email-code sign-in is not supported by Horizon">
+      <button type="button" className="auth-provider" disabled title="Email sign-in is not supported by Horizon">
         <ShieldIcon />
-        <span>Continue with email code</span>
+        <span>Continue with email</span>
         <small>Unavailable</small>
       </button>
       <p className="auth-unavailable-note">Alternative sign-in methods aren’t enabled for Horizon.</p>
@@ -100,7 +100,7 @@ export function LoginPage() {
       <section className="auth-card auth-card-login" aria-labelledby="login-title">
         <div className="auth-card-heading">
           <h1 id="login-title">Welcome back</h1>
-          <p>Sign in or create an account</p>
+          <p>Sign in to continue to Horizon</p>
         </div>
 
         {step === "email" ? (
@@ -128,7 +128,7 @@ export function LoginPage() {
             <div className="auth-divider"><span>OR</span></div>
             <AlternativeMethods />
             <p className="auth-legal">By continuing, you agree to the Terms of Service and Privacy Policy.</p>
-            <p className="auth-switch">Don’t have an account? <Link to="/register">Create one</Link></p>
+            <p className="auth-switch">Don’t have an account? <Link to="/register">Create your account</Link></p>
           </form>
         ) : (
           <form className="auth-form" onSubmit={(event) => void submit(event)} noValidate>
@@ -181,7 +181,7 @@ export function LoginPage() {
             </button>
             <div className="auth-divider"><span>OR</span></div>
             <AlternativeMethods />
-            <p className="auth-switch">Don’t have an account? <Link to="/register">Create one</Link></p>
+            <p className="auth-switch">Don’t have an account? <Link to="/register">Create your account</Link></p>
             <p className="auth-legal">By continuing, you agree to the Terms of Service and Privacy Policy.</p>
           </form>
         )}

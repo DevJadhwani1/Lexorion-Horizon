@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useWorkspace } from "../workspace/WorkspaceProvider";
+import { HorizonWorkflowNav } from "../components/HorizonWorkflowNav";
 import { Button } from "../components/ui/Button";
 import { Notice } from "../components/ui/Page";
 import { useApplicationContext } from "../context/ApplicationContext";
@@ -15,6 +16,7 @@ type NavEntry = readonly [path: string, label: string, icon: IconName];
 const administration: readonly NavEntry[] = [
   ["organization", "Organization", "building"], ["members", "Members", "profile"],
   ["invitations", "Invitations", "admin"], ["settings", "Settings", "settings"],
+  ["entitlements", "Entitlements", "badge"],
 ];
 const organizationWorkspaces: readonly NavEntry[] = [["workspaces", "Workspaces", "panels"]];
 const workforceAdmin: readonly NavEntry[] = [
@@ -35,6 +37,8 @@ const platformSystem: readonly NavEntry[] = [["settings", "Settings", "settings"
 
 export function AppShell() {
   const auth = useAuth(), workspace = useWorkspace(), navigate = useNavigate(), location = useLocation();
+  // Organization administration reloads workspace access itself. Do not discard its forms during that refresh.
+  const organizationAdministration = /^\/(?:app\/admin\/|(?:organization|members|invitations|settings|entitlements|workspaces)(?:\/|$))/.test(location.pathname);
   const application = useApplicationContext();
   const [apiError, setApiError] = useState(""), [collapsed, setCollapsed] = useState(() => { try { return sessionStorage.getItem("lexorion.sidebar-collapsed") === "true" || (sessionStorage.getItem("lexorion.sidebar-collapsed") === null && window.innerWidth <= 1100); } catch { return false; } }), [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
@@ -43,6 +47,7 @@ export function AppShell() {
     return () => window.removeEventListener("lexorion:api-error", show);
   }, []);
   useEffect(() => setDrawerOpen(false), [location.pathname]);
+  useEffect(() => setApiError(""), [auth.organization?.organizationId, workspace.workspace?.key]);
   useEffect(() => {
     const desktop = window.matchMedia("(min-width: 801px)");
     const closeOnDesktop = () => { if (desktop.matches) setDrawerOpen(false); };
@@ -81,6 +86,18 @@ export function AppShell() {
     return !value;
   });
 
+  useEffect(() => {
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        if (window.innerWidth <= 800) setDrawerOpen((value) => !value);
+        else toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, []);
+
   return (
     <div className={`shell ${application.mode === "platform" ? "platform-shell" : ""} ${collapsed ? "sidebar-collapsed" : ""} ${drawerOpen ? "drawer-open" : ""}`}>
       <button className="sidebar-backdrop" type="button" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} />
@@ -111,11 +128,12 @@ export function AppShell() {
             {application.mode === "platform" && <Button size="sm" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/app"); } }}>Client application</Button>}
             {application.mode === "client" && application.hasPlatformAccess && <Button size="sm" onClick={() => { if (consoleHost() === "client") window.location.assign(consoleUrl("platform")); else { application.enterPlatform(); navigate("/app"); } }}>Platform</Button>}
           </div>
-          <span className="topbar-avatar" aria-hidden="true">{initials.toUpperCase()}</span>
+          <span className="topbar-avatar" title={`${auth.user?.firstName ?? ""} ${auth.user?.lastName ?? ""}`.trim()} aria-label={`Signed in as ${auth.user?.email ?? "current user"}`}>{initials.toUpperCase()}</span>
         </header>
         <main>
           {apiError && <div className="dismissible"><Notice>{apiError}</Notice><Button size="sm" onClick={() => setApiError("")}>Dismiss</Button></div>}
-          <Outlet />
+          {application.mode === "client" && <HorizonWorkflowNav />}
+          <Outlet key={`${location.pathname}:${application.mode === "client" ? `client:${auth.organization?.organizationId ?? "none"}:${organizationAdministration ? "organization" : workspace.workspace?.key ?? "none"}` : "platform"}`} />
         </main>
       </div>
     </div>

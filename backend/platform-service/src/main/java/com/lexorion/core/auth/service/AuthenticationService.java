@@ -54,7 +54,7 @@ public class AuthenticationService {
 
    public TokenResponse login(LoginRequest request) {
       User user = this.userRepository.findByEmailIgnoreCase(request.email().trim().toLowerCase(Locale.ROOT)).orElse(null);
-      String encodedPassword = user == null ? "{bcrypt}$2a$10$7EqJtq98hPqEX7fNZaFWoO5v4fK4Jz6mJxq4ZKecQjQ4H0zH1Jjye" : user.getPasswordHash();
+      String encodedPassword = user == null ? DUMMY_HASH : user.getPasswordHash();
       if (this.passwordEncoder.matches(request.password(), encodedPassword) && user != null && user.getStatus() == UserStatus.ACTIVE) {
          if (this.passwordEncoder.upgradeEncoding(user.getPasswordHash())) {
             user.setPasswordHash(this.passwordEncoder.encode(request.password()));

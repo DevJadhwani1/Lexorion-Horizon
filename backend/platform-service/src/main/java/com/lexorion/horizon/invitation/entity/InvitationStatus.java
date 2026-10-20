@@ -5,9 +5,4 @@ public enum InvitationStatus {
    ACCEPTED,
    EXPIRED,
    REVOKED;
-
-   // $FF: synthetic method
-   private static InvitationStatus[] $values() {
-      return new InvitationStatus[]{PENDING, ACCEPTED, EXPIRED, REVOKED};
-   }
 }

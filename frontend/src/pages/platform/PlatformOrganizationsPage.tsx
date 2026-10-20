@@ -4,17 +4,19 @@ import { ApiError } from "../../api/types";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
-import { getPlatformOrganization, getPlatformOrganizations, type PlatformOrganization } from "../../features/platform/platformApi";
+import { activatePlatformOrganization, assignPlatformOrganizationPlan, createPlatformOrganization, getPlatformOrganization, getPlatformOrganizations, getPlatformPlans, getPlatformUsers, type PlatformOrganization, type PlatformUser, type PlatformPlan } from "../../features/platform/platformApi";
 import { useAuth } from "../../auth/AuthProvider";
 import { useApplicationContext } from "../../context/ApplicationContext";
 import { appPath, consoleHost, consoleUrl } from "../../app/hostRouting";
 
 export function PlatformOrganizationsPage() {
+  const auth = useAuth(), navigate = useNavigate();
+  const [users, setUsers] = useState<PlatformUser[]>([]), [busy, setBusy] = useState(false);
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState("");
   const [query, setQuery] = useState(""), [status, setStatus] = useState("ALL");
   useEffect(() => {
-    getPlatformOrganizations().then(setOrganizations)
+    Promise.all([getPlatformOrganizations(), getPlatformUsers()]).then(([items, owners]) => { setOrganizations(items); setUsers(owners); })
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to load client organizations."))
       .finally(() => setLoading(false));
   }, []);
@@ -26,6 +28,24 @@ export function PlatformOrganizationsPage() {
         .some((value) => value?.toLowerCase().includes(term))));
   }, [organizations, query, status]);
   return <Page title="Organizations" description="Client organizations managed through Horizon.">
+    <details className="card"><summary>Create organization</summary>
+      <p>Choose an existing Core user as the organization administrator. After creation, activate the organization and assign a plan before creating its workspace.</p>
+      <form className="form-grid" onSubmit={(event) => {
+        event.preventDefault(); setBusy(true); setError("");
+        const form = new FormData(event.currentTarget);
+        void createPlatformOrganization({ name: String(form.get("name")), organizationCode: String(form.get("organizationCode")), primaryEmail: String(form.get("primaryEmail")), ownerUserId: String(form.get("ownerUserId")), ...(form.get("slug") ? { slug: String(form.get("slug")) } : {}) })
+          .then(async (created) => { await auth.reloadOrganizations(); navigate(appPath(`/app/platform/organizations/${created.id}`)); })
+          .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to create organization."))
+          .finally(() => setBusy(false));
+      }}>
+        <label>Name<input name="name" required maxLength={150} /></label>
+        <label>Organization code<input name="organizationCode" required maxLength={50} /></label>
+        <label>Primary email<input name="primaryEmail" type="email" required maxLength={255} /></label>
+        <label>Slug (optional)<input name="slug" maxLength={63} /></label>
+        <label>Organization administrator<select name="ownerUserId" required defaultValue={auth.user?.id}>{users.filter(user => user.status === "ACTIVE").map(user => <option key={user.id} value={user.id}>{user.email}</option>)}</select></label>
+        <Button variant="primary" disabled={loading || busy || users.length === 0}>{busy ? "Creating…" : "Create organization"}</Button>
+      </form>
+    </details>
     <div className="platform-toolbar" role="search">
       <label><span>Search</span><input type="search" placeholder="Search name, code, slug, or email" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
       <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
@@ -43,8 +63,9 @@ export function PlatformOrganizationDetailPage() {
   const auth = useAuth(), application = useApplicationContext(), navigate = useNavigate();
   const [organization, setOrganization] = useState<PlatformOrganization | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState("");
+  const [plans, setPlans] = useState<PlatformPlan[]>([]), [busy, setBusy] = useState(false), [notice, setNotice] = useState("");
   useEffect(() => {
-    getPlatformOrganization(organizationId).then(setOrganization)
+    Promise.all([getPlatformOrganization(organizationId), getPlatformPlans()]).then(([item, catalog]) => { setOrganization(item); setPlans(catalog.filter(plan => plan.status === "ACTIVE" && ["starter", "business"].includes(plan.key))); })
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to load organization."))
       .finally(() => setLoading(false));
   }, [organizationId]);
@@ -57,6 +78,23 @@ export function PlatformOrganizationDetailPage() {
     else { auth.selectOrganization(organization.slug); application.enterClient(); navigate("/app"); }
   };
   return <Page title={organization.name} description={`${organization.organizationCode} · ${organization.slug}`}>
+    {notice && <Notice tone="success">{notice}</Notice>}
+    <section className="card"><h2>Organization setup</h2>
+      <p>Activate this organization, assign its plan, then have its administrator enter Horizon and create a workspace.</p>
+      {["PENDING", "TRIAL", "SUSPENDED"].includes(organization.status) && <Button disabled={busy} onClick={() => {
+        setBusy(true); setNotice("");
+        void activatePlatformOrganization(organizationId).then(async (updated) => { setOrganization(updated); await auth.reloadOrganizations(); setNotice("Organization activated. Assign a plan before workspace setup."); })
+          .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to activate organization."))
+          .finally(() => setBusy(false));
+      }}>Activate organization</Button>}
+      <form className="toolbar" onSubmit={(event) => {
+        event.preventDefault(); setBusy(true); setNotice("");
+        const planKey = String(new FormData(event.currentTarget).get("planKey"));
+        void assignPlatformOrganizationPlan(organizationId, planKey).then((updated) => { setOrganization(updated); setNotice("Plan assigned. The organization administrator can now create a workspace."); })
+          .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to assign plan."))
+          .finally(() => setBusy(false));
+      }}><label>Organization plan<select name="planKey" required><option value="">Choose plan</option>{plans.map(plan => <option key={plan.key} value={plan.key}>{plan.displayName}</option>)}</select></label><Button disabled={busy || plans.length === 0}>Assign plan</Button></form>
+    </section>
     <div className="platform-detail-actions"><Link to={appPath("/app/platform/organizations")}>← Organizations</Link>{membership && <Button variant="primary" onClick={enter}>Enter organization</Button>}</div>
     {!membership && <Notice tone="info">Platform Access is separate from organization membership. An active membership is required to enter this client organization.</Notice>}
     <div className="platform-detail-grid">

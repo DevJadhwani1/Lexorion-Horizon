@@ -1,6 +1,9 @@
 package com.lexorion.payroll.domain;
 import jakarta.persistence.*;import java.math.BigDecimal;import java.time.*;import java.util.UUID;import lombok.*;import org.hibernate.annotations.Check;import org.hibernate.annotations.UuidGenerator;
-@Entity@Check(constraints="amount <> 0")@Table(name="payroll_ledger_entries",uniqueConstraints=@UniqueConstraint(name="uk_payroll_ledger_workspace_source",columnNames={"workspace_id","source_reference"}),indexes={@Index(name="idx_payroll_ledger_employee_period",columnList="workspace_id,payroll_employee_id,period_end"),@Index(name="idx_payroll_ledger_pay_run",columnList="workspace_id,pay_run_id")})
+@Entity
+@SuppressWarnings("deprecation")
+@Check(constraints="amount <> 0")
+@Table(name="payroll_ledger_entries",uniqueConstraints=@UniqueConstraint(name="uk_payroll_ledger_workspace_source",columnNames={"workspace_id","source_reference"}),indexes={@Index(name="idx_payroll_ledger_employee_period",columnList="workspace_id,payroll_employee_id,period_end"),@Index(name="idx_payroll_ledger_pay_run",columnList="workspace_id,pay_run_id")})
 @Getter@NoArgsConstructor public class PayrollLedgerEntry{
  @Id@UuidGenerator private UUID id;@ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="workspace_id",nullable=false,updatable=false)private PayrollWorkspace workspace;@ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="payroll_employee_id",nullable=false,updatable=false)private PayrollEmployee payrollEmployee;@ManyToOne(fetch=FetchType.LAZY,optional=false)@JoinColumn(name="pay_run_id",nullable=false,updatable=false)private PayRun payRun;
  @Column(name="period_start",nullable=false,updatable=false)private LocalDate periodStart;@Column(name="period_end",nullable=false,updatable=false)private LocalDate periodEnd;@Column(name="entry_date",nullable=false,updatable=false)private LocalDate entryDate;@Enumerated(EnumType.STRING)@Column(name="entry_type",nullable=false,updatable=false,length=24)private PayrollLedgerEntryType type;

@@ -57,6 +57,8 @@ export interface Calculation {
   deductionAmount: number;
   netAmount: number;
   lines: CalculationLine[];
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }
 export interface PayRun {
   payRunKey: string;
@@ -71,6 +73,8 @@ export interface PayRun {
   employeeCount: number;
   createdAt: string;
   finalizedAt: string | null;
+  failureMessage?: string | null;
+  processingStartedAt?: string | null;
 }
 export interface PayRunEmployee {
   employeeCode: string;
@@ -313,3 +317,31 @@ export const finalizePayRun = (key: string) =>
     `/api/payroll/pay-runs/${encodeURIComponent(key)}/finalize`,
     { method: "POST" },
   );
+
+export const recoverPayRun = (key: string) => apiRequest<PayRun>(`/api/payroll/pay-runs/${key}/recover`, { method: "POST" });
+
+export interface PayrollReadiness { activeEmployees: number; employeesWithCompensation: number; nextEmployeeCode: string | null; }
+export const getPayrollReadiness = () => apiRequest<PayrollReadiness>("/api/payroll/readiness");
+
+export interface PayRunPreparation {
+  payRunKey: string;
+  status: string;
+  periodStart: string;
+  periodEnd: string;
+  calculationDate: string;
+  currency: string;
+  employeeCount: number;
+  eligibleCount: number;
+  blockedCount: number;
+  selectedCount: number;
+  selectedBlockedCount: number;
+  ready: boolean;
+  issues: string[];
+  employees: { employeeCode: string; selected: boolean; eligible: boolean; blockedReason: string | null }[];
+}
+export const getPayRunPreparation = (key: string) =>
+  apiRequest<PayRunPreparation>(`/api/payroll/pay-runs/${encodeURIComponent(key)}/preparation`);
+export const savePayRunPreparation = (key: string, employeeCodes: string[]) =>
+  apiRequest<PayRunPreparation>(`/api/payroll/pay-runs/${encodeURIComponent(key)}/preparation`, {
+    method: "PUT", body: { employeeCodes },
+  });

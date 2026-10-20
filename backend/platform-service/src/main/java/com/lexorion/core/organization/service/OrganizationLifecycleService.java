@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OrganizationLifecycleService {
+    @SuppressWarnings("deprecation")
     public void transition(Organization organization, OrganizationStatus target, Instant now) {
         var current = organization.getStatus();
         boolean allowed = switch (current) {

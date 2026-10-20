@@ -11,11 +11,11 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 class LocalPostgresMigrationTest {
     @Test
     @EnabledIfEnvironmentVariable(named = "HORIZON_MIGRATION_CLEAN_JDBC_URL", matches = ".+")
-    void cleanDatabaseMigratesFromV1ThroughV8() {
+    void cleanDatabaseMigratesFromV1ThroughV9() {
         Flyway flyway = configuration("HORIZON_MIGRATION_CLEAN_JDBC_URL").load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(8);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(9);
         try (var connection = connect("HORIZON_MIGRATION_CLEAN_JDBC_URL"); var statement = connection.createStatement()) {
-            assertThat(count(statement, "select count(*) from flyway_schema_history where success")).isEqualTo(8);
+            assertThat(count(statement, "select count(*) from flyway_schema_history where success")).isEqualTo(9);
             assertThat(count(statement, "select count(*) from pg_constraint where conname = 'uk_org_plan_assignment'")).isEqualTo(1);
             assertThat(count(statement, "select count(*) from pg_constraint where conrelid='organization_plan_assignments'::regclass and contype <> 'n'")).isEqualTo(5);
             assertThat(count(statement, "select count(*) from plans where product_id is null and plan_key in ('starter','business')")).isEqualTo(2);
@@ -44,7 +44,7 @@ class LocalPostgresMigrationTest {
             assertThat(count(sql, "select count(*) from plans")).isEqualTo(1);
             assertThat(count(sql, "select count(*) from plan_entitlements")).isEqualTo(1);
         }
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
         try (var connection = connect("HORIZON_MIGRATION_UPGRADE_JDBC_URL"); var sql = connection.createStatement()) {
             assertThat(count(sql, "select count(*) from organization_product_plan_assignments_legacy")).isEqualTo(1);
             assertThat(count(sql, "select count(*) from organization_product_plan_assignments_legacy where id='00000000-0000-0000-0000-000000000011' and plan_id='00000000-0000-0000-0000-000000000002' and product_id='00000000-0000-0000-0000-000000000001' and status='ACTIVE'")).isEqualTo(1);

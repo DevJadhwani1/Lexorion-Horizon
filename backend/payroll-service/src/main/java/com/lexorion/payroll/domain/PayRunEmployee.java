@@ -9,6 +9,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name="payroll_pay_run_employees",uniqueConstraints={@UniqueConstraint(name="uk_pay_run_employee",columnNames={"pay_run_id","payroll_employee_id"}),@UniqueConstraint(name="uk_pay_run_calculation",columnNames="calculation_id")},indexes=@Index(name="idx_pay_run_employee",columnList="pay_run_id,employee_code"))
+@SuppressWarnings("deprecation")
 @Check(constraints="gross_snapshot >= 0 and deduction_snapshot >= 0 and net_snapshot >= 0")
 @Getter @Setter @NoArgsConstructor
 public class PayRunEmployee extends Auditable {

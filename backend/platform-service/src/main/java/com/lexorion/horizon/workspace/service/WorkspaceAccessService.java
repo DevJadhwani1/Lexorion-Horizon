@@ -59,6 +59,8 @@ public class WorkspaceAccessService {
     public OrganizationWorkspace requireAccessibleWorkspace(String key, String productKey) {
         var workspace = requireAccessibleWorkspace(key);
         if ("workforce".equals(productKey) || "payroll".equals(productKey)) {
+            // A commercial entitlement does not reattach a product removed from this workspace.
+            entitlementService.requireEffectivePlan(workspace, productKey);
             if (!entitlementService.hasEntitlement(workspace, productKey + ".enabled"))
                 throw new com.lexorion.horizon.entitlement.exception.EntitlementDeniedException("Product entitlement is disabled");
             return workspace;

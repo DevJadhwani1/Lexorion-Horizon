@@ -1,6 +1,7 @@
 package com.lexorion.platform.domain.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import com.lexorion.platform.domain.config.DomainProperties;
 import com.lexorion.platform.domain.context.OrganizationContext;
 import com.lexorion.platform.domain.context.OrganizationContextHolder;
@@ -10,7 +11,6 @@ import com.lexorion.platform.domain.service.HostnameNormalizer;
 import com.lexorion.platform.domain.service.RequestHostnameExtractor;
 import com.lexorion.platform.domain.service.SharedPlatformOrganizationResolver;
 import com.lexorion.platform.exception.ApiError;
-import com.lexorion.core.organization.exception.InvalidTenantSlugException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,7 +48,7 @@ public class SharedPlatformOrganizationContextFilter extends OncePerRequestFilte
          String selection = request.getHeader("X-Lexorion-Organization");
          Optional<OrganizationContext> hostnameContext = this.contextHolder.get();
          if (hostnameContext.isPresent()) {
-            this.rejectConflictingWhiteLabelSelection(selection, (OrganizationContext)hostnameContext.get());
+            this.rejectConflictingWhiteLabelSelection(selection, hostnameContext.get());
          } else if (selection != null) {
             if (!this.isSharedPlatformRequest(request) && !request.getRequestURI().startsWith("/internal/")) {
                throw new InvalidOrganizationSelectionException("Organization selection header is only accepted on the shared platform host");
@@ -56,14 +56,14 @@ public class SharedPlatformOrganizationContextFilter extends OncePerRequestFilte
 
             Optional<OrganizationContext> selected = this.organizationResolver.resolveCurrent(selection, this.sharedPlatformHostname);
             if (selected.isPresent()) {
-               this.contextHolder.set((OrganizationContext)selected.get());
+               this.contextHolder.set(selected.get());
                establishedSharedContext = true;
             }
          }
 
          filterChain.doFilter(request, response);
       } catch (InvalidTenantSlugException | InvalidOrganizationSelectionException ex) {
-         this.writeError(request, response, HttpStatus.BAD_REQUEST, ((RuntimeException)ex).getMessage());
+         this.writeError(request, response, HttpStatus.BAD_REQUEST, ex.getMessage());
       } catch (OrganizationSelectionDeniedException ex) {
          this.writeError(request, response, HttpStatus.FORBIDDEN, ex.getMessage());
       } finally {

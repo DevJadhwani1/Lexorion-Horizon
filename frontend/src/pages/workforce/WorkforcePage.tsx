@@ -37,6 +37,7 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
     [data, setData] = useState<unknown>(null),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true);
+  const organization = useAuth().organization, workspace = useWorkspace().workspace;
   const load = async () => {
     setLoading(true);
     setError("");
@@ -64,7 +65,7 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   };
   useEffect(() => {
     void load();
-  }, [section, employeeCode]);
+  }, [section, employeeCode, organization?.organizationId, workspace?.key]);
   if (loading)
     return (
       <Page title="Workforce">
@@ -116,8 +117,9 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   return (
     <Page
       title={section === "dashboard" ? "Workforce dashboard" : "Employees"}
-      description="Live workspace-scoped Workforce records."
+      description="Manage the people in this Horizon workspace. Departments, designations and reporting managers are optional."
     >
+      <WorkforceSetup />
       {section === "employees" && <EmployeeCreate reload={load} />}{" "}
       {employees.length ? (
         <Table headers={["Code", "Name", "Email", "Department", "Status"]}>
@@ -143,10 +145,18 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
           ))}
         </Table>
       ) : (
-        <Empty>No employees returned by Workforce.</Empty>
+        <Empty>No employees yet. <Link to={appPath("/app/workforce/employees")}>Add an employee</Link> before configuring their payroll.</Empty>
       )}
     </Page>
   );
+}
+function WorkforceSetup() {
+  return <nav className="toolbar" aria-label="Workforce setup">
+    <Link to={appPath("/app/workforce/departments")}>1. Departments</Link>
+    <Link to={appPath("/app/workforce/designations")}>2. Designations</Link>
+    <Link to={appPath("/app/workforce/employees")}>3. Employees</Link>
+    <Link to={appPath("/app/workforce/structure")}>4. Reporting structure</Link>
+  </nav>;
 }
 function EmployeeCreate({ reload }: { reload(): Promise<void> }) {
   const [error, setError] = useState("");
@@ -360,6 +370,8 @@ function References({
   const [error, setError] = useState("");
   return (
     <Page title={title[0].toUpperCase() + title.slice(1)}>
+      <WorkforceSetup />
+      <p>Use the stable keys shown here when assigning an employee’s department or designation.</p>
       <form
         className="toolbar"
         onSubmit={(e: FormEvent) => {
@@ -419,6 +431,7 @@ function References({
 function StructurePage({ value }: { value: Structure }) {
   return (
     <Page title="Organization structure">
+      <WorkforceSetup />
       <div className="cards">
         <article>
           <h3>Departments</h3>

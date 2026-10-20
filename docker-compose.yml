@@ -9,24 +9,33 @@ x-backend-healthcheck: &backend-healthcheck
 x-database-environment: &database-environment
   DB_HOST: ${DB_HOST:-postgres}
   DB_PORT: ${DB_PORT:-5432}
-  DB_USERNAME: ${DB_USERNAME:-postgres}
-  DB_PASSWORD: ${DB_PASSWORD:-postgres}
   EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:?Set the database provisioning administrator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set the database provisioning password}
+      PLATFORM_DB_NAME: ${PLATFORM_DB_NAME:-platform_db}
+      PLATFORM_DB_USERNAME: ${PLATFORM_DB_USERNAME:?Set PLATFORM_DB_USERNAME}
+      PLATFORM_DB_PASSWORD: ${PLATFORM_DB_PASSWORD:?Set PLATFORM_DB_PASSWORD}
+      WORKFORCE_DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
+      WORKFORCE_DB_USERNAME: ${WORKFORCE_DB_USERNAME:?Set WORKFORCE_DB_USERNAME}
+      WORKFORCE_DB_PASSWORD: ${WORKFORCE_DB_PASSWORD:?Set WORKFORCE_DB_PASSWORD}
+      PAYROLL_DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
+      PAYROLL_DB_USERNAME: ${PAYROLL_DB_USERNAME:?Set PAYROLL_DB_USERNAME}
+      PAYROLL_DB_PASSWORD: ${PAYROLL_DB_PASSWORD:?Set PAYROLL_DB_PASSWORD}
+      FINANCE_DB_NAME: ${FINANCE_DB_NAME:-lexorion_finance}
+      FINANCE_DB_USERNAME: ${FINANCE_DB_USERNAME:?Set FINANCE_DB_USERNAME}
+      FINANCE_DB_PASSWORD: ${FINANCE_DB_PASSWORD:?Set FINANCE_DB_PASSWORD}
     volumes:
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
     networks:
       - horizon
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -36,7 +45,7 @@ services:
     environment:
       EUREKA_PORT: 9003
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
-    ports: ["9003:9003"]
+    ports: ["127.0.0.1:9003:9003"]
     networks: [horizon]
     healthcheck:
       <<: *backend-healthcheck
@@ -47,13 +56,23 @@ services:
     environment:
       <<: *database-environment
       PLATFORM_PORT: 9002
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      INVITATION_FROM: ${INVITATION_FROM:-}
+      INVITATION_PUBLIC_ORIGIN: ${INVITATION_PUBLIC_ORIGIN:-}
       DB_NAME: ${PLATFORM_DB_NAME:-platform_db}
-      JWT_SECRET: ${JWT_SECRET:-local_jwt_secret_must_be_at_least_32_characters_long_for_hs256_to_work_properly}
-      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
-      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
-      LEXORION_BOOTSTRAP_ENABLED: "true"
-      LEXORION_BOOTSTRAP_EMAIL: "admin@lexorion.in"
-      LEXORION_BOOTSTRAP_PASSWORD: "password123"
+      DB_USERNAME: ${PLATFORM_DB_USERNAME:?Set PLATFORM_DB_USERNAME to a dedicated database role}
+      DB_PASSWORD: ${PLATFORM_DB_PASSWORD:?Set PLATFORM_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a unique secret of at least 32 characters}
+      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:?Set WORKFORCE_SERVICE_TOKEN to a unique secret of at least 32 characters}
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:?Set PAYROLL_SERVICE_TOKEN to a unique secret of at least 32 characters}
+      LEXORION_BOOTSTRAP_ENABLED: ${LEXORION_BOOTSTRAP_ENABLED:-false}
+      LEXORION_BOOTSTRAP_EMAIL: ${LEXORION_BOOTSTRAP_EMAIL:-}
+      LEXORION_BOOTSTRAP_PASSWORD: ${LEXORION_BOOTSTRAP_PASSWORD:-}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9002"]
     networks: [horizon]
@@ -70,9 +89,11 @@ services:
       <<: *database-environment
       WORKFORCE_PORT: 9004
       DB_NAME: ${WORKFORCE_DB_NAME:-lexorion_workforce}
+      DB_USERNAME: ${WORKFORCE_DB_USERNAME:?Set WORKFORCE_DB_USERNAME to a dedicated database role}
+      DB_PASSWORD: ${WORKFORCE_DB_PASSWORD:?Set WORKFORCE_DB_PASSWORD}
       LEXORION_PLATFORM_SERVICE_URL: http://platform-service
-      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:-local_workforce_token_must_be_at_least_32_characters_long}
-      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
+      WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:?Set WORKFORCE_SERVICE_TOKEN to a unique secret of at least 32 characters}
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:?Set PAYROLL_SERVICE_TOKEN to a unique secret of at least 32 characters}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9004"]
     networks: [horizon]
@@ -90,9 +111,11 @@ services:
       <<: *database-environment
       PAYROLL_PORT: 9005
       DB_NAME: ${PAYROLL_DB_NAME:-lexorion_payroll}
+      DB_USERNAME: ${PAYROLL_DB_USERNAME:?Set PAYROLL_DB_USERNAME to a dedicated database role}
+      DB_PASSWORD: ${PAYROLL_DB_PASSWORD:?Set PAYROLL_DB_PASSWORD}
       LEXORION_PLATFORM_SERVICE_URL: http://platform-service
       LEXORION_WORKFORCE_SERVICE_URL: http://workforce-service
-      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:-local_payroll_token_must_be_at_least_32_characters_long}
+      PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:?Set PAYROLL_SERVICE_TOKEN to a unique secret of at least 32 characters}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9005"]
     networks: [horizon]
@@ -111,6 +134,8 @@ services:
       <<: *database-environment
       FINANCE_PORT: 9006
       DB_NAME: ${FINANCE_DB_NAME:-lexorion_finance}
+      DB_USERNAME: ${FINANCE_DB_USERNAME:?Set FINANCE_DB_USERNAME to a dedicated database role}
+      DB_PASSWORD: ${FINANCE_DB_PASSWORD:?Set FINANCE_DB_PASSWORD}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9006"]
     networks: [horizon]
@@ -126,7 +151,7 @@ services:
     environment:
       GATEWAY_PORT: 9001
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:9003/eureka/
-    ports: ["9001:9001"]
+    ports: ["127.0.0.1:9001:9001"]
     networks: [horizon]
     depends_on:
       eureka: {condition: service_healthy}
@@ -136,7 +161,7 @@ services:
 
   frontend:
     build: ./frontend
-    ports: ["80:9000", "9000:9000"]
+    ports: ["${HORIZON_BIND_ADDRESS:-127.0.0.1}:80:9000", "127.0.0.1:9000:9000"]
     networks: [horizon]
     depends_on:
       gateway: {condition: service_healthy}
@@ -149,3 +174,8 @@ services:
 networks:
   horizon:
     driver: bridge
+
+volumes:
+  postgres-data:
+    external: true
+    name: ${POSTGRES_DATA_VOLUME:?Set POSTGRES_DATA_VOLUME to the existing data volume or create a new empty volume}

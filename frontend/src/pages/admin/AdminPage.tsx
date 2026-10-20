@@ -13,6 +13,7 @@ import {
   getOrganization,
   removeMember,
   revokeInvitation,
+  resendInvitation,
   updateOrganization,
   updateSettings,
   type Invitation,
@@ -62,7 +63,7 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
         <p>Loading…</p>
       </Page>
     );
-  if (error)
+  if (error && (section !== "invitations" || data === null))
     return (
       <Page title={title(section)}>
         <Notice>{error}</Notice>
@@ -163,16 +164,15 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
               <td>{i.role}</td>
               <td>
                 <Badge label={i.status} />
+                <div>Email: {i.deliveryStatus ?? "NOT_SENT"}</div>
+                {i.deliveryError && <div role="alert">{i.deliveryError}</div>}
               </td>
               <td>{new Date(i.expiresAt).toLocaleDateString()}</td>
               <td>
-                <Button
-                  onClick={() =>
-                    void revokeInvitation(i.invitationId).then(load)
-                  }
-                >
-                  Revoke
-                </Button>
+                {i.status === "PENDING" && <>
+                  <Button onClick={() => void resendInvitation(i.invitationId).then(load).catch((x: Error) => setError(x.message))}>Retry delivery</Button>
+                  <Button onClick={() => void revokeInvitation(i.invitationId).then(load).catch((x: Error) => setError(x.message))}>Revoke</Button>
+                </>}
               </td>
             </tr>
           ))}

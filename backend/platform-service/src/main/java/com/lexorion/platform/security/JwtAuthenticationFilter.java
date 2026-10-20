@@ -44,13 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                principal = horizonUser;
                operator = horizonUser.platformAccess();
             }
-            List<SimpleGrantedAuthority> authorities = new ArrayList();
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             authorities.add(new SimpleGrantedAuthority("AUTHENTICATED"));
             if (operator) {
                authorities.add(new SimpleGrantedAuthority("PLATFORM_ACCESS"));
             }
 
-            SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(principal, (Object)null, authorities));
+            SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(principal, null, authorities));
             filterChain.doFilter(request, response);
          } catch (AuthenticationException ex) {
             SecurityContextHolder.clearContext();

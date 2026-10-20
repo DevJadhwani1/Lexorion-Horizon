@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TenantAccessContextHolder {
-   private final ThreadLocal<TenantAccessContext> current = new ThreadLocal();
+   private final ThreadLocal<TenantAccessContext> current = new ThreadLocal<>();
 
    public Optional<TenantAccessContext> get() {
-      return Optional.ofNullable((TenantAccessContext)this.current.get());
+      return Optional.ofNullable(this.current.get());
    }
 
    public void set(TenantAccessContext context) {

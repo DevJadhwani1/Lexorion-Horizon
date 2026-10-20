@@ -33,6 +33,11 @@ public class OrganizationInvitationController {
       return ResponseEntity.created(URI.create("/api/tenant/invitations/" + String.valueOf(response.invitationId()))).body(response);
    }
 
+   @PostMapping("/{invitationId}/resend")
+   public InvitationResponse resend(@PathVariable UUID invitationId) {
+      return service.resend(invitationId);
+   }
+
    @GetMapping
    public List<InvitationResponse> list() {
       return this.service.list();

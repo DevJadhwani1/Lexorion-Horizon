@@ -8,6 +8,7 @@ import org.hibernate.annotations.Check;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
+@SuppressWarnings("deprecation")
 @Check(constraints = "effective_to is null or effective_to >= effective_from")
 @Table(name = "compensation_profiles",
         uniqueConstraints = @UniqueConstraint(name = "uk_profile_employee_key", columnNames = {"payroll_employee_id", "profile_key"}),
@@ -21,6 +22,7 @@ public class CompensationProfile extends Auditable {
     @Column(name = "profile_key", nullable = false, updatable = false, length = 64)
     private String profileKey;
     @Column(nullable = false, updatable = false, length = 3) private String currency;
+    @Enumerated(EnumType.STRING) @Column(name = "pay_frequency", nullable = false, updatable = false, length = 16) private PayFrequency payFrequency;
     @Column(name = "effective_from", nullable = false, updatable = false) private LocalDate effectiveFrom;
     @Column(name = "effective_to", updatable = false) private LocalDate effectiveTo;
     @Enumerated(EnumType.STRING) @Column(name = "profile_status", nullable = false, updatable = false, length = 16)

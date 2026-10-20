@@ -41,8 +41,8 @@ public class TenantAdministrationService {
    private final OrganizationRepository organizationRepository;
    private final OrganizationMembershipRepository membershipRepository;
    private final OrganizationSettingsRepository settingsRepository;
-   private static final Set<String> ISO_COUNTRIES = new HashSet(Set.of(Locale.getISOCountries()));
-   private static final Set<String> AVAILABLE_LOCALES = (Set)Arrays.stream(Locale.getAvailableLocales()).map(Locale::toLanguageTag).collect(Collectors.toUnmodifiableSet());
+   private static final Set<String> ISO_COUNTRIES = new HashSet<>(Set.of(Locale.getISOCountries()));
+   private static final Set<String> AVAILABLE_LOCALES = Arrays.stream(Locale.getAvailableLocales()).map(Locale::toLanguageTag).collect(Collectors.toUnmodifiableSet());
 
    public TenantAdministrationService(TenantAccessContextHolder tenantContextHolder, OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, OrganizationSettingsRepository settingsRepository) {
       this.tenantContextHolder = tenantContextHolder;

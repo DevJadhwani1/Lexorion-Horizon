@@ -48,16 +48,33 @@ public class CalculationService {
     }
 
     Calculation calculateSnapshot(PayrollWorkspace workspace, String rawEmployeeCode, java.time.LocalDate calculationDate) {
-        String code = CompensationService.employeeCode(rawEmployeeCode);
-        employees.findScopedForUpdate(workspace.getId(), code)
+        var employee = employees.findScopedForUpdate(workspace.getId(), CompensationService.employeeCode(rawEmployeeCode))
                 .orElseThrow(() -> new PayrollException(404, "Payroll employee not found"));
-        List<CompensationProfile> effective = profiles.findEffective(workspace.getId(), code, calculationDate);
+        PayrollPeriod period = PayrollPeriod.containing(employee, calculationDate);
+        return calculateSnapshot(workspace, rawEmployeeCode, calculationDate, period.start(), period.end());
+    }
+
+    Calculation calculateSnapshot(PayrollWorkspace workspace, String rawEmployeeCode, java.time.LocalDate calculationDate,
+            java.time.LocalDate periodStart, java.time.LocalDate periodEnd) {
+        String code = CompensationService.employeeCode(rawEmployeeCode);
+        var employee = employees.findScopedForUpdate(workspace.getId(), code)
+                .orElseThrow(() -> new PayrollException(404, "Payroll employee not found"));
+        return persist(evaluate(workspace, employee, calculationDate, periodStart, periodEnd));
+    }
+
+    // Shared by preparation and processing. Evaluates existing rules without writing a snapshot.
+    Calculation evaluate(PayrollWorkspace workspace, PayrollEmployee employee, java.time.LocalDate calculationDate,
+            java.time.LocalDate periodStart, java.time.LocalDate periodEnd) {
+        String code = employee.getEmployeeCode();
+        List<CompensationProfile> effective = profiles.findEffective(workspace.getId(), code, periodStart);
         if (effective.isEmpty()) throw new PayrollException(404, "No effective compensation profile");
         if (effective.size() != 1) throw new PayrollException(409, "Conflicting effective compensation profiles");
         CompensationProfile profile = effective.getFirst();
-        List<ComponentAssignment> ordered = profile.getAssignments().stream()
+        PayrollPeriod period = new PayrollPeriod(periodStart, periodEnd);
+        period.validate(employee, profile);
+        List<ComponentAssignment> ordered = profile.getAssignments().stream().filter(period::includes)
             .sorted(Comparator.comparing(ComponentAssignment::getComponentKey)).toList();
-        if (ordered.isEmpty()) throw new PayrollException(409, "Effective compensation profile has no components");
+        if (profile.getAssignments().isEmpty()) throw new PayrollException(409, "Effective compensation profile has no components");
         ordered.forEach(this::percentageBasis);
 
         BigDecimal fixedGross = sum(ordered, ComponentCategory.EARNING, AmountType.FIXED_AMOUNT, BigDecimal.ZERO);
@@ -73,6 +90,8 @@ public class CalculationService {
         calculation.setEmployeeCode(code);
         calculation.setCalculationDate(calculationDate);
         calculation.setCurrency(profile.getCurrency());
+        calculation.setPeriodStart(periodStart); calculation.setPeriodEnd(periodEnd);
+        calculation.setSourceProfileKey(profile.getProfileKey()); calculation.setPayFrequency(profile.getPayFrequency());
         calculation.setGrossAmount(gross);
         calculation.setDeductionAmount(deductions);
         calculation.setNetAmount(money(gross.subtract(deductions)));
@@ -81,6 +100,7 @@ public class CalculationService {
                     : assignment.getCategory() == ComponentCategory.EARNING ? fixedGross : gross;
             CalculationLine line = new CalculationLine();
             line.setCalculation(calculation);
+            line.setSourceAssignmentId(assignment.getId());
             line.setComponentKey(assignment.getComponentKey());
             line.setDisplayName(assignment.getDisplayName());
             line.setCategory(assignment.getCategory());
@@ -93,8 +113,10 @@ public class CalculationService {
             line.setCurrency(profile.getCurrency());
             calculation.getLines().add(line);
         }
-        return calculations.saveAndFlush(calculation);
+        return calculation;
     }
+
+    Calculation persist(Calculation calculation) { return calculations.saveAndFlush(calculation); }
 
     private BigDecimal sum(List<ComponentAssignment> assignments, ComponentCategory category,
             AmountType type, BigDecimal base) {

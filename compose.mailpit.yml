@@ -1,0 +1,15 @@
+# Optional local delivery sink. Messages never leave this container.
+# Use with: docker compose -f docker-compose.yml -f compose.mailpit.yml up -d
+services:
+  mailpit:
+    image: axllent/mailpit:v1.29
+    ports: ["127.0.0.1:8025:8025"]
+    networks: [horizon]
+  platform:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      INVITATION_FROM: horizon@local.test
+      INVITATION_PUBLIC_ORIGIN: http://localhost

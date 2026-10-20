@@ -10,6 +10,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name="payroll_pay_runs",uniqueConstraints=@UniqueConstraint(name="uk_pay_run_workspace_key",columnNames={"workspace_id","pay_run_key"}),indexes={@Index(name="idx_pay_run_workspace_status",columnList="workspace_id,pay_run_status"),@Index(name="idx_pay_run_workspace_key",columnList="workspace_id,pay_run_key")})
+@SuppressWarnings("deprecation")
 @Check(constraints="period_start <= period_end and gross_total >= 0 and deduction_total >= 0 and net_total >= 0")
 @Getter @Setter @NoArgsConstructor
 public class PayRun extends Auditable {
@@ -24,6 +25,9 @@ public class PayRun extends Auditable {
  @Column(name="gross_total",nullable=false,precision=19,scale=4)private BigDecimal grossTotal;
  @Column(name="deduction_total",nullable=false,precision=19,scale=4)private BigDecimal deductionTotal;
  @Column(name="net_total",nullable=false,precision=19,scale=4)private BigDecimal netTotal;
+ @Column(name="processing_attempt")private UUID processingAttempt;
+ @Column(name="processing_started_at")private Instant processingStartedAt;
+ @Column(name="failure_message",length=255)private String failureMessage;
  @Column(name="finalized_at")private Instant finalizedAt;
  @OneToMany(mappedBy="payRun",cascade=CascadeType.ALL,orphanRemoval=false)@OrderBy("employeeCode ASC")private List<PayRunEmployee> employees=new ArrayList<>();
 }

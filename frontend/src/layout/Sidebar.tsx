@@ -44,18 +44,18 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
     onKeyDown={(event) => { if (event.key === "Escape") { setAccountOpen(false); setSearchOpen(false); setQuery(""); } }}
     onMouseOver={(event) => {
       const target = (event.target as HTMLElement).closest<HTMLElement>("[data-tooltip]");
-      if (!collapsed || window.innerWidth <= 800 || !target) { setTooltip(null); return; }
-      const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: 76 });
+      if ((!collapsed && !target?.classList.contains("desktop-control")) || window.innerWidth <= 800 || !target) { setTooltip(null); return; }
+      const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: rect.right + 8 });
     }} onFocus={(event) => {
       const target = event.target.closest<HTMLElement>("[data-tooltip]");
-      if (collapsed && window.innerWidth > 800 && target) { const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: 76 }); }
+      if ((collapsed || target?.classList.contains("desktop-control")) && window.innerWidth > 800 && target) { const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: rect.right + 8 }); }
     }} onBlur={() => setTooltip(null)}>
     <div className="sidebar-header">
-      <NavLink className="brand brand-desktop" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong><small>by Lexorion</small></span></NavLink>
-      <NavLink className="brand brand-mobile" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong><small>by Lexorion</small></span></NavLink>
+      <NavLink className="brand brand-desktop" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
+      <NavLink className="brand brand-mobile" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
       <button className="sidebar-control sidebar-search" aria-label="Search navigation" data-tooltip="Search navigation" aria-expanded={searchOpen} onClick={() => { setSearchOpen(!searchOpen); setQuery(""); if (collapsed && window.innerWidth > 800) onToggle(); }}><Icon name="search" /></button>
-      <button className="sidebar-control desktop-control" onClick={onToggle} aria-label={collapsed ? "Open sidebar" : "Close sidebar"} data-tooltip={collapsed ? "Open sidebar" : "Close sidebar"} aria-expanded={!collapsed} aria-controls="sidebar-content">
-        <span className="toggle-affordance"><span className="toggle-primary"><Icon name={collapsed ? "expand" : "collapse"} /></span><span className="toggle-secondary"><Icon name={collapsed ? "collapse" : "expand"} /></span></span>
+      <button className="sidebar-control desktop-control" onClick={onToggle} aria-label="Toggle sidebar" data-tooltip="Toggle sidebar" aria-keyshortcuts="Meta+Shift+S Control+Shift+S" aria-expanded={!collapsed} aria-controls="sidebar-content">
+        <Icon name="sidebar" />
       </button>
       <button className="sidebar-control mobile-close" onClick={onClose} aria-label="Close navigation"><Icon name="close" /></button>
     </div>
@@ -65,7 +65,7 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
       const target = document.activeElement as HTMLElement | null;
       if (collapsed && window.innerWidth > 800 && target?.dataset.tooltip && aside.current?.contains(target)) {
         const rect = target.getBoundingClientRect();
-        setTooltip({ label: target.dataset.tooltip, top: rect.top + rect.height / 2, left: 76 });
+        setTooltip({ label: target.dataset.tooltip, top: rect.top + rect.height / 2, left: rect.right + 8 });
       } else setTooltip(null);
     }}>
       {query.trim() ? <section className="nav-group"><h2>Search results</h2>{items.filter((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())).map(row)}{!items.some((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())) && <p className="sidebar-empty">No matching pages.</p>}</section> : <>
@@ -77,6 +77,6 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
       {accountOpen && <div className="sidebar-account-menu"><strong>{userName}</strong><small>{accountInfo}</small>{items.filter((item) => item.to.endsWith("/settings") || item.to.endsWith("/me")).map((item) => <NavLink key={item.to} to={item.to} onClick={() => { setAccountOpen(false); onClose(); }}>{item.label}</NavLink>)}<button onClick={onLogout}>Sign out</button></div>}
       <button className="sidebar-account-button" aria-label={`Account: ${userName}`} data-tooltip="Account" aria-expanded={accountOpen} onClick={() => setAccountOpen(!accountOpen)}><span className="user-avatar" aria-hidden="true">{initials}</span><span className="user-copy"><strong>{userName}</strong><small>{accountInfo}</small></span><span className="account-dots" aria-hidden="true">···</span></button>
     </div>
-    {tooltip && createPortal(<div className="sidebar-tooltip" role="tooltip" style={{ top: tooltip.top, left: tooltip.left }}>{tooltip.label}</div>, document.body)}
+    {tooltip && createPortal(<div className="sidebar-tooltip" role="tooltip" style={{ top: tooltip.top, left: tooltip.left }}>{tooltip.label}{tooltip.label === "Toggle sidebar" && <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? "⇧⌘S" : "Ctrl ⇧ S"}</kbd>}</div>, document.body)}
   </aside>;
 }

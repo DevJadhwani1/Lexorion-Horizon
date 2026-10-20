@@ -2,16 +2,9 @@ package com.lexorion.platform.security;
 
 import com.lexorion.horizon.membership.entity.MembershipStatus;
 import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
-import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
-import com.lexorion.core.platformaccess.repository.PlatformAccessRepository;
-import com.lexorion.core.user.entity.User;
-import com.lexorion.core.user.entity.UserStatus;
-import com.lexorion.core.user.repository.UserRepository;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

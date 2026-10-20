@@ -34,7 +34,7 @@ public class CoreSecurityConfiguration {
 
    @Bean
    PasswordEncoder passwordEncoder() {
-      Map<String, PasswordEncoder> encoders = new HashMap();
+      Map<String, PasswordEncoder> encoders = new HashMap<>();
       encoders.put("bcrypt", new BCryptPasswordEncoder());
       DelegatingPasswordEncoder encoder = new DelegatingPasswordEncoder("bcrypt", encoders);
       encoder.setDefaultPasswordEncoderForMatches(new LegacyPbkdf2PasswordEncoder());

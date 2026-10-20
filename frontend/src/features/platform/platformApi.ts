@@ -15,11 +15,20 @@ export interface PlatformEntitlement { key: string; displayName: string; descrip
 
 const platformOptions = { organizationScoped: false, workspaceScoped: false } as const;
 export const getPlatformOrganizations = () => apiRequest<PlatformOrganization[]>("/api/platform/organizations", platformOptions);
+export const createPlatformOrganization = (body: { name: string; organizationCode: string; primaryEmail: string; ownerUserId: string; slug?: string }) =>
+  apiRequest<PlatformOrganization>("/api/platform/organizations", { ...platformOptions, method: "POST", body });
+export const activatePlatformOrganization = (id: string) =>
+  apiRequest<PlatformOrganization>(`/api/platform/organizations/${encodeURIComponent(id)}/status`, { ...platformOptions, method: "PATCH", body: { status: "ACTIVE" } });
+export const assignPlatformOrganizationPlan = (id: string, planKey: string) =>
+  apiRequest<PlatformOrganization>(`/api/platform/organizations/${encodeURIComponent(id)}`, { ...platformOptions, method: "PATCH", body: { planKey } });
 export const getPlatformOrganization = (id: string) => apiRequest<PlatformOrganization>(`/api/platform/organizations/${encodeURIComponent(id)}`, platformOptions);
 export const getPlatformUsers = () => apiRequest<PlatformUser[]>("/api/platform/users", platformOptions);
 export const getPlatformAccess = () => apiRequest<PlatformAccessRecord[]>("/api/platform/platform-access", platformOptions);
 export const updatePlatformAccessRole = (userId: string, role: string) => apiRequest<PlatformAccessRecord>(`/api/platform/platform-access/${encodeURIComponent(userId)}/role`, { ...platformOptions, method: "PATCH", body: { role } });
 export const updatePlatformAccessStatus = (userId: string, status: string) => apiRequest<PlatformAccessRecord>(`/api/platform/platform-access/${encodeURIComponent(userId)}/status`, { ...platformOptions, method: "PATCH", body: { status } });
 export const getPlatformProducts = () => apiRequest<PlatformProduct[]>("/api/platform/products", platformOptions);
-export const getPlatformPlans = () => apiRequest<PlatformPlan[]>("/api/platform/plans", platformOptions);
+export const getPlatformPlans = async (): Promise<PlatformPlan[]> => {
+  const plans = await apiRequest<PlatformPlan[]>("/api/platform/plans", platformOptions);
+  return plans.map((plan) => ({ ...plan, entitlements: Array.isArray(plan.entitlements) ? plan.entitlements : [] }));
+};
 export const getPlatformEntitlements = () => apiRequest<PlatformEntitlement[]>("/api/platform/entitlements", platformOptions);
