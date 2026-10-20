@@ -1,4 +1,4 @@
-export type IconName = "sidebar" | "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels";
+export type IconName = "sidebar" | "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels" | "grid" | "chevronDown" | "chevronRight" | "check" | "plus" | "user" | "help" | "layers" | "checkCircle";
 
 export function Icon({ name }: { name: IconName }) {
   const paths = {
@@ -21,6 +21,15 @@ export function Icon({ name }: { name: IconName }) {
     logout: <><path d="m10 17 5-5-5-5M15 12H3M14 3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5" /></>,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
+    grid: <><rect x="4" y="4" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="10.25" y="4" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="16.5" y="4" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="4" y="10.25" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="10.25" y="10.25" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="16.5" y="10.25" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="4" y="16.5" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="10.25" y="16.5" width="3.5" height="3.5" rx="1" fill="currentColor" /><rect x="16.5" y="16.5" width="3.5" height="3.5" rx="1" fill="currentColor" /></>,
+    chevronDown: <path d="m6 9 6 6 6-6" />,
+    chevronRight: <path d="m9 6 6 6-6 6" />,
+    check: <path d="m5 13 4 4L19 7" />,
+    plus: <path d="M12 5v14M5 12h14" />,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></>,
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
+    layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></>,
+    checkCircle: <><circle cx="12" cy="12" r="9" /><path d="m9 12 2 2 4-4" /></>,
   };
   return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"
     strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
