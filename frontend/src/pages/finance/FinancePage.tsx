@@ -17,6 +17,7 @@ import { formatDate, formatMoney, humanize } from "../../lib/format";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { Table } from "../admin/AdminPage";
 import { InvoiceDocument } from "./InvoiceDocument";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 const financePath = (path = "") => appPath(`/app/finance${path}`);
 const invoicePath = (invoice: { reference: string }) => financePath(`/invoices/${encodeURIComponent(invoice.reference)}`);
@@ -294,6 +295,7 @@ function InvoiceDetail() {
   const { reference = "" } = useParams();
   const defaults = useOrganizationDefaults();
   const organizationName = useAuth().organization?.organizationName;
+  const [ask, confirmDialog] = useConfirm();
   const { data, error, reload } = useLoad(() => Promise.all([getInvoice(reference), getInvoicePayments(reference)]), [reference]);
   const [mode, setMode] = useState<"view" | "edit" | "pay" | "void">("view");
   const [nextNumber, setNextNumber] = useState("");
@@ -317,7 +319,7 @@ function InvoiceDetail() {
   const title = invoice.invoiceNumber ?? `Draft ${invoice.reference}`;
   const actions = <div className="toolbar">
     {invoice.status === "DRAFT" && mode === "view" && <>
-      <Button variant="primary" disabled={busy || invoice.total <= 0} onClick={() => confirm(`Issue this invoice for ${money(invoice.total)}${nextNumber ? ` as ${nextNumber}` : ""}? Issued invoices can no longer be edited.`) && act(() => issueInvoice(invoice.reference), "Unable to issue the invoice")}>Issue invoice</Button>
+      <Button variant="primary" disabled={busy || invoice.total <= 0} onClick={async () => await ask({ title: `Issue this invoice for ${money(invoice.total)}?`, body: `${nextNumber ? `It will be numbered ${nextNumber}. ` : ""}Issued invoices can no longer be edited.`, confirmLabel: "Issue invoice" }) && act(() => issueInvoice(invoice.reference), "Unable to issue the invoice")}>Issue invoice</Button>
       <Button disabled={busy} onClick={() => setMode("edit")}>Edit</Button>
     </>}
     {open && mode === "view" && <Button variant="primary" disabled={busy} onClick={() => setMode("pay")}>Record payment</Button>}
@@ -325,6 +327,7 @@ function InvoiceDetail() {
     {mode !== "edit" && <Button onClick={() => window.print()}>Print / PDF</Button>}
   </div>;
   return <Page title={title} description={`${invoice.clientName} · ${humanize(invoice.status)}${invoice.overdue ? " · overdue" : ""} · ${invoice.template.name} template`} actions={actions}>
+    {confirmDialog}
     <p><Link to={financePath("/invoices")}>← All invoices</Link></p>
     {actionError && <Notice>{actionError}</Notice>}
     {invoice.status === "DRAFT" && mode === "view" && <Notice tone="info">

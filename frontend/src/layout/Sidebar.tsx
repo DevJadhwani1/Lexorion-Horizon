@@ -119,9 +119,17 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
       </>}
     </nav>
     <div className="sidebar-account">
-      {accountOpen && <div className="sidebar-account-menu"><strong>{userName}</strong><small>{accountInfo}</small>{[...accountLinks, ...items.filter((item) => item.to.endsWith("/me"))].map((item) => <NavLink key={item.to} to={item.to} onClick={() => { setAccountOpen(false); onClose(); }}>{item.label}</NavLink>)}<button onClick={onLogout}>Sign out</button></div>}
+      {accountOpen && <div className="sidebar-account-menu"><strong>{userName}</strong><small>{accountInfo}</small>{[...accountLinks, ...items.filter((item) => item.to.endsWith("/me"))].map((item) => <NavLink key={item.to} to={item.to} onClick={() => { setAccountOpen(false); onClose(); }}>{item.label}</NavLink>)}<button onClick={onLogout}>Sign out</button><small className="sidebar-build">Build {buildLabel()}</small></div>}
       <button className="sidebar-account-button" aria-label={`Account: ${userName}`} data-tooltip="Account" aria-expanded={accountOpen} onClick={() => setAccountOpen(!accountOpen)}><span className="user-avatar" aria-hidden="true">{initials}</span><span className="user-copy"><strong>{userName}</strong><small>{accountInfo}</small></span><span className="account-dots" aria-hidden="true">···</span></button>
     </div>
     {tooltip && createPortal(<div className="sidebar-tooltip" role="tooltip" style={{ top: tooltip.top, left: tooltip.left }}>{tooltip.label}{tooltip.label === "Toggle sidebar" && <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? "⇧⌘S" : "Ctrl ⇧ S"}</kbd>}</div>, document.body)}
   </aside>;
+}
+
+/** Build time of the bundle the browser is running, e.g. "22 Oct 2026, 23:52". */
+function buildLabel(): string {
+  const built = typeof __BUILD_TIME__ === "string" ? new Date(__BUILD_TIME__) : null;
+  return built && !Number.isNaN(built.getTime())
+    ? built.toLocaleString(undefined, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "development";
 }

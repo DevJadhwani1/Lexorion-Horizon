@@ -104,7 +104,6 @@ describe("Finance billing workspace", () => {
 
   it("issues a draft and records a payment against the balance", async () => {
     const issued = { ...draft, invoiceNumber: "OH/26-27/0001", status: "ISSUED" as const };
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(financeApi.getInvoice).mockResolvedValueOnce(draft).mockResolvedValueOnce(issued)
       .mockResolvedValue({ ...issued, status: "PARTIALLY_PAID", amountPaid: 12400, balanceDue: 200000 });
     vi.mocked(financeApi.getInvoicePayments).mockResolvedValue([]);
@@ -116,8 +115,11 @@ describe("Finance billing workspace", () => {
     </Routes></MemoryRouter>);
     await screen.findByText(/It will be numbered/);
     fireEvent.click(screen.getByRole("button", { name: "Issue invoice" }));
+    const dialog = await screen.findByRole("dialog", { name: /Issue this invoice/ });
+    expect(dialog.textContent).toContain("It will be numbered OH/26-27/0001");
+    expect(financeApi.issueInvoice).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Issue invoice" }));
     await waitFor(() => expect(financeApi.issueInvoice).toHaveBeenCalledWith("REF-00001"));
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("as OH/26-27/0001"));
     fireEvent.click(await screen.findByRole("button", { name: "Record payment" }));
     fireEvent.change(screen.getByLabelText("Amount (INR)"), { target: { value: "12400" } });
     fireEvent.change(screen.getByLabelText("Payment date"), { target: { value: "2026-06-01" } });

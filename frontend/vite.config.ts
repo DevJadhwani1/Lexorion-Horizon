@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // Shown in the account menu so anyone can tell which build the browser is running.
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   server: {
     port: 9000,
     strictPort: true,
