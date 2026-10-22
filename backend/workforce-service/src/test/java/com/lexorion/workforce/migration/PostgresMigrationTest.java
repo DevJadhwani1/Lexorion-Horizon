@@ -24,9 +24,12 @@ class PostgresMigrationTest {
             statement.executeUpdate("INSERT INTO workforce_workspaces (id, created_at, updated_at, workspace_key) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', NOW(), NOW(), 'main')");
             String second = "INSERT INTO workforce_workspaces (id, created_at, updated_at, workspace_key) VALUES ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NOW(), NOW(), 'main')";
             assertThatThrownBy(() -> statement.executeUpdate(second)).isInstanceOf(SQLException.class);
-            var after = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
-                    .locations("classpath:db/migration").load().migrate();
-            assertThat(after.migrationsExecuted).isEqualTo(1);
+            var upgrade = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
+                    .locations("classpath:db/migration").load();
+            int pending = upgrade.info().pending().length;
+            assertThat(pending).isGreaterThanOrEqualTo(1);
+            var after = upgrade.migrate();
+            assertThat(after.migrationsExecuted).isEqualTo(pending);
             assertThat(statement.executeUpdate(second)).isEqualTo(1);
             try (var rows = statement.executeQuery("SELECT count(*) FROM workforce_workspaces WHERE workspace_key = 'main'")) {
                 assertThat(rows.next()).isTrue();

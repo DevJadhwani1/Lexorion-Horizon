@@ -358,7 +358,11 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Re-sync during render when a reload hands over a new organization. An effect would run after the commit,
+  // so it could overwrite an edit made before it flushed and briefly show stale values beside the save notice.
+  const [syncedOrganization, setSyncedOrganization] = useState(organization);
+  if (syncedOrganization !== organization) {
+    setSyncedOrganization(organization);
     setName(organization.name || "");
     setLegalName(organization.legalName || "");
     setPrimaryEmail(organization.primaryEmail || "");
@@ -371,7 +375,7 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
     setStateProvince(organization.stateProvince || "");
     setCity(organization.city || "");
     setPostalCode(organization.postalCode || "");
-  }, [organization]);
+  }
 
   // Industry options including legacy value preservation
   const industryOptions = useMemo(() => {
@@ -687,15 +691,17 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync state if settings prop changes from backend reload
-  useEffect(() => {
+  // Sync state during render if settings prop changes from backend reload (see OrganizationProfileForm)
+  const [syncedSettings, setSyncedSettings] = useState(settings);
+  if (syncedSettings !== settings) {
+    setSyncedSettings(settings);
     setCountry(settings.country || "US");
     setCurrency(settings.currency || "USD");
     setTimeZone(settings.timeZone || "UTC");
     setDateFormat(settings.dateFormat || "YYYY-MM-DD");
     setLocale(settings.locale || "en-US");
     setBrandingDisplayName(settings.brandingDisplayName || "");
-  }, [settings]);
+  }
 
   const isDirty =
     country !== (settings.country || "US") ||

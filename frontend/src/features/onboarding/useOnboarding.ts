@@ -141,54 +141,38 @@ export function useOnboarding() {
   );
 
   const saveDetails = async (details: Partial<Organization>) => {
+    const updated = await updateOrganization(details);
+    setOrganization(updated);
     try {
-      const updated = await updateOrganization(details);
-      setOrganization(updated);
-      try {
-        sessionStorage.setItem(`lexorion.details-completed.${organizationSlug}`, "true");
-      } catch {
-        /* storage may be unavailable */
-      }
-      return updated;
-    } catch (err) {
-      throw err;
+      sessionStorage.setItem(`lexorion.details-completed.${organizationSlug}`, "true");
+    } catch {
+      /* storage may be unavailable */
     }
+    return updated;
   };
 
   const saveOrgSettings = async (settings: Partial<Settings>) => {
+    const updated = await updateSettings(settings);
+    setOrganization(updated);
     try {
-      const updated = await updateSettings(settings);
-      setOrganization(updated);
-      try {
-        sessionStorage.setItem(`lexorion.details-completed.${organizationSlug}`, "true");
-      } catch {
-        /* storage may be unavailable */
-      }
-      return updated;
-    } catch (err) {
-      throw err;
+      sessionStorage.setItem(`lexorion.details-completed.${organizationSlug}`, "true");
+    } catch {
+      /* storage may be unavailable */
     }
+    return updated;
   };
 
   const createWorkspace = async (input: CreateWorkspaceInput) => {
-    try {
-      const created = await createOrganizationWorkspace(input);
-      setWorkspaces((prev) => [...prev, created]);
-      await workspaceContext.reload({ select: created.key });
-      return created;
-    } catch (err) {
-      throw err;
-    }
+    const created = await createOrganizationWorkspace(input);
+    setWorkspaces((prev) => [...prev, created]);
+    await workspaceContext.reload({ select: created.key });
+    return created;
   };
 
   const invite = async (email: string, role: string) => {
-    try {
-      const created = await createInvitation(email, role);
-      setInvitations((prev) => [...prev, created]);
-      return created;
-    } catch (err) {
-      throw err;
-    }
+    const created = await createInvitation(email, role);
+    setInvitations((prev) => [...prev, created]);
+    return created;
   };
 
   const confirmAccessSolo = () => {
