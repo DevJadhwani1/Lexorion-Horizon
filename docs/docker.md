@@ -163,11 +163,15 @@ installation. The existing deployment has not yet undergone this ownership trans
 ## Applying code changes
 
 The `frontend` container serves the bundle built inside its image; a local `frontend/dist` is not used.
-After pulling changes, rebuild the affected images and hard-refresh the browser:
+After pulling changes, rebuild the images and hard-refresh the browser (Compose service names are
+`platform`, `workforce`, `payroll`, `finance`, `gateway` and `frontend`):
 
 ```sh
-docker compose up -d --build frontend payroll-service workforce-service platform-service
+docker compose up -d --build
 ```
+
+The account menu in the sidebar shows when the running frontend was built; if it predates your pull, the
+frontend image was not rebuilt.
 
 ### Setups created before the Finance service
 
