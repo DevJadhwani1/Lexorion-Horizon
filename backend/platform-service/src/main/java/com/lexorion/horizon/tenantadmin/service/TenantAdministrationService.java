@@ -63,59 +63,61 @@ public class TenantAdministrationService {
    public CurrentOrganizationResponse updateProfile(UpdateOrganizationProfileRequest request) {
       TenantAccessContext context = this.requireTenantAdministrator();
       Organization organization = this.lockMutableOrganization(context.organizationId());
-      if (request.name() != null) {
+
+      if (request.has("name")) {
          organization.setName(requireText(request.name(), "name"));
       }
 
-      if (request.legalName() != null) {
+      if (request.has("legalName")) {
          organization.setLegalName(trimToNull(request.legalName()));
       }
 
-      if (request.description() != null) {
+      if (request.has("description")) {
          organization.setDescription(trimToNull(request.description()));
       }
 
-      if (request.industry() != null) {
+      if (request.has("industry")) {
          organization.setIndustry(trimToNull(request.industry()));
       }
 
-      if (request.companySize() != null) {
-         organization.setCompanySize(request.companySize());
+      if (request.has("companySize")) {
+         organization.setCompanySize(validateCompanySize(request.companySize()));
       }
 
-      if (request.website() != null) {
+      if (request.has("website")) {
          organization.setWebsite(validateWebsite(request.website()));
       }
 
-      if (request.primaryEmail() != null) {
-         organization.setPrimaryEmail(request.primaryEmail().trim().toLowerCase(Locale.ROOT));
+      if (request.has("primaryEmail")) {
+         organization.setPrimaryEmail(validateEmail(request.primaryEmail()));
       }
 
-      if (request.primaryPhone() != null) {
+      if (request.has("primaryPhone")) {
          organization.setPrimaryPhone(trimToNull(request.primaryPhone()));
       }
 
-      if (request.addressLine1() != null) {
+      if (request.has("addressLine1")) {
          organization.setAddressLine1(trimToNull(request.addressLine1()));
       }
 
-      if (request.addressLine2() != null) {
+      if (request.has("addressLine2")) {
          organization.setAddressLine2(trimToNull(request.addressLine2()));
       }
 
-      if (request.addressCountry() != null) {
-         organization.setAddressCountry(validateCountry(request.addressCountry()));
+      if (request.has("addressCountry")) {
+         String country = trimToNull(request.addressCountry());
+         organization.setAddressCountry(country != null ? validateCountry(country) : null);
       }
 
-      if (request.stateProvince() != null) {
+      if (request.has("stateProvince")) {
          organization.setStateProvince(trimToNull(request.stateProvince()));
       }
 
-      if (request.city() != null) {
+      if (request.has("city")) {
          organization.setCity(trimToNull(request.city()));
       }
 
-      if (request.postalCode() != null) {
+      if (request.has("postalCode")) {
          organization.setPostalCode(trimToNull(request.postalCode()));
       }
 
@@ -141,6 +143,10 @@ public class TenantAdministrationService {
 
       if (request.currency() != null) {
          settings.setDefaultCurrency(validateCurrency(request.currency()));
+      }
+
+      if (request.dateFormat() != null) {
+         settings.setDateFormat(validateDateFormat(request.dateFormat()));
       }
 
       if (request.workingDays() != null) {
@@ -263,7 +269,38 @@ public class TenantAdministrationService {
       return settings;
    }
 
+   private static final java.util.regex.Pattern EMAIL_PATTERN = java.util.regex.Pattern.compile(
+      "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+   );
+
+   private static final Set<String> VALID_COMPANY_SIZES = Set.of(
+      "MICRO", "SMALL", "MEDIUM", "LARGE", "ENTERPRISE"
+   );
+
+   private static String validateEmail(String value) {
+      String trimmed = requireText(value, "primaryEmail");
+      if (!EMAIL_PATTERN.matcher(trimmed).matches()) {
+         throw invalid("primaryEmail must be a valid email address");
+      }
+      return trimmed.toLowerCase(Locale.ROOT);
+   }
+
+   private static String validateCompanySize(String value) {
+      String trimmed = trimToNull(value);
+      if (trimmed == null) {
+         return null;
+      }
+      String upper = trimmed.toUpperCase(Locale.ROOT);
+      if (!VALID_COMPANY_SIZES.contains(upper)) {
+         throw invalid("companySize must be one of MICRO, SMALL, MEDIUM, LARGE, ENTERPRISE");
+      }
+      return upper;
+   }
+
    private static String requireText(String value, String field) {
+      if (value == null) {
+         throw invalid(field + " must not be blank");
+      }
       String trimmed = value.trim();
       if (trimmed.isEmpty()) {
          throw invalid(field + " must not be blank");
@@ -273,6 +310,9 @@ public class TenantAdministrationService {
    }
 
    private static String trimToNull(String value) {
+      if (value == null) {
+         return null;
+      }
       String trimmed = value.trim();
       return trimmed.isEmpty() ? null : trimmed;
    }
@@ -281,17 +321,24 @@ public class TenantAdministrationService {
       String normalized = trimToNull(value);
       if (normalized == null) {
          return null;
-      } else {
-         try {
-            URI uri = new URI(normalized);
-            if (("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())) && uri.getHost() != null) {
-               return uri.toString();
-            } else {
-               throw invalid("website must be an HTTP(S) URL");
-            }
-         } catch (URISyntaxException var3) {
-            throw invalid("website must be an HTTP(S) URL");
+      }
+      String lower = normalized.toLowerCase();
+      if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("file:") || lower.startsWith("ftp:")) {
+         throw invalid("website contains an unsupported protocol");
+      }
+      String urlToParse = normalized;
+      if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+         urlToParse = "https://" + normalized;
+      }
+      try {
+         URI uri = new URI(urlToParse);
+         if (("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())) && uri.getHost() != null) {
+            return normalized;
+         } else {
+            throw invalid("website must be an HTTP(S) URL or valid domain");
          }
+      } catch (URISyntaxException var3) {
+         throw invalid("website must be an HTTP(S) URL or valid domain");
       }
    }
 
@@ -329,6 +376,19 @@ public class TenantAdministrationService {
          return Currency.getInstance(normalized).getCurrencyCode();
       } catch (IllegalArgumentException var3) {
          throw invalid("currency must be an ISO 4217 code");
+      }
+   }
+
+   private static final Set<String> SUPPORTED_DATE_FORMATS = Set.of(
+      "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD MMM YYYY"
+   );
+
+   private static String validateDateFormat(String value) {
+      String normalized = value.trim();
+      if (!SUPPORTED_DATE_FORMATS.contains(normalized)) {
+         throw invalid("dateFormat must be one of: DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD, DD MMM YYYY");
+      } else {
+         return normalized;
       }
    }
 

@@ -73,6 +73,19 @@ services:
       LEXORION_BOOTSTRAP_ENABLED: ${LEXORION_BOOTSTRAP_ENABLED:-false}
       LEXORION_BOOTSTRAP_EMAIL: ${LEXORION_BOOTSTRAP_EMAIL:-}
       LEXORION_BOOTSTRAP_PASSWORD: ${LEXORION_BOOTSTRAP_PASSWORD:-}
+      LEXORION_CLIENT_SEED_ENABLED: ${LEXORION_CLIENT_SEED_ENABLED:-false}
+      LEXORION_CLIENT_SEED_EMAIL: ${LEXORION_CLIENT_SEED_EMAIL:-dev@lexorion.in}
+      LEXORION_CLIENT_SEED_PASSWORD: ${LEXORION_CLIENT_SEED_PASSWORD:-}
+      LEXORION_CLIENT_SEED_FIRST_NAME: ${LEXORION_CLIENT_SEED_FIRST_NAME:-Dev}
+      LEXORION_CLIENT_SEED_LAST_NAME: ${LEXORION_CLIENT_SEED_LAST_NAME:-Jadhwani}
+      LEXORION_CLIENT_SEED_ORGANIZATION_NAME: ${LEXORION_CLIENT_SEED_ORGANIZATION_NAME:-Lexorion Client}
+      LEXORION_CLIENT_SEED_ORGANIZATION_CODE: ${LEXORION_CLIENT_SEED_ORGANIZATION_CODE:-LEXORION-CLIENT}
+      LEXORION_CLIENT_SEED_ORGANIZATION_SLUG: ${LEXORION_CLIENT_SEED_ORGANIZATION_SLUG:-lexorion-client}
+      # AXON runtime security monitor: login outcomes are published only when AXON_ENABLED=true.
+      # From this container AXON on the same Mac is http://host.docker.internal:8100 (not localhost).
+      AXON_ENABLED: ${AXON_ENABLED:-false}
+      AXON_BASE_URL: ${AXON_BASE_URL:-}
+      AXON_INGESTION_KEY: ${AXON_INGESTION_KEY:-}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9002"]
     networks: [horizon]
@@ -161,6 +174,8 @@ services:
 
   frontend:
     build: ./frontend
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
     ports: ["${HORIZON_BIND_ADDRESS:-127.0.0.1}:80:9000", "127.0.0.1:9000:9000"]
     networks: [horizon]
     depends_on:

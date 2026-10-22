@@ -78,6 +78,63 @@ Rotate a database password using PostgreSQL's interactive `\password <role>` fro
 
 Bootstrap is allowed only on an empty identity store. Set its enabled flag/email/password explicitly for one initial Platform instance, start it, then disable and remove credentials before normal operation. Enabled bootstrap on an existing identity store fails startup instead of restoring a removed administrator or promoting an existing user. Recover accounts through authenticated administration or an explicitly reviewed DBA recovery procedure.
 
+For a local client login, the optional client seed creates `dev@lexorion.in`, a fresh `Lexorion Client` trial organization, and an `ADMIN` membership. It is disabled by default and is idempotent:
+
+```sh
+export LEXORION_CLIENT_SEED_ENABLED=true
+export LEXORION_CLIENT_SEED_PASSWORD='<12-to-72-byte-development-password>'
+docker compose up -d --force-recreate platform
+```
+
+Do not commit the password or enable this seed in production. Disable `LEXORION_CLIENT_SEED_ENABLED` after local provisioning.
+
+## Unified HRM MVP demo workflow
+
+After the stack is healthy, open `http://localhost:9000/` and sign in with the
+local client account created by the optional seed. Select `Lexorion Client` in
+the organization context selector. The Home screen is the resumable setup
+entry point: organization administrators can follow each action in order, and the
+checklist derives its state from the current organization, plan, workspace,
+workforce, and payroll data rather than browser-only flags.
+
+1. Review **Organization details**.
+2. Open **Workspace and plan**. Confirm an active Starter or Business plan,
+   then create a workspace without selecting individual products. Enabled
+   capabilities are resolved from the organization's assigned plan.
+3. Configure departments and designations, then add an active employee under
+   **Workforce**.
+4. Open **Payroll**, enroll the employee, and add an effective compensation
+   profile with components.
+5. Confirm payroll readiness, create a pay run, process it, review the
+   calculation, and finalize it. Finalized pay runs and their ledger entries
+   are immutable.
+
+If there is no active plan, an inactive plan, or the workspace limit has been
+reached, the workspace screen reports the actionable server response instead
+of allowing a bypass. Non-administrators see the request-access state until an
+administrator provisions a workspace. Workforce and Payroll remain protected
+by the selected tenant context and workspace authorization.
+
+Frontend validation for the unified setup flow:
+
+```sh
+cd frontend
+npm test -- --run src/pages/HomePage.test.tsx src/pages/admin/AdminWorkspaces.test.tsx src/workspace/WorkspaceProvider.test.tsx
+npm run typecheck
+npm run build
+```
+
+The focused run passed 13 tests, type-checking passed, and the production
+build passed. Backend provisioning and entitlement validation:
+
+```sh
+cd backend/platform-service
+./mvnw -q -Dtest=WorkspaceSecurityIntegrationTest,EntitlementSecurityIntegrationTest test
+```
+
+This passed with 34 tests and no failures. The backend suite uses H2 and
+does not replace a full deployed-stack smoke test against PostgreSQL.
+
 Production operators must also configure TLS ingress and hostname routing, database backups/persistence, and the external SMTP relay described in [invitation-lifecycle.md](invitation-lifecycle.md). The frontend binds to loopback by default; set `HORIZON_BIND_ADDRESS` explicitly only behind the intended ingress. DB, registry and service endpoints must remain private. Compose is not a TLS certificate or backup manager.
 
 ## Existing data volume

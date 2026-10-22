@@ -1347,7 +1347,7 @@ function NewPayRun({ runs, onCreated, onCancel }: { runs: PayRun[]; onCreated(ru
           {roster !== null && active.length > 0 && <> · {monthly} monthly employee{monthly === 1 ? "" : "s"}</>}
         </p>}
         {otherFrequencies > 0 && <p className="snapshot-note">{otherFrequencies} employee{otherFrequencies === 1 ? " is" : "s are"} paid weekly or every two weeks and will show as blocked in a monthly run. Use a custom period for them.</p>}
-        {!currency && defaults.loaded && <Notice>Set your organization’s currency in <Link to={appPath("/app/admin/settings")}>Settings</Link> before creating a pay run.</Notice>}
+        {!currency && defaults.loaded && <Notice>Set your organization’s currency in <Link to={appPath("/organization/settings")}>Settings</Link> before creating a pay run.</Notice>}
         <div className="form-actions">
           <Button variant="primary" disabled={busy || !month || !currency}>{busy ? "Creating…" : `Create ${monthName || "pay run"} draft`}</Button>
           <Button type="button" onClick={() => setCustom(true)}>Use a custom period</Button>

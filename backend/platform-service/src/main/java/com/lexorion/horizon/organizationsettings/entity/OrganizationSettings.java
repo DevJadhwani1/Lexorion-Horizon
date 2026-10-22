@@ -64,6 +64,12 @@ public class OrganizationSettings extends Auditable {
       length = 3
    )
    private String defaultCurrency = "USD";
+   @Column(
+      name = "date_format",
+      nullable = false,
+      length = 20
+   )
+   private String dateFormat = "YYYY-MM-DD";
    @ElementCollection(
       fetch = FetchType.EAGER
    )
@@ -132,6 +138,11 @@ public class OrganizationSettings extends Auditable {
    }
 
    @Generated
+   public String getDateFormat() {
+      return this.dateFormat;
+   }
+
+   @Generated
    public Set<WorkingDay> getWorkingDays() {
       return this.workingDays;
    }
@@ -184,6 +195,11 @@ public class OrganizationSettings extends Auditable {
    @Generated
    public void setDefaultCurrency(final String defaultCurrency) {
       this.defaultCurrency = defaultCurrency;
+   }
+
+   @Generated
+   public void setDateFormat(final String dateFormat) {
+      this.dateFormat = dateFormat;
    }
 
    @Generated

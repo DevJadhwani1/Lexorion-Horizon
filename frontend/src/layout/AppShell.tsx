@@ -14,11 +14,12 @@ import { Sidebar, type SidebarGroup } from "./Sidebar";
 
 type NavEntry = readonly [path: string, label: string, icon: IconName];
 const administration: readonly NavEntry[] = [
-  ["organization", "Organization profile", "building"], ["members", "Members", "profile"],
-  ["invitations", "Invitations", "admin"], ["workspaces", "Workspaces", "panels"],
-  ["entitlements", "Plan & usage", "badge"], ["settings", "Settings", "settings"],
+  ["/organization", "Organization", "building"],
+  ["/organization/workspaces", "Workspaces", "panels"],
+  ["/organization/members", "Members", "profile"],
+  ["/organization/invitations", "Invitations", "admin"],
+  ["/organization/settings", "Settings", "settings"],
 ];
-// Administrators manage people here; their own profile is in the account menu.
 const workforceAdmin: readonly NavEntry[] = [
   ["employees", "Employees", "profile"], ["departments", "Departments", "workforce"],
   ["designations", "Designations", "workforce"], ["structure", "Reporting structure", "workforce"],
@@ -35,12 +36,31 @@ const platformCatalog: readonly NavEntry[] = [["products", "Products", "package"
 const platformOperations: readonly NavEntry[] = [["workspaces", "Workspaces", "panels"]];
 const platformSystem: readonly NavEntry[] = [["settings", "Settings", "settings"]];
 
+import { AppSwitcher } from "./AppSwitcher";
+import { ContextSelector } from "./ContextSelector";
+import { AccountMenu } from "./AccountMenu";
+import { OnboardingTopBar } from "../features/onboarding/OnboardingTopBar";
+import { HelpModal } from "../features/onboarding/HelpModal";
+import { OnboardingProvider, useOnboardingContext } from "../features/onboarding/OnboardingContext";
+
 export function AppShell() {
+  return (
+    <OnboardingProvider>
+      <AppShellInner />
+    </OnboardingProvider>
+  );
+}
+
+function AppShellInner() {
   const auth = useAuth(), workspace = useWorkspace(), navigate = useNavigate(), location = useLocation();
   // Organization administration reloads workspace access itself. Do not discard its forms during that refresh.
-  const organizationAdministration = /^\/(?:app\/admin\/|(?:organization|members|invitations|settings|entitlements|workspaces)(?:\/|$))/.test(location.pathname);
+  const organizationAdministration = /^\/(?:(?:app\/)?(?:admin|organization)(?:\/|$)|(?:app\/)?(?:members|invitations|settings|entitlements|workspaces)(?:\/|$))/.test(location.pathname);
   const application = useApplicationContext();
+  const onboarding = useOnboardingContext();
   const [apiError, setApiError] = useState(""), [collapsed, setCollapsed] = useState(() => { try { return sessionStorage.getItem("lexorion.sidebar-collapsed") === "true" || (sessionStorage.getItem("lexorion.sidebar-collapsed") === null && window.innerWidth <= 1100); } catch { return false; } }), [drawerOpen, setDrawerOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpTab, setHelpTab] = useState<"help" | "docs">("help");
+
   useEffect(() => {
     const show = (event: Event) => setApiError((event as CustomEvent<string>).detail);
     window.addEventListener("lexorion:api-error", show);
@@ -62,6 +82,13 @@ export function AppShell() {
   }, [drawerOpen]);
 
   const role = auth.organization?.membershipRole, adminRole = role === "ADMIN";
+
+  const isOnboarding =
+    application.mode === "client" &&
+    Boolean(auth.organization) &&
+    adminRole &&
+    (workspace.workspaces.length === 0 || location.pathname === appPath("/app/onboarding"));
+
   const workforceProduct = Boolean(workspace.workspace?.products.some(product => product.key === "workforce"));
   const workforce = adminRole ? workforceAdmin : role === "MANAGER" ? workforceSelf : workforceSelf.filter(([key]) => key === "me");
   const initials = `${auth.user?.firstName?.[0] ?? ""}${auth.user?.lastName?.[0] ?? ""}` || "L";
@@ -75,14 +102,20 @@ export function AppShell() {
   }
   if (application.mode === "client") {
     groups.push({ label: "", items: [{ to: appPath("/app"), label: "Overview", icon: "home" }] });
-    if (role && workforceProduct) addGroup(adminRole ? "People" : "Workforce", "workforce", workforce);
+    if (adminRole) {
+      groups.push({
+        label: "Organization",
+        items: administration.map(([path, text, icon]) => ({
+          to: appPath(path),
+          label: text,
+          icon,
+        })),
+      });
+    }
+    if (role && workforceProduct) addGroup("Workforce", "workforce", workforce);
     if (adminRole && workspace.workspace?.products.some(product => product.key === "payroll")) addGroup("Payroll", "payroll", payroll);
-    if (adminRole) addGroup("Organization", "admin", administration);
   }
   const accountLinks = application.mode === "client" && adminRole && workforceProduct ? [{ to: appPath("/app/workforce/me"), label: "My profile" }] : [];
-  // Single choices are selected automatically, so their switchers add nothing. They reappear when a second option exists.
-  const showOrganizationSwitcher = auth.organizations.length !== 1 || !auth.organization;
-  const showWorkspaceSwitcher = workspace.workspaces.length !== 1 || !workspace.workspace;
   const toggleSidebar = () => setCollapsed((value) => {
     try { sessionStorage.setItem("lexorion.sidebar-collapsed", String(!value)); } catch { /* Storage may be unavailable. */ }
     return !value;
@@ -110,28 +143,41 @@ export function AppShell() {
         accountLinks={accountLinks} onLogout={() => void auth.logout()} />
       <div className="stage" inert={drawerOpen}>
         <header className="topbar">
+          <AppSwitcher />
           <button className="sidebar-trigger" type="button" aria-label="Open navigation" aria-controls="application-sidebar"
             aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button>
-          <span className="topbar-title">{application.mode === "platform" ? "Platform Console" : "Horizon"}</span>
-          <div className="context-selectors">
-            {application.mode === "client" && !showOrganizationSwitcher && !showWorkspaceSwitcher && <span className="context-current" title={`Workspace: ${workspace.workspace?.displayName ?? ""}`}>{auth.organization?.organizationName}</span>}
-            {application.mode === "client" && showOrganizationSwitcher && <label><span>Organization</span>
-              <select aria-label="Organization" value={auth.organization?.slug ?? ""} onChange={(event) => { auth.selectOrganization(event.target.value); navigate(appPath("/app")); }}>
-                <option value="">Choose organization</option>
-                {auth.organizations.map((item) => <option key={item.slug} value={item.slug}>{item.organizationName}</option>)}
-              </select>
-            </label>}
-            {application.mode === "client" && showWorkspaceSwitcher && <label><span>Workspace</span>
-              <select aria-label="Workspace" disabled={!auth.organization || workspace.loading} value={workspace.workspace?.key ?? ""}
-                onChange={(event) => { workspace.selectWorkspace(event.target.value); navigate(appPath("/app")); }}>
-                <option value="">Choose workspace</option>
-                {workspace.workspaces.map((item) => <option key={item.key} value={item.key}>{item.displayName}</option>)}
-              </select>
-            </label>}
-            {application.mode === "platform" && <Button size="sm" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/app"); } }}>Client application</Button>}
-            {application.mode === "client" && application.hasPlatformAccess && <Button size="sm" onClick={() => { if (consoleHost() === "client") window.location.assign(consoleUrl("platform")); else { application.enterPlatform(); navigate("/app"); } }}>Platform</Button>}
+          <div className="topbar-title-wrap">
+            <span className="topbar-title">{application.mode === "platform" ? "Platform Console" : "Horizon"}</span>
+            {application.mode === "client" && auth.organization && (
+              <span className="topbar-crumb-sep">/</span>
+            )}
+            {application.mode === "client" && auth.organization && (
+              <span className="topbar-org-tag">{auth.organization.organizationName}</span>
+            )}
           </div>
-          <span className="topbar-avatar" title={`${auth.user?.firstName ?? ""} ${auth.user?.lastName ?? ""}`.trim()} aria-label={`Signed in as ${auth.user?.email ?? "current user"}`}>{initials.toUpperCase()}</span>
+          <div className="context-selectors">
+            {application.mode === "client" ? (
+              isOnboarding ? (
+                <OnboardingTopBar
+                  completedSteps={onboarding.completedCount}
+                  totalSteps={onboarding.totalSteps}
+                  onOpenHelp={() => {
+                    setHelpTab("help");
+                    setHelpOpen(true);
+                  }}
+                />
+              ) : (
+                <ContextSelector />
+              )
+            ) : (
+              <div className="platform-nav-actions">
+                <Button size="sm" variant="secondary" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/app"); } }}>
+                  Open client app →
+                </Button>
+              </div>
+            )}
+          </div>
+          <AccountMenu />
         </header>
         <main>
           {apiError && <div className="dismissible"><Notice>{apiError}</Notice><Button size="sm" onClick={() => setApiError("")}>Dismiss</Button></div>}
@@ -139,6 +185,12 @@ export function AppShell() {
           <Outlet key={`${location.pathname}:${application.mode === "client" ? `client:${auth.organization?.organizationId ?? "none"}:${organizationAdministration ? "organization" : workspace.workspace?.key ?? "none"}` : "platform"}`} />
         </main>
       </div>
+
+      <HelpModal
+        open={helpOpen}
+        initialTab={helpTab}
+        onClose={() => setHelpOpen(false)}
+      />
     </div>
   );
 }

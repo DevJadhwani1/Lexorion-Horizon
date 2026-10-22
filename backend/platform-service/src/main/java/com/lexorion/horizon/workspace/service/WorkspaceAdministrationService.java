@@ -54,7 +54,12 @@ public class WorkspaceAdministrationService {
         var keys = new java.util.LinkedHashSet<String>();
         if (request.productKey() != null) keys.add(request.productKey());
         if (request.productKeys() != null) keys.addAll(request.productKeys());
-        if (keys.isEmpty()) throw new InvalidWorkspaceException("At least one product is required");
+        if (keys.isEmpty()) {
+            keys.addAll(entitlements.enabledProductKeysForOrganization(organization.getId()));
+            if (keys.isEmpty()) {
+                throw new InvalidWorkspaceException("The organization plan does not enable any workspace products");
+            }
+        }
         Product product = productRepository.findByKey(keys.iterator().next())
                 .orElseThrow(() -> new InvalidWorkspaceException("Product is not available for provisioning"));
         if (product.getStatus() != ProductStatus.ACTIVE) {

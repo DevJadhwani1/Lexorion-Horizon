@@ -4,7 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Icon, type IconName } from "./SidebarIcon";
 import { appPath } from "../app/hostRouting";
 
-interface SidebarItem { to: string; label: string; icon: IconName }
+export interface SidebarItem { to: string; label: string; icon: IconName; onClick?: () => void }
 export interface SidebarGroup { label: string; items: SidebarItem[] }
 interface Props {
   platform?: boolean; groups: SidebarGroup[]; collapsed: boolean; drawerOpen: boolean;
@@ -39,9 +39,52 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
     return () => { document.removeEventListener("keydown", trap); previous?.focus(); };
   }, [drawerOpen]);
   useEffect(() => { setTooltip(null); }, [collapsed]);
-  const row = (item: SidebarItem) => <NavLink key={item.to} to={item.to} end={item.to === appPath("/app") || item.to === appPath("/app/platform")} aria-label={item.label} data-tooltip={item.label} onClick={() => { onClose(); setQuery(""); setSearchOpen(false); }}>
-    <span className="nav-icon"><Icon name={item.icon} /></span><span className="nav-label">{item.label}</span>
-  </NavLink>;
+  const row = (item: SidebarItem, keyPrefix = "") => {
+    if (item.onClick) {
+      return (
+        <button
+          key={`${keyPrefix}${item.label}`}
+          type="button"
+          className="nav-item-btn"
+          aria-label={item.label}
+          data-tooltip={item.label}
+          onClick={(event) => {
+            event.preventDefault();
+            item.onClick?.();
+            onClose();
+            setQuery("");
+            setSearchOpen(false);
+          }}
+        >
+          <span className="nav-icon"><Icon name={item.icon} /></span>
+          <span className="nav-label">{item.label}</span>
+        </button>
+      );
+    }
+    return (
+      <NavLink
+        key={`${keyPrefix}${item.to}`}
+        to={item.to}
+        end={
+          item.to === appPath("/app") ||
+          item.to === appPath("/app/platform") ||
+          item.to === appPath("/organization") ||
+          item.to === "/organization" ||
+          item.to === "/app/organization"
+        }
+        aria-label={item.label}
+        data-tooltip={item.label}
+        onClick={() => {
+          onClose();
+          setQuery("");
+          setSearchOpen(false);
+        }}
+      >
+        <span className="nav-icon"><Icon name={item.icon} /></span>
+        <span className="nav-label">{item.label}</span>
+      </NavLink>
+    );
+  };
   return <aside ref={aside} id="application-sidebar" aria-label="Application navigation" onMouseLeave={() => setTooltip(null)}
     onKeyDown={(event) => { if (event.key === "Escape") { setAccountOpen(false); setSearchOpen(false); setQuery(""); } }}
     onMouseOver={(event) => {
@@ -53,8 +96,8 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
       if ((collapsed || target?.classList.contains("desktop-control")) && window.innerWidth > 800 && target) { const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: rect.right + 8 }); }
     }} onBlur={() => setTooltip(null)}>
     <div className="sidebar-header">
-      <NavLink className="brand brand-desktop" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
-      <NavLink className="brand brand-mobile" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/brand-icon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
+      <NavLink className="brand brand-desktop" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
+      <NavLink className="brand brand-mobile" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
       <button className="sidebar-control sidebar-search" aria-label="Search navigation" data-tooltip="Search navigation" aria-expanded={searchOpen} onClick={() => { setSearchOpen(!searchOpen); setQuery(""); if (collapsed && window.innerWidth > 800) onToggle(); }}><Icon name="search" /></button>
       <button className="sidebar-control desktop-control" onClick={onToggle} aria-label="Toggle sidebar" data-tooltip="Toggle sidebar" aria-keyshortcuts="Meta+Shift+S Control+Shift+S" aria-expanded={!collapsed} aria-controls="sidebar-content">
         <Icon name="sidebar" />
@@ -70,8 +113,8 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
         setTooltip({ label: target.dataset.tooltip, top: rect.top + rect.height / 2, left: rect.right + 8 });
       } else setTooltip(null);
     }}>
-      {query.trim() ? <section className="nav-group"><h2>Search results</h2>{items.filter((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())).map(row)}{!items.some((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())) && <p className="sidebar-empty">No matching pages.</p>}</section> : <>
-        {groups.map((group) => <section className="nav-group" key={`${group.label}:${group.items[0]?.to ?? "empty"}`} aria-label={group.label || group.items[0]?.label || "Navigation"}>{group.label && <h2>{group.label}</h2>}{group.items.map(row)}</section>)}
+      {query.trim() ? <section className="nav-group"><h2>Search results</h2>{items.filter((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())).map((item, idx) => row(item, `search-${idx}:`))}{!items.some((item) => item.label.toLowerCase().includes(query.trim().toLowerCase())) && <p className="sidebar-empty">No matching pages.</p>}</section> : <>
+        {groups.map((group) => <section className="nav-group" key={`${group.label}:${group.items[0]?.to ?? "empty"}`} aria-label={group.label || group.items[0]?.label || "Navigation"}>{group.label && <h2>{group.label}</h2>}{group.items.map((item) => row(item, `${group.label}:`))}</section>)}
 
       </>}
     </nav>

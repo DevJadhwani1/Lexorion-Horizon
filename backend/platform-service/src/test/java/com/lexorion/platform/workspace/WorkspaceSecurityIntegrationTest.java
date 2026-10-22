@@ -132,7 +132,7 @@ class WorkspaceSecurityIntegrationTest {
 
     @Test
     void ownerAndAdminCanCreateUpdateDeactivateAndReactivate() throws Exception {
-        create(owner, "core", "Core Workspace", "workforce", "alpha").andExpect(status().isCreated())
+        createBody(owner, "alpha", "{\"key\":\"core\",\"displayName\":\"Core Workspace\"}").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.organizationId").doesNotExist()).andExpect(jsonPath("$.productId").doesNotExist());
         tenant(patch("/api/tenant/workspaces/core").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"displayName\":\"Core Operations\"}"), token(admin), "alpha", HOST)
@@ -142,6 +142,40 @@ class WorkspaceSecurityIntegrationTest {
         tenant(patch("/api/tenant/workspaces/core").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"ACTIVE\"}"), token(owner), "alpha", HOST).andExpect(status().isOk());
         tenant(get("/api/tenant/workspaces/core"), token(member), "alpha", HOST).andExpect(status().isOk());
+    }
+
+    @Test
+    void assignedPlanResolvesWorkspaceProductsWithoutCustomerProductSelection() throws Exception {
+        createBody(owner, "alpha", "{\"key\":\"automatic\",\"displayName\":\"Automatic Workspace\"}")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.productKey").value("payroll"))
+                .andExpect(jsonPath("$.products.length()").value(2));
+    }
+
+    @Test
+    void missingOrInactivePlanExplainsWhyWorkspaceCannotBeCreated() throws Exception {
+        planAssignments.deleteAll();
+        createBody(owner, "alpha", "{\"key\":\"missing-plan\",\"displayName\":\"Missing Plan\"}")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("An active organization plan is required"));
+
+        assign(alpha, "workforce", "starter");
+        var plan = plans.findByKey("starter").orElseThrow();
+        plan.setStatus(com.lexorion.horizon.entitlement.entity.CatalogStatus.INACTIVE);
+        plans.saveAndFlush(plan);
+        createBody(owner, "alpha", "{\"key\":\"inactive-plan\",\"displayName\":\"Inactive Plan\"}")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("An active organization plan is required"));
+        plan.setStatus(com.lexorion.horizon.entitlement.entity.CatalogStatus.ACTIVE);
+        plans.saveAndFlush(plan);
+    }
+
+    @Test
+    void assignedPlanWorkspaceLimitIsEnforced() throws Exception {
+        createBody(owner, "alpha", "{\"key\":\"first\",\"displayName\":\"First\"}").andExpect(status().isCreated());
+        createBody(owner, "alpha", "{\"key\":\"second\",\"displayName\":\"Second\"}")
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Workspace limit exceeded"));
     }
 
     @Test

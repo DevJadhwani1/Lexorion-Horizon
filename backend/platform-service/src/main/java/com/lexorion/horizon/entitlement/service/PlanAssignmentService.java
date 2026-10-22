@@ -52,6 +52,10 @@ public class PlanAssignmentService {
 
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('PLATFORM_ACCESS')")
     public EffectiveEntitlementResponse assignPlatformOrganization(java.util.UUID id, String planKey) {
+        return assignPlanToOrganization(id, planKey);
+    }
+
+    public EffectiveEntitlementResponse assignPlanToOrganization(java.util.UUID id, String planKey) {
         Organization organization = organizations.findByIdForUpdate(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Organization", id));
         if (!organization.getStatus().allowsTenantManagement()
@@ -69,8 +73,8 @@ public class PlanAssignmentService {
     }
 
     private Plan requireCommercialPlan(String key) {
-        if (!"starter".equals(key) && !"business".equals(key))
-            throw new InvalidPlanAssignmentException("Only Starter and Business plans are available");
+        if (!"starter".equals(key) && !"business".equals(key) && !"enterprise".equals(key))
+            throw new InvalidPlanAssignmentException("Only Starter, Business, and Enterprise plans are available");
         Plan plan = plans.findByKey(key).orElseThrow(() -> new InvalidPlanAssignmentException("Plan is unavailable"));
         if (plan.getProduct() != null || plan.getStatus() != CatalogStatus.ACTIVE)
             throw new InvalidPlanAssignmentException("An active platform plan is required");

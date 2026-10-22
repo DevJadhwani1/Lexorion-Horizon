@@ -33,8 +33,9 @@ public class OrganizationService {
    private final TenantSlugService tenantSlugService;
    private final Clock clock;
    private final com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon;
+   private final com.lexorion.horizon.entitlement.service.PlanAssignmentService planAssignmentService;
 
-   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock, com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon, com.lexorion.core.organization.service.CoreOrganizationService coreOrganizations) {
+   public OrganizationService(OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, UserService userService, TenantSlugService tenantSlugService, Clock clock, com.lexorion.horizon.workspace.service.HorizonProvisioningService horizon, com.lexorion.core.organization.service.CoreOrganizationService coreOrganizations, com.lexorion.horizon.entitlement.service.PlanAssignmentService planAssignmentService) {
       this.coreOrganizations = coreOrganizations;
       this.horizon = horizon;
       this.organizationRepository = organizationRepository;
@@ -42,6 +43,7 @@ public class OrganizationService {
       this.userService = userService;
       this.tenantSlugService = tenantSlugService;
       this.clock = clock;
+      this.planAssignmentService = planAssignmentService;
    }
 
    public OrganizationResponse create(CreateOrganizationRequest request) {
@@ -51,6 +53,12 @@ public class OrganizationService {
       var ownership = membershipRepository.findByUserIdAndOrganizationIdAndStatus(request.ownerUserId(), organization.getId(), MembershipStatus.ACTIVE).orElseThrow();
       ownership.setRole(OrganizationRole.ADMIN); membershipRepository.saveAndFlush(ownership);
       horizon.enroll(organization.getId());
+      if (request.planKey() != null && !request.planKey().isBlank()) {
+         planAssignmentService.assignPlanToOrganization(organization.getId(), request.planKey());
+      }
+      if (request.status() != null) {
+         this.transition(organization, request.status(), this.clock.instant());
+      }
       return OrganizationResponse.from(organizationRepository.saveAndFlush(organization));
    }
 

@@ -8,6 +8,7 @@ import { InvitationPage } from "../pages/InvitationPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { HomePage } from "../pages/HomePage";
+import { OnboardingPage } from "../pages/onboarding/OnboardingPage";
 import { AdminPage } from "../pages/admin/AdminPage";
 import { AdminWorkspaces } from "../pages/admin/AdminWorkspaces";
 import { WorkforcePage } from "../pages/workforce/WorkforcePage";
@@ -71,18 +72,32 @@ function platformRoutes(prefix = ""): RouteObject[] {
   ] }];
 }
 
-function clientRoutes(local: boolean): RouteObject[] {
-  const admin = (value: string) => local ? `admin/${value}` : value;
+export function clientRoutes(local: boolean): RouteObject[] {
+  const base = local ? "/app" : "";
   return [
     { index: true, element: <HomePage /> },
+    { path: "onboarding", element: <OnboardingPage /> },
     { element: <ContextRequired area="administration" />, children: [
-      ...(local ? [{ path: "admin", element: <Navigate to="/app/admin/organization" replace /> }] : []),
-      { path: admin("organization"), element: <AdminPage sectionKey="organization" /> },
-      { path: admin("members"), element: <AdminPage sectionKey="members" /> },
-      { path: admin("invitations"), element: <AdminPage sectionKey="invitations" /> },
-      { path: admin("settings"), element: <AdminPage sectionKey="settings" /> },
-      { path: admin("entitlements"), element: <AdminPage sectionKey="entitlements" /> },
-      { path: admin("workspaces"), element: <AdminWorkspaces /> },
+      { path: "organization", element: <AdminPage sectionKey="organization" /> },
+      { path: "organization/workspaces", element: <AdminWorkspaces /> },
+      { path: "organization/members", element: <AdminPage sectionKey="members" /> },
+      { path: "organization/invitations", element: <AdminPage sectionKey="invitations" /> },
+      { path: "organization/settings", element: <AdminPage key="settings" sectionKey="settings" /> },
+      { path: "organization/settings/product-access", element: <AdminPage key="product-access" sectionKey="product-access" /> },
+      { path: "organization/entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
+      { path: "admin", element: <Navigate to={`${base}/organization`} replace /> },
+      { path: "admin/organization", element: <Navigate to={`${base}/organization`} replace /> },
+      { path: "admin/workspaces", element: <Navigate to={`${base}/organization/workspaces`} replace /> },
+      { path: "admin/members", element: <Navigate to={`${base}/organization/members`} replace /> },
+      { path: "admin/invitations", element: <Navigate to={`${base}/organization/invitations`} replace /> },
+      { path: "admin/settings", element: <Navigate to={`${base}/organization/settings`} replace /> },
+      { path: "admin/entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
+      { path: "admin/*", element: <Navigate to={`${base}/organization`} replace /> },
+      { path: "workspaces", element: <Navigate to={`${base}/organization/workspaces`} replace /> },
+      { path: "members", element: <Navigate to={`${base}/organization/members`} replace /> },
+      { path: "invitations", element: <Navigate to={`${base}/organization/invitations`} replace /> },
+      { path: "settings", element: <Navigate to={`${base}/organization/settings`} replace /> },
+      { path: "entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
     ] },
     { element: <ContextRequired area="workforce" />, children: workforceRoutes() },
     { element: <ContextRequired area="payroll" />, children: payrollRoutes() },
@@ -107,6 +122,54 @@ function payrollRoutes(): RouteObject[] { return [
 ]; }
 
 const host = consoleHost();
+export function getTopLevelCompatibilityRoutes(currentHost = consoleHost()): RouteObject[] {
+  return currentHost === "local" ? [
+    { path: "/organization", element: <Navigate to="/app/organization" replace /> },
+    { path: "/organization/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
+    { path: "/organization/members", element: <Navigate to="/app/organization/members" replace /> },
+    { path: "/organization/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
+    { path: "/organization/settings", element: <Navigate to="/app/organization/settings" replace /> },
+    { path: "/organization/settings/product-access", element: <Navigate to="/app/organization/settings/product-access" replace /> },
+    { path: "/organization/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
+    { path: "/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
+    { path: "/members", element: <Navigate to="/app/organization/members" replace /> },
+    { path: "/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
+    { path: "/settings", element: <Navigate to="/app/organization/settings" replace /> },
+    { path: "/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
+    { path: "/admin", element: <Navigate to="/app/organization" replace /> },
+    { path: "/admin/organization", element: <Navigate to="/app/organization" replace /> },
+    { path: "/admin/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
+    { path: "/admin/members", element: <Navigate to="/app/organization/members" replace /> },
+    { path: "/admin/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
+    { path: "/admin/settings", element: <Navigate to="/app/organization/settings" replace /> },
+    { path: "/admin/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
+    { path: "/admin/*", element: <Navigate to="/app/organization" replace /> },
+  ] : currentHost === "client" ? [
+    { path: "/app/organization", element: <Navigate to="/organization" replace /> },
+    { path: "/app/organization/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
+    { path: "/app/organization/members", element: <Navigate to="/organization/members" replace /> },
+    { path: "/app/organization/invitations", element: <Navigate to="/organization/invitations" replace /> },
+    { path: "/app/organization/settings", element: <Navigate to="/organization/settings" replace /> },
+    { path: "/app/organization/settings/product-access", element: <Navigate to="/organization/settings/product-access" replace /> },
+    { path: "/app/organization/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
+    { path: "/app/admin", element: <Navigate to="/organization" replace /> },
+    { path: "/app/admin/organization", element: <Navigate to="/organization" replace /> },
+    { path: "/app/admin/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
+    { path: "/app/admin/members", element: <Navigate to="/organization/members" replace /> },
+    { path: "/app/admin/invitations", element: <Navigate to="/organization/invitations" replace /> },
+    { path: "/app/admin/settings", element: <Navigate to="/organization/settings" replace /> },
+    { path: "/app/admin/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
+    { path: "/app/admin/*", element: <Navigate to="/organization" replace /> },
+    { path: "/app/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
+    { path: "/app/members", element: <Navigate to="/organization/members" replace /> },
+    { path: "/app/invitations", element: <Navigate to="/organization/invitations" replace /> },
+    { path: "/app/settings", element: <Navigate to="/organization/settings" replace /> },
+    { path: "/app/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
+  ] : [];
+}
+
+export const topLevelCompatibilityRoutes: RouteObject[] = getTopLevelCompatibilityRoutes();
+
 const protectedRoute: RouteObject = host === "platform"
   ? { path: "/", element: <Protected />, children: [...platformRoutes(), { path: "*", element: <ContextNotice title="Page not found">This Horizon Platform page does not exist.</ContextNotice> }] }
   : host === "client"
@@ -116,7 +179,9 @@ const protectedRoute: RouteObject = host === "platform"
 const router = createBrowserRouter([
   { errorElement: <RouteErrorPage />, children: [
   { path: "/invitations/accept", element: <InvitationPage /> },
-  { path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> }, protectedRoute,
+  { path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> },
+  ...topLevelCompatibilityRoutes,
+  protectedRoute,
   { path: "*", element: <Navigate to={host === "local" ? "/app" : "/"} replace /> },
   ] },
 ]);
