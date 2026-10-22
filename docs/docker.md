@@ -168,3 +168,16 @@ After pulling changes, rebuild the affected images and hard-refresh the browser:
 ```sh
 docker compose up -d --build frontend payroll-service workforce-service platform-service
 ```
+
+### Setups created before the Finance service
+
+A `.env` and database volume created before Finance existed lack the `FINANCE_*` settings and the Finance
+database, and Compose stops with "required variable FINANCE_SERVICE_TOKEN is missing". Run once:
+
+```sh
+sh scripts/add-finance-to-existing-setup.sh
+docker compose up -d --build
+```
+
+It appends random secrets to `.env` without printing them and creates the Finance role and database in the
+existing volume. Existing settings and data are not changed, and running it again is harmless.
