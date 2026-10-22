@@ -5,7 +5,7 @@ The Docker stack runs Eureka, Gateway, Platform, Workforce, Payroll, Finance, an
 ## Prerequisites
 
 - Docker Engine with Docker Compose v2
-- Explicit PostgreSQL provisioner credentials, independent database roles/passwords for each service, JWT_SECRET, WORKFORCE_SERVICE_TOKEN and PAYROLL_SERVICE_TOKEN supplied in the environment or private ignored `.env`
+- Explicit PostgreSQL provisioner credentials, independent database roles/passwords for each service, JWT_SECRET, WORKFORCE_SERVICE_TOKEN, PAYROLL_SERVICE_TOKEN and FINANCE_SERVICE_TOKEN supplied in the environment or private ignored `.env`
 - For an external database: existing service databases and a role with access
 
 Export configuration before starting the stack:
@@ -31,6 +31,7 @@ export FINANCE_DB_NAME=lexorion_finance
 export JWT_SECRET='<at-least-32-byte-secret>'
 export WORKFORCE_SERVICE_TOKEN='<independent-random-secret-at-least-32-bytes>'
 export PAYROLL_SERVICE_TOKEN='<independent-random-secret-at-least-32-bytes>'
+export FINANCE_SERVICE_TOKEN='<independent-random-secret-at-least-32-bytes>'
 ```
 
 `DB_HOST` may need the host's LAN address on Docker environments that do not support `host.docker.internal`. Full JDBC URLs can instead be supplied with `PLATFORM_DB_URL`, `WORKFORCE_DB_URL`, `PAYROLL_DB_URL`, or `FINANCE_DB_URL` through an environment override.
@@ -74,7 +75,7 @@ Use a secret manager/environment injector or private `.env` with restricted host
 
 For an existing database, changing environment variables does **not** change PostgreSQL credentials or object ownership. Back up first and schedule a maintenance window. A DBA must provision the dedicated service roles, transfer each service database's tables/sequences to its role, and revoke cross-database CONNECT. Do not apply the empty-volume init script to an existing installation. Never delete or renew data volumes to make initialization rerun. The current local ownership migration is pending explicit approval; application fixes can use the already-running database identities until it is approved.
 
-Rotate a database password using PostgreSQL's interactive `\password <role>` from an authorized DBA session (avoids passwords in shell history/SQL arguments), update the matching private configuration, then recreate that service. Keep the old secret in a restricted rollback location until health and tenant reads/writes are confirmed. Rotate JWT_SECRET by replacing it and recreating Platform; old access tokens fail validation, but refresh tokens can establish new access tokens. For a compromise, also revoke stored refresh sessions using the supported session-revocation API. Rotate WORKFORCE_SERVICE_TOKEN together on Platform/Workforce, and PAYROLL_SERVICE_TOKEN together on Platform/Workforce/Payroll; schedule maintenance because single-key verification has no rolling overlap window.
+Rotate a database password using PostgreSQL's interactive `\password <role>` from an authorized DBA session (avoids passwords in shell history/SQL arguments), update the matching private configuration, then recreate that service. Keep the old secret in a restricted rollback location until health and tenant reads/writes are confirmed. Rotate JWT_SECRET by replacing it and recreating Platform; old access tokens fail validation, but refresh tokens can establish new access tokens. For a compromise, also revoke stored refresh sessions using the supported session-revocation API. Rotate WORKFORCE_SERVICE_TOKEN together on Platform/Workforce, PAYROLL_SERVICE_TOKEN together on Platform/Workforce/Payroll, and FINANCE_SERVICE_TOKEN together on Platform/Finance; schedule maintenance because single-key verification has no rolling overlap window.
 
 Bootstrap is allowed only on an empty identity store. Set its enabled flag/email/password explicitly for one initial Platform instance, start it, then disable and remove credentials before normal operation. Enabled bootstrap on an existing identity store fails startup instead of restoring a removed administrator or promoting an existing user. Recover accounts through authenticated administration or an explicitly reviewed DBA recovery procedure.
 

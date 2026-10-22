@@ -14,7 +14,7 @@ The organization RBAC model is exactly `ADMIN`, `MANAGER`, and `EMPLOYEE`. ADMIN
 
 ## Internal calls
 
-The Gateway removes all `X-Lexorion-Trusted-*` headers and `X-Lexorion-Service-Token` supplied by clients. Internal Platform endpoints require both the delegated user credential and a service token specific to Workforce or Payroll. The Payroll-only Workforce verification endpoint likewise requires the Payroll service token in addition to the delegated, Platform-validated context. Configure independent random values of at least 32 characters in `WORKFORCE_SERVICE_TOKEN` and `PAYROLL_SERVICE_TOKEN`; rotate them through deployment secret management.
+The Gateway removes all `X-Lexorion-Trusted-*` headers and `X-Lexorion-Service-Token` supplied by clients. Internal Platform endpoints require both the delegated user credential and a service token specific to Workforce, Payroll or Finance. The Payroll-only Workforce verification endpoint likewise requires the Payroll service token in addition to the delegated, Platform-validated context. Configure independent random values of at least 32 characters in `WORKFORCE_SERVICE_TOKEN`, `PAYROLL_SERVICE_TOKEN` and `FINANCE_SERVICE_TOKEN`; rotate them through deployment secret management.
 
 The current shared-secret mechanism is deliberately small and deployment-compatible. It authenticates the caller service but does not replace network policy or TLS. A future production deployment should source credentials from a secret manager and use TLS between services; mTLS can replace shared credentials when infrastructure supports it.
 
@@ -30,7 +30,7 @@ Platform stores append-oriented authentication audit events, including login, to
 
 ## Deployment topology
 
-Compose exposes the frontend (`9000`), Gateway (`9001`), and Eureka (`9003`) on the host. Platform (`9002`), Workforce (`9004`), Payroll (`9005`), and Finance (`9006`) retain their established ports but are reachable only on the `horizon` network. PostgreSQL remains an external dependency. Required secrets are `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `WORKFORCE_SERVICE_TOKEN`, and `PAYROLL_SERVICE_TOKEN`.
+Compose exposes the frontend (`9000`), Gateway (`9001`), and Eureka (`9003`) on the host. Platform (`9002`), Workforce (`9004`), Payroll (`9005`), and Finance (`9006`) retain their established ports but are reachable only on the `horizon` network. PostgreSQL remains an external dependency. Required secrets are `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `WORKFORCE_SERVICE_TOKEN`, `PAYROLL_SERVICE_TOKEN`, and `FINANCE_SERVICE_TOKEN`.
 
 The current frontend and historical wireframes are functional/legacy references, not the approved Lexorion design system. Future visual work must use the Brand Book and supplied logo assets; this foundation phase makes compatibility changes only.
 

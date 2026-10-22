@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/Button";
 import {
   createOrganizationWorkspace,
   getOrganizationWorkspaces,
+  setOrganizationWorkspaceProducts,
   setOrganizationWorkspaceStatus,
   type OrganizationWorkspace,
 } from "../../features/admin/workspaceApi";
@@ -96,6 +97,20 @@ export function AdminWorkspaces() {
     finally { setBusy(null); }
   }
 
+  /** Finance is not tied to a plan switch: an administrator attaches it to the workspaces that bill clients. */
+  async function toggleFinance(workspace: OrganizationWorkspace) {
+    const enabled = workspace.products.some((product) => product.key === "finance");
+    if (enabled && !confirm(`Remove Finance from ${workspace.displayName}? Billing data is kept, but nobody can open it until Finance is added again.`)) return;
+    const keys = workspace.products.map((product) => product.key).filter((productKey) => productKey !== "finance");
+    setBusy(workspace.key); setError(null);
+    try {
+      const updated = await setOrganizationWorkspaceProducts(workspace.key, enabled ? keys : [...keys, "finance"]);
+      setWorkspaces((current) => current.map((item) => item.key === updated.key ? updated : item));
+      await workspaceContext.reload();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to update workspace products"); }
+    finally { setBusy(null); }
+  }
+
   const field: CSSProperties = { width: "100%", padding: "8px 9px", border: `1px solid ${t.border}`, borderRadius: 7, background: t.field, color: t.ink };
   const limit = getEntitlementLimit(effective, "platform.workspace_limit");
   const active = workspaces.filter(workspace => workspace.status === "ACTIVE").length;
@@ -164,7 +179,12 @@ export function AdminWorkspaces() {
                   </div>
                 </td>
                 <td><Badge label={workspace.status} variant={workspace.status === "ACTIVE" ? "success" : "neutral"} /></td>
-                <td>
+                <td className="row-actions">
+                  {workspace.status === "ACTIVE" && effective.length > 0 && (
+                    <Button size="sm" disabled={busy !== null} onClick={() => void toggleFinance(workspace)}>
+                      {workspace.products.some((product) => product.key === "finance") ? "Remove Finance" : "Add Finance"}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant={workspace.status === "ACTIVE" ? "destructive" : "secondary"}

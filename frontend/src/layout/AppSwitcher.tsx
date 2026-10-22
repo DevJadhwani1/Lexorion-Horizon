@@ -19,6 +19,7 @@ export function AppSwitcher() {
   const selectedWs = workspace.workspace;
   const workforceEnabled = Boolean(selectedWs?.products.some(p => p.key === "workforce"));
   const payrollEnabled = Boolean(selectedWs?.products.some(p => p.key === "payroll"));
+  const financeEnabled = Boolean(selectedWs?.products.some(p => p.key === "finance"));
 
   useEffect(() => {
     if (!open) return;
@@ -94,6 +95,23 @@ export function AppSwitcher() {
               </div>
               <span className={`app-switcher-status ${payrollEnabled ? "active" : ""}`}>
                 {payrollEnabled ? "Active" : "Not enabled"}
+              </span>
+            </Link>
+
+            <Link
+              to={appPath("/app/finance/overview")}
+              className={`app-switcher-item ${financeEnabled && adminRole ? "enabled" : "disabled"}`}
+              onClick={close}
+            >
+              <span className="app-switcher-icon finance">
+                <Icon name="card" size={16} />
+              </span>
+              <div className="app-switcher-info">
+                <strong>Horizon Finance</strong>
+                <small>Client billing, invoices & payments received</small>
+              </div>
+              <span className={`app-switcher-status ${financeEnabled ? "active" : ""}`}>
+                {financeEnabled ? "Active" : "Not enabled"}
               </span>
             </Link>
 

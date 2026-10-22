@@ -1920,6 +1920,11 @@ a.button.primary{color:#fff}
   color: #16a34a;
 }
 
+.app-switcher-icon.finance {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
 .app-switcher-icon.admin {
   background: #f8fafc;
   color: #475569;
@@ -5237,3 +5242,26 @@ select:not([multiple]):not([size]) {
   background-size: 12px 12px;
 }
 .directory-filters { align-items: end; }
+
+/* Finance billing workspace */
+.finance-badges{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle}
+.finance-filters{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.finance-filters label{display:grid;gap:4px;min-width:200px;font-size:13px;color:#344054}
+.finance-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.finance-tabs button{padding:6px 12px;border:1px solid #d0d5dd;border-radius:999px;background:#fff;color:#344054;font-size:13px;cursor:pointer}
+.finance-tabs button.active{border-color:#175cd3;background:#eff4ff;color:#175cd3;font-weight:600}
+.finance-amount{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.finance-late{color:#b42318}
+.finance-lines input{width:100%;min-width:72px}
+.finance-lines td:first-child input{min-width:220px}
+.finance-notes{display:grid;gap:4px;margin:12px 0}
+.finance-document-header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;margin-bottom:16px}
+.finance-document-header h3{margin:4px 0}
+.finance-document-header p{margin:2px 0;color:#475467}
+.finance-document-header .detail-list{min-width:min(320px,100%)}
+.finance-address{white-space:pre-line;color:#475467}
+@media print{
+  .sidebar-backdrop,#application-sidebar,.topbar,.finance-no-print,.page-header>.toolbar{display:none!important}
+  .shell,.stage{display:block!important;margin:0!important;padding:0!important}
+  .finance-document{border:0;box-shadow:none}
+}
