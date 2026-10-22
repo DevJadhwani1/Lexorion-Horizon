@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Link, NavLink, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, type Page as ResultPage } from "../../api/types";
 import {
   createDepartment,
@@ -147,7 +147,6 @@ function EmployeeDirectory() {
   return (
     <Page title="Employees" description="Everyone in this workspace. Open an employee to update their details, status or payroll setup."
       actions={<Link className="button primary" to={appPath("/app/workforce/employees/new")}>Add employee</Link>}>
-      <WorkforceTabs />
       <form className="toolbar filter-bar directory-filters" role="search" onSubmit={(event) => { event.preventDefault(); update({ q: draft.trim() }); }}>
         <label>Search employees<input type="search" placeholder="Name, email or employee code" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
         <label>Status
@@ -213,15 +212,6 @@ export function Pagination({ page, totalPages, total, size, busy, onPage }: { pa
   </nav>;
 }
 
-function WorkforceTabs() {
-  return <nav className="toolbar section-tabs" aria-label="Workforce setup">
-    <NavLink to={appPath("/app/workforce/employees")}>Employees</NavLink>
-    <NavLink to={appPath("/app/workforce/departments")}>Departments</NavLink>
-    <NavLink to={appPath("/app/workforce/designations")}>Designations</NavLink>
-    <NavLink to={appPath("/app/workforce/structure")}>Reporting structure</NavLink>
-  </nav>;
-}
-
 const transitionLabels: Record<string, string> = { leave: "Mark on leave", suspend: "Suspend", resign: "Record resignation", terminate: "Terminate", activate: "Reactivate" };
 const transitions: Record<EmploymentStatus, string[]> = {
   ACTIVE: ["leave", "suspend", "resign", "terminate"],
@@ -254,7 +244,6 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
   return (
     <Page title={name} description={`${employee.employeeCode} · ${employee.workEmail}`}
       actions={admin && !self && !editing ? <Button onClick={() => { setEditing(true); setSaved(""); }}>Edit details</Button> : undefined}>
-      {!self && admin && <p><Link to={appPath("/app/workforce/employees")}>← All employees</Link></p>}
       {error && <Notice>{error}</Notice>}
       {saved && <Notice tone="success">{saved}</Notice>}
       {editing ? <form className="card form-grid" aria-label="Edit employee" onSubmit={(event: FormEvent) => {
@@ -380,7 +369,6 @@ function References({ title, items, reload }: { title: "departments" | "designat
     <Page title={humanize(title)} description={title === "departments"
       ? "Group employees into teams. Departments are optional and can be nested under a parent."
       : "Job titles you can assign to employees. Designations are optional."}>
-      <WorkforceTabs />
       <form className="card form-grid" aria-label={`Add ${singular}`}
         onSubmit={(e: FormEvent) => {
           e.preventDefault();
@@ -434,7 +422,6 @@ function StructurePage({ value }: { value: Structure }) {
   const people = new Map(value.employees.map((e) => [e.employeeCode, e.name]));
   return (
     <Page title="Reporting structure" description="Departments and who reports to whom. Assign managers from each employee’s profile.">
-      <WorkforceTabs />
       <div className="cards">
         <article>
           <h3>Departments</h3>

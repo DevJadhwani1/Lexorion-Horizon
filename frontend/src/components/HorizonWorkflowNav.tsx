@@ -15,12 +15,13 @@ export function workflowReturn(search: string): string | null {
       ? url.pathname + url.search : null;
   } catch { return null; }
 }
+/** Shown only when a task was opened from another workflow (for example a pay run), to return to it. Navigation is the sidebar's job. */
 export function HorizonWorkflowNav() {
   const { pathname, search } = useLocation();
   if (![appPath("/app/workforce/"), appPath("/app/payroll/")].some(prefix => pathname.startsWith(prefix))) return null;
   const returnTo = workflowReturn(search);
-  return <nav className="horizon-workflow-nav" aria-label="Horizon workflow">
-    <Link to={appPath("/app")}>← Horizon overview</Link>
-    {returnTo && <Link to={returnTo}>{returnTo.includes("/pay-runs") ? "Return to pay run" : "Return to workflow"} →</Link>}
+  if (!returnTo) return null;
+  return <nav className="horizon-workflow-nav" aria-label="Return to workflow">
+    <Link to={returnTo}>← {returnTo.includes("/pay-runs") ? "Back to pay run" : "Back to previous step"}</Link>
   </nav>;
 }

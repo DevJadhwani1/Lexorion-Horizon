@@ -768,6 +768,16 @@ function EmployeeDetail({ section }: { section: string }) {
   const defaults = useOrganizationDefaults();
   const [roster, setRoster] = useState<PayrollEmployee[]>([]);
   useEffect(() => { getPayrollEmployees().then(setRoster).catch(() => setRoster([])); }, []);
+  // Salary, pay preview, payslips and ledger share the chosen employee, so moving between them in the sidebar keeps it.
+  const workspaceKey = useWorkspace().workspace?.key ?? "";
+  const rememberKey = `lexorion.payroll-employee:${workspaceKey}`;
+  useEffect(() => {
+    if (searchParams.get("employee") || !roster.length) return;
+    let remembered: string | null = null;
+    try { remembered = sessionStorage.getItem(rememberKey); } catch { /* Storage may be unavailable. */ }
+    if (remembered && roster.some((item) => item.employeeCode === remembered))
+      setSearchParams((previous) => { const params = new URLSearchParams(previous); params.set("employee", remembered!); return params; }, { replace: true });
+  }, [roster, rememberKey]);
   const load = async (employeeCode = code, filters: Record<string, string> = {}) => {
     const normalizedCode = employeeCode.trim().toUpperCase();
     if (!normalizedCode) return;
@@ -787,6 +797,7 @@ function EmployeeDetail({ section }: { section: string }) {
         getPayrollEmployee(normalizedCode),
       ]);
       if (version !== loadVersion.current) return;
+      try { sessionStorage.setItem(rememberKey, normalizedCode); } catch { /* Storage may be unavailable. */ }
       setCode(normalizedCode);
       setData(records);
       setEmployee(payrollEmployee);
@@ -907,13 +918,6 @@ function EmployeeDetail({ section }: { section: string }) {
         </form>
       )}
       {data && data.length === 0 && section !== "compensation" && <Empty>{section === "calculations" ? "No previews yet. Choose a date above to see what this employee would be paid." : "Nothing here yet. Results appear after a pay run including this employee is finalized."}</Empty>}
-      {employee && <nav className="toolbar section-tabs" aria-label="Employee payroll workflow">
-        <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Salary</Link>
-        <Link to={`${appPath("/app/payroll/calculations")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Pay preview</Link>
-        <Link to={`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Payslips</Link>
-        <Link to={`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Ledger</Link>
-        {directory.find(employee.employeeCode) && <Link to={appPath(`/app/workforce/employees/${employee.employeeCode}`)}>Employee profile</Link>}
-      </nav>}
       {section === "compensation" && employee && <p className="snapshot-note">Need another pay component? <Link to={workflowLink(appPath("/app/payroll/components"), `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Manage salary components</Link>, then return here.</p>}
       {data &&
         section === "compensation" &&

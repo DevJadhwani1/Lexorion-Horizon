@@ -12,7 +12,8 @@ import { createPayrollEmployee, getPayrollEmployee, getProfiles, type PayrollEmp
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, humanize, personName } from "../../lib/format";
 import { CompensationForm } from "../payroll/CompensationForm";
-import { EmployeeFields, suggestEmployeeCode } from "./EmployeeFields";
+import { EmployeeFields, employeeCodePrefix, suggestEmployeeCode } from "./EmployeeFields";
+import { useAuth } from "../../auth/AuthProvider";
 
 type Step = "details" | "payroll" | "salary" | "done";
 interface Progress { employee: Employee | null; payroll: PayrollEmployee | null; profiles: Profile[] }
@@ -29,6 +30,7 @@ export function EmployeeSetupWizard() {
   const payrollEnabled = Boolean(workspace?.products.some((product) => product.key === "payroll"));
   const directory = useWorkforceDirectory();
   const defaults = useOrganizationDefaults();
+  const codePrefix = employeeCodePrefix(useAuth().organization?.organizationName ?? "", defaults.organizationCode);
   const [progress, setProgress] = useState<Progress>({ employee: null, payroll: null, profiles: [] });
   const [step, setStep] = useState<Step>("details");
   const [loading, setLoading] = useState(Boolean(code)), [error, setError] = useState(""), [busy, setBusy] = useState(false);
@@ -65,7 +67,6 @@ export function EmployeeSetupWizard() {
   const resume = (employeeCode: string) => setParams({ employee: employeeCode }, { replace: true });
 
   return <Page title={name ? `Set up ${name}` : "Add employee"} description="Add the person, set how they are paid, then give them a salary. Each step is saved as you go — you can leave and resume from the employee’s profile.">
-    <p><Link to={appPath("/app/workforce/employees")}>← All employees</Link></p>
     <ol className="stepper" aria-label="Setup progress">
       {steps.map((item, index) => <li key={item.key} className={index < position ? "done" : index === position ? "current" : ""} aria-current={index === position ? "step" : undefined}>
         <span>{index < position ? "✓" : index + 1}</span>{item.title}
@@ -88,12 +89,12 @@ export function EmployeeSetupWizard() {
       }}>
         <h2>Employee details</h2>
         <div className="form-grid">
-          <EmployeeFields includeCode suggestedCode={suggestEmployeeCode(directory.employees.map((item) => item.employeeCode))}
-            key={directory.loading ? "loading" : "ready"}
+          <EmployeeFields includeCode suggestedCode={suggestEmployeeCode(directory.employees.map((item) => item.employeeCode), codePrefix)}
+            key={directory.loading || !defaults.loaded ? "loading" : `ready:${codePrefix}`}
             departments={directory.departments} designations={directory.designations} managers={directory.employees} />
         </div>
         <p className="snapshot-note">Department, designation and manager are optional. You can add them later.</p>
-        <div className="form-actions"><Button variant="primary" disabled={busy || directory.loading}>{busy ? "Saving…" : payrollEnabled ? "Save and continue" : "Save employee"}</Button></div>
+        <div className="form-actions"><Button variant="primary" disabled={busy || directory.loading || !defaults.loaded}>{busy ? "Saving…" : payrollEnabled ? "Save and continue" : "Save employee"}</Button></div>
       </form>}
 
       {step === "payroll" && progress.employee && <form aria-label="Payroll settings" onSubmit={(event: FormEvent) => {

@@ -10,7 +10,8 @@ import { ApiError } from "../../api/types";
 const ada = { employeeCode: "EMP-002", firstName: "Ada", middleName: null, lastName: "Lovelace", workEmail: "ada@example.test", phone: null, joiningDate: "2026-10-01", status: "ACTIVE" as const, departmentKey: null, designationKey: null, reportingManagerEmployeeCode: null };
 const existing = { ...ada, employeeCode: "EMP-001", firstName: "Grace", lastName: "Hopper" };
 const enrolled = { employeeCode: "EMP-002", currency: "INR", payFrequency: "MONTHLY" as const, effectiveFrom: "2026-10-01", status: "ACTIVE" as const };
-vi.mock("../../auth/AuthProvider", () => ({ useAuth: () => ({ organization: { organizationId: "org", membershipRole: "ADMIN" } }) }));
+const org = vi.hoisted(() => ({ organizationName: "" }));
+vi.mock("../../auth/AuthProvider", () => ({ useAuth: () => ({ organization: { organizationId: "org", membershipRole: "ADMIN", organizationName: org.organizationName } }) }));
 vi.mock("../../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: { key: "main", products: [{ key: "workforce" }, { key: "payroll" }] } }) }));
 vi.mock("../../features/admin/adminApi", () => ({ getOrganization: vi.fn() }));
 vi.mock("../../features/workforce/workforceApi", () => ({
@@ -32,7 +33,7 @@ beforeEach(() => {
   vi.mocked(payrollApi.getComponents).mockResolvedValue([{ componentKey: "BASIC", displayName: "Basic salary", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "TAXABLE", status: "ACTIVE" }]);
 });
 // Reset (not just clear) so unconsumed one-off responses cannot leak into the next test.
-afterEach(() => { cleanup(); vi.resetAllMocks(); });
+afterEach(() => { cleanup(); vi.resetAllMocks(); org.organizationName = ""; });
 
 it("creates the employee once, then enrolls and sets salary on the same record", async () => {
   vi.mocked(workforceApi.createEmployee).mockResolvedValue(ada);
@@ -111,4 +112,11 @@ it("lets the admin skip payroll and shows what is still missing", async () => {
   await screen.findByRole("heading", { name: "Ada Lovelace is added" });
   expect(screen.getByText(/this person cannot be paid yet/)).toBeTruthy();
   expect(screen.getByRole("button", { name: "Finish payroll setup" })).toBeTruthy();
+});
+
+it("suggests employee codes with the company prefix", async () => {
+  org.organizationName = "Lexorion";
+  vi.mocked(workforceApi.getEmployees).mockResolvedValue({ content: [{ ...existing, employeeCode: "LEX-004" }, existing], page: 0, size: 100, totalElements: 2, totalPages: 1, sort: "firstName", direction: "ASC" });
+  wizard();
+  await waitFor(() => expect((screen.getByLabelText("Employee code") as HTMLInputElement).value).toBe("LEX-005"));
 });

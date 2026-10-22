@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { formatDate, formatMoney, humanize, keyFromName } from "./format";
-import { suggestEmployeeCode } from "../pages/workforce/EmployeeFields";
+import { employeeCodePrefix, suggestEmployeeCode } from "../pages/workforce/EmployeeFields";
 import { estimatePay, nextProfileKey } from "../pages/payroll/CompensationForm";
 import { monthPeriod, suggestedPayMonth } from "../pages/payroll/PayrollPage";
 import type { Component, PayRun, Profile } from "../features/payroll/payrollApi";
@@ -20,7 +20,18 @@ it("formats ISO dates without time-zone drift and money with the given currency"
 it("suggests the next unused employee code in the existing pattern", () => {
   expect(suggestEmployeeCode([])).toBe("EMP-001");
   expect(suggestEmployeeCode(["EMP-001", "EMP-009", "X-1"])).toBe("EMP-010");
-  expect(suggestEmployeeCode(["A1", "A2", "A0003"])).toBe("A0004");
+  expect(suggestEmployeeCode(["LEX-001", "EMP-007"], "LEX")).toBe("LEX-002");
+  expect(suggestEmployeeCode(["EMP-001"], "LEX")).toBe("LEX-001");
+});
+
+it("derives a 2-4 character employee code prefix from the company", () => {
+  expect(employeeCodePrefix("Lexorion")).toBe("LEX");
+  expect(employeeCodePrefix("Tata Consultancy Services")).toBe("TCS");
+  expect(employeeCodePrefix("Acme Industries")).toBe("AI");
+  expect(employeeCodePrefix("One Two Three Four Five")).toBe("OTTF");
+  expect(employeeCodePrefix("Lexorion", "lx")).toBe("LX");
+  expect(employeeCodePrefix("Lexorion", "LEXORION-HQ-2026")).toBe("LEX");
+  expect(employeeCodePrefix("")).toBe("EMP");
 });
 
 it("estimates recurring pay in the calculator's order", () => {
