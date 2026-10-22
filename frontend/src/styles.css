@@ -5237,3 +5237,9 @@ select:not([multiple]):not([size]) {
   background-size: 12px 12px;
 }
 .directory-filters { align-items: end; }
+/* Dropdown: the custom menu is the visible control; this input only carries the form value and `required`. */
+.dropdown-field{position:relative;min-width:0}
+.dropdown-value{position:absolute;left:12px;bottom:0;width:1px;height:1px;padding:0;border:0;opacity:0;pointer-events:none}
+.readonly-value{background:var(--color-surface-muted,#f1f5f9);color:var(--color-ink-primary,#101828);font-weight:600;letter-spacing:.02em;cursor:default}
+/* The global `label` rule stacks children in a column, which centred SearchSelect labels; keep them inline and left-aligned. */
+.search-select-label{flex-direction:row;justify-content:flex-start}

@@ -5,9 +5,10 @@ import { appPath } from "../../app/hostRouting";
 import { Button } from "../../components/ui/Button";
 import { Notice, Page } from "../../components/ui/Page";
 import { Field } from "../../components/ui/Field";
+import { Dropdown } from "../../components/ui/Dropdown";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { createEmployee, getEmployee, type Employee } from "../../features/workforce/workforceApi";
-import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
+import { getAllEmployees, useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
 import { createPayrollEmployee, getPayrollEmployee, getProfiles, type PayrollEmployee, type Profile } from "../../features/payroll/payrollApi";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, humanize, personName } from "../../lib/format";
@@ -78,13 +79,10 @@ export function EmployeeSetupWizard() {
         event.preventDefault();
         const form = new FormData(event.currentTarget as HTMLFormElement);
         const body = Object.fromEntries(Array.from(form.entries()).filter(([, value]) => value !== ""));
-        const employeeCode = String(body.employeeCode ?? "").trim().toUpperCase();
         setBusy(true); setError("");
-        void createEmployee({ ...body, employeeCode, status: "ACTIVE" })
+        void createWithNextCode(body, codePrefix)
           .then(async (created) => { await directory.reload(); resume(created.employeeCode); })
-          .catch((reason) => setError(reason instanceof ApiError && reason.status === 409 && /code/i.test(reason.message)
-            ? `Employee code ${employeeCode} is already in use. Choose another code, or continue setting up that employee from their profile.`
-            : reason instanceof ApiError ? reason.message : "Unable to save employee details."))
+          .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to save employee details."))
           .finally(() => setBusy(false));
       }}>
         <h2>Employee details</h2>
@@ -115,13 +113,8 @@ export function EmployeeSetupWizard() {
           <Field label="Currency" hint={defaults.currency ? "Your organization’s currency." : "Three-letter currency code."}>
             <input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={defaults.currency} key={defaults.currency} placeholder="e.g. INR" />
           </Field>
-          <label>Pay frequency
-            <select name="payFrequency" defaultValue="MONTHLY">
-              <option value="MONTHLY">Monthly</option>
-              <option value="BIWEEKLY">Every two weeks</option>
-              <option value="WEEKLY">Weekly</option>
-            </select>
-          </label>
+          <Dropdown label="Pay frequency" name="payFrequency" defaultValue="MONTHLY"
+            options={[{ value: "MONTHLY", label: "Monthly" }, { value: "BIWEEKLY", label: "Every two weeks" }, { value: "WEEKLY", label: "Weekly" }]} />
           <Field label="Payroll start date" hint={`Joined ${formatDate(progress.employee.joiningDate)}.`}>
             <input name="effectiveFrom" type="date" required defaultValue={progress.employee.joiningDate} />
           </Field>
@@ -156,6 +149,23 @@ export function EmployeeSetupWizard() {
       </div>}
     </section>}
   </Page>;
+}
+
+/**
+ * Creates the employee with the next company code. Codes are read fresh at save time across every employee,
+ * including those who have left, so a code is never reused. If another admin takes the same code first, the
+ * next number is tried.
+ */
+async function createWithNextCode(body: Record<string, unknown>, prefix: string): Promise<Employee> {
+  for (let attempt = 1; ; attempt++) {
+    const employeeCode = suggestEmployeeCode((await getAllEmployees()).map((item) => item.employeeCode), prefix);
+    try {
+      return await createEmployee({ ...body, employeeCode, status: "ACTIVE" });
+    } catch (reason) {
+      const codeTaken = reason instanceof ApiError && reason.status === 409 && /code/i.test(reason.message);
+      if (!codeTaken || attempt >= 3) throw reason;
+    }
+  }
 }
 
 function hasSalary(profiles: Profile[]): boolean {

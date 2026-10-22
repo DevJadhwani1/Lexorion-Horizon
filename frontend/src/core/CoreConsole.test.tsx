@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chooseOption } from "../test/dropdown";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { CoreRoutes } from "./CoreConsole";
@@ -90,7 +91,7 @@ describe("Core Console", () => {
     fireEvent.click(await screen.findByText("Register product"));
     fireEvent.change(screen.getByLabelText("Stable product key"), { target: { value: "lexorion-travel" } });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Lexorion Travel" } });
-    fireEvent.change(screen.getByLabelText("Availability"), { target: { value: "true" } });
+    chooseOption("Availability", "Active");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(screen.getByText("Lexorion Travel")).toBeTruthy());
     expect(products).toEqual([{ id: "travel-id", key: "lexorion-travel", displayName: "Lexorion Travel", active: true }]);

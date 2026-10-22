@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../../api/types";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { Dropdown } from "../../components/ui/Dropdown";
+const human = (value: string) => value.charAt(0) + value.slice(1).toLowerCase().replaceAll("_", " ");
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import { activatePlatformOrganization, assignPlatformOrganizationPlan, createPlatformOrganization, getPlatformOrganization, getPlatformOrganizations, getPlatformPlans, getPlatformUsers, type PlatformOrganization, type PlatformUser, type PlatformPlan } from "../../features/platform/platformApi";
 import { useAuth } from "../../auth/AuthProvider";
@@ -42,13 +44,13 @@ export function PlatformOrganizationsPage() {
         <label>Organization code<input name="organizationCode" required maxLength={50} /></label>
         <label>Primary email<input name="primaryEmail" type="email" required maxLength={255} /></label>
         <label>Slug (optional)<input name="slug" maxLength={63} /></label>
-        <label>Organization administrator<select name="ownerUserId" required defaultValue={auth.user?.id}>{users.filter(user => user.status === "ACTIVE").map(user => <option key={user.id} value={user.id}>{user.email}</option>)}</select></label>
+        <Dropdown label="Organization administrator" name="ownerUserId" required defaultValue={auth.user?.id ?? ""} options={users.filter(user => user.status === "ACTIVE").map(user => ({ value: user.id, label: user.email }))} />
         <Button variant="primary" disabled={loading || busy || users.length === 0}>{busy ? "Creating…" : "Create organization"}</Button>
       </form>
     </details>
     <div className="platform-toolbar" role="search">
       <label><span>Search</span><input type="search" placeholder="Search name, code, slug, or email" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-      <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="ALL">All statuses</option>{statuses.map((value) => <option key={value}>{value}</option>)}</select></label>
+      <Dropdown label="Status" value={status} onChange={setStatus} options={[{ value: "ALL", label: "All statuses" }, ...statuses.map((value) => ({ value, label: human(value) }))]} />
       <span className="platform-result-count">{filtered.length} of {organizations.length}</span>
     </div>
     {loading ? <Notice tone="info">Loading organizations…</Notice> : error ? <Notice>{error}</Notice>
@@ -93,7 +95,7 @@ export function PlatformOrganizationDetailPage() {
         void assignPlatformOrganizationPlan(organizationId, planKey).then((updated) => { setOrganization(updated); setNotice("Plan assigned. The organization administrator can now create a workspace."); })
           .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to assign plan."))
           .finally(() => setBusy(false));
-      }}><label>Organization plan<select name="planKey" required><option value="">Choose plan</option>{plans.map(plan => <option key={plan.key} value={plan.key}>{plan.displayName}</option>)}</select></label><Button disabled={busy || plans.length === 0}>Assign plan</Button></form>
+      }}><Dropdown label="Organization plan" name="planKey" required placeholder="Choose plan" options={plans.map(plan => ({ value: plan.key, label: plan.displayName }))} /><Button disabled={busy || plans.length === 0}>Assign plan</Button></form>
     </section>
     <div className="platform-detail-actions"><Link to={appPath("/app/platform/organizations")}>← Organizations</Link>{membership && <Button variant="primary" onClick={enter}>Enter organization</Button>}</div>
     {!membership && <Notice tone="info">Platform Access is separate from organization membership. An active membership is required to enter this client organization.</Notice>}

@@ -5,6 +5,7 @@ import { CoreSessionProvider, useCoreSession } from "./CoreSession";
 import { coreBase } from "./routing";
 import { coreRequest, type CoreOrganization, type CoreUser, type CoreProduct, type CoreGrant, type CoreOperator, type CoreSession, type CoreAudit, type CoreMembership } from "./consoleApi";
 import "./core.css";
+import { Dropdown } from "../components/ui/Dropdown";
 
 export const coreNavigation = [
   ["", "Overview"], ["organizations", "Organizations"], ["users", "Users"], ["products", "Products"],
@@ -76,7 +77,7 @@ function Editor({ title, children, submit, done }: { title: string; children: Re
 function Field({ name, label, type = "text", required = true, ...props }: { name: string; label: string; type?: string; required?: boolean; minLength?: number; maxLength?: number }) {
   return <label>{label}<input name={name} type={type} required={required} {...props} /></label>;
 }
-function Select({ name, label, options }: { name: string; label: string; options: Array<[string, string]> }) { return <label>{label}<select name={name} required><option value="">Select…</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>; }
+function Select({ name, label, options }: { name: string; label: string; options: Array<[string, string]> }) { return <Dropdown label={label} name={name} required placeholder="Select…" options={options.map(([value, text]) => ({ value, label: text }))} />; }
 const text = (d: FormData, key: string) => String(d.get(key) ?? "");
 const message = (e: unknown) => e instanceof Error ? e.message : "The request failed.";
 const date = (value: string | null) => value ? new Date(value).toLocaleString() : "—";
@@ -91,7 +92,7 @@ function Organizations() {
   const state = useData<CoreOrganization[]>("/organizations"), users = useData<CoreUser[]>("/users"); const [selected, setSelected] = useState("");
   return <Page title="Organizations" description="Global organization identity and lifecycle."><Load state={state}>
     <Editor title="Create organization" done={state.reload} submit={d => coreRequest("/organizations", json("POST", { name: text(d,"name"), organizationCode: text(d,"organizationCode"), slug: text(d,"slug") || null, primaryEmail: text(d,"primaryEmail"), initialUserId: text(d,"initialUserId") || null }))}>
-      <Field name="name" label="Name" maxLength={150} /><Field name="organizationCode" label="Organization code" maxLength={50} /><Field name="slug" label="Slug" required={false} maxLength={63} /><Field name="primaryEmail" label="Primary email" type="email" /><label>Initial member (optional)<select name="initialUserId"><option value="">None</option>{users.data?.map(u => <option key={u.id} value={u.id}>{u.email}</option>)}</select></label>
+      <Field name="name" label="Name" maxLength={150} /><Field name="organizationCode" label="Organization code" maxLength={50} /><Field name="slug" label="Slug" required={false} maxLength={63} /><Field name="primaryEmail" label="Primary email" type="email" /><Dropdown label="Initial member (optional)" name="initialUserId" defaultValue="" options={[{ value: "", label: "None" }, ...(users.data ?? []).map(u => ({ value: u.id, label: u.email }))]} />
     </Editor>
     <Table headers={["Organization", "Code", "Lifecycle", "Actions"]} rows={(state.data ?? []).map(o => [o.name, o.organizationCode, o.status, <div className="core-actions"><button onClick={() => setSelected(o.id)}>Memberships</button>{lifecycleTargets(o.status).map(status => <Action key={status} run={() => coreRequest(`/organizations/${o.id}/status`, json("PATCH", { status }))} done={state.reload}>{status.toLowerCase()}</Action>)}</div>])} />
   </Load>{selected && <Memberships organizationId={selected} users={users.data ?? []} />}</Page>;

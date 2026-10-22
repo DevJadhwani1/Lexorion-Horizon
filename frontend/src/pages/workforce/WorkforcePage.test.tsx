@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chooseOption } from "../../test/dropdown";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { WorkforcePage } from "./WorkforcePage";
@@ -37,9 +38,9 @@ describe("employee profile", () => {
     expect(await screen.findByText("Engineering")).toBeTruthy();
     expect((await screen.findByRole("link", { name: "View compensation" })).getAttribute("href")).toContain("employee=EMP-001");
     fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    expect((screen.getByLabelText("Department") as HTMLSelectElement).value).toBe("engineering");
-    fireEvent.change(screen.getByLabelText("Department"), { target: { value: "" } });
-    fireEvent.change(screen.getByLabelText("Designation"), { target: { value: "" } });
+    expect(screen.getByRole("combobox", { name: "Department" }).textContent).toContain("Engineering");
+    chooseOption("Department", "No department");
+    chooseOption("Designation", "No designation");
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(workforceApi.updateEmployee).toHaveBeenCalledWith("EMP-001", expect.objectContaining({ departmentKey: null, designationKey: null, reportingManagerEmployeeCode: null })));
   });
@@ -59,11 +60,12 @@ describe("employee directory", () => {
     expect(lastQuery().get("size")).toBe("20");
     fireEvent.change(screen.getByLabelText("Search employees"), { target: { value: "ada" } });
     await waitFor(() => expect(lastQuery().get("search")).toBe("ada"), { timeout: 2000 });
-    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "ON_LEAVE" } });
+    chooseOption("Status", "On leave");
     await waitFor(() => expect(lastQuery().get("status")).toBe("ON_LEAVE"));
-    fireEvent.change(await screen.findByLabelText("Department"), { target: { value: "engineering" } });
+    await screen.findByRole("combobox", { name: "Department" });
+    chooseOption("Department", "Engineering");
     await waitFor(() => expect(lastQuery().get("departmentKey")).toBe("engineering"));
-    fireEvent.change(screen.getByLabelText("Sort by"), { target: { value: "joiningDate:DESC" } });
+    chooseOption("Sort by", "Joining date (newest first)");
     await waitFor(() => { expect(lastQuery().get("sort")).toBe("joiningDate"); expect(lastQuery().get("direction")).toBe("DESC"); });
     expect(lastQuery().get("search")).toBe("ada");
     expect(lastQuery().get("page")).toBe("0");

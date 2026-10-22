@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { chooseOption } from "../../test/dropdown";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { PayrollPage } from "./PayrollPage";
@@ -76,9 +77,8 @@ it("clears the loaded employee before a different employee can be used for calcu
   const view = render(<MemoryRouter initialEntries={["/payroll/calculations?employee=EMP-001"]}><PayrollPage sectionKey="calculations" /></MemoryRouter>);
   const banner = () => view.container.querySelector(".employee-context")?.textContent ?? null;
   await waitFor(() => expect(banner()).toContain("EMP-001"));
-  await screen.findByRole("option", { name: "EMP-OTHER" });
   expect(screen.getByRole("button", { name: "Calculate" }).hasAttribute("disabled")).toBe(false);
-  fireEvent.change(screen.getByLabelText("Employee"), { target: { value: "EMP-OTHER" } });
+  chooseOption("Employee", /EMP-OTHER/);
   expect(banner()).toBeNull();
   expect(screen.getByRole("button", { name: "Calculate" }).hasAttribute("disabled")).toBe(true);
   await waitFor(() => expect(banner()).toContain("EMP-OTHER"));

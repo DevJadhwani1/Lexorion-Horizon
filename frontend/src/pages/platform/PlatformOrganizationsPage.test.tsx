@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
+import { chooseOption } from "../../test/dropdown";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { PlatformOrganizationsPage, PlatformOrganizationDetailPage } from "./PlatformOrganizationsPage";
@@ -35,7 +36,7 @@ it("connects organization creation to activation and plan assignment through exi
   fireEvent.click(screen.getByRole("button", { name: "Activate organization" }));
   await screen.findByText("Organization activated. Assign a plan before workspace setup.");
   expect(api.activatePlatformOrganization).toHaveBeenCalledWith("org");
-  fireEvent.change(screen.getByLabelText("Organization plan"), { target: { value: "starter" } });
+  chooseOption("Organization plan", "Starter");
   fireEvent.click(screen.getByRole("button", { name: "Assign plan" }));
   await waitFor(() => expect(api.assignPlatformOrganizationPlan).toHaveBeenCalledWith("org", "starter"));
   await screen.findByText("Plan assigned. The organization administrator can now create a workspace.");

@@ -30,6 +30,7 @@ import { StatusBadge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import { Field } from "../../components/ui/Field";
+import { Dropdown } from "../../components/ui/Dropdown";
 import { Table } from "../admin/AdminPage";
 import { useAuth } from "../../auth/AuthProvider";
 import { appPath } from "../../app/hostRouting";
@@ -149,32 +150,17 @@ function EmployeeDirectory() {
       actions={<Link className="button primary" to={appPath("/app/workforce/employees/new")}>Add employee</Link>}>
       <form className="toolbar filter-bar directory-filters" role="search" onSubmit={(event) => { event.preventDefault(); update({ q: draft.trim() }); }}>
         <label>Search employees<input type="search" placeholder="Name, email or employee code" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
-        <label>Status
-          <select value={status} onChange={(event) => update({ status: event.target.value })}>
-            <option value="">All statuses</option>
-            {statuses.map((value) => <option key={value} value={value}>{humanize(value)}</option>)}
-          </select>
-        </label>
-        {directory.departments.length > 0 && <label>Department
-          <select value={department} onChange={(event) => update({ department: event.target.value })}>
-            <option value="">All departments</option>
-            {directory.departments.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
-          </select>
-        </label>}
-        {directory.designations.length > 0 && <label>Designation
-          <select value={designation} onChange={(event) => update({ designation: event.target.value })}>
-            <option value="">All designations</option>
-            {directory.designations.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
-          </select>
-        </label>}
-        <label>Sort by
-          <select value={`${sort}:${direction}`} onChange={(event) => { const [field, order] = event.target.value.split(":"); update({ sort: field, direction: order }); }}>
-            {sorts.flatMap(([field, text]) => [
-              <option key={`${field}:ASC`} value={`${field}:ASC`}>{text} {field === "joiningDate" ? "(oldest first)" : "(A–Z)"}</option>,
-              <option key={`${field}:DESC`} value={`${field}:DESC`}>{text} {field === "joiningDate" ? "(newest first)" : "(Z–A)"}</option>,
-            ])}
-          </select>
-        </label>
+        <Dropdown label="Status" value={status} onChange={(next) => update({ status: next })}
+          options={[{ value: "", label: "All statuses" }, ...statuses.map((value) => ({ value, label: humanize(value) }))]} />
+        {directory.departments.length > 0 && <Dropdown label="Department" value={department} onChange={(next) => update({ department: next })}
+          options={[{ value: "", label: "All departments" }, ...directory.departments.map((item) => ({ value: item.key, label: item.name }))]} />}
+        {directory.designations.length > 0 && <Dropdown label="Designation" value={designation} onChange={(next) => update({ designation: next })}
+          options={[{ value: "", label: "All designations" }, ...directory.designations.map((item) => ({ value: item.key, label: item.name }))]} />}
+        <Dropdown label="Sort by" value={`${sort}:${direction}`} onChange={(next) => { const [field, order] = next.split(":"); update({ sort: field, direction: order }); }}
+          options={sorts.flatMap(([field, text]) => [
+            { value: `${field}:ASC`, label: `${text} ${field === "joiningDate" ? "(oldest first)" : "(A–Z)"}` },
+            { value: `${field}:DESC`, label: `${text} ${field === "joiningDate" ? "(newest first)" : "(Z–A)"}` },
+          ])} />
         {filtered && <Button type="button" onClick={() => { setDraft(""); setParams(new URLSearchParams({ sort, direction }), { replace: true }); }}>Clear filters</Button>}
       </form>
       {error && <Notice>{error}</Notice>}
@@ -383,12 +369,8 @@ function References({ title, items, reload }: { title: "departments" | "designat
           <input name="key" required value={key} pattern="[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?" title="Lowercase letters, numbers and hyphens"
             onChange={(event) => { setKey(event.target.value); setKeyEdited(true); }} />
         </Field>
-        {title === "departments" && <label>Parent department
-          <select name="parentDepartmentKey" defaultValue="">
-            <option value="">None (top level)</option>
-            {items.filter((item) => item.status === "ACTIVE").map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
-          </select>
-        </label>}
+        {title === "departments" && <Dropdown label="Parent department" name="parentDepartmentKey" defaultValue=""
+          options={[{ value: "", label: "None (top level)" }, ...items.filter((item) => item.status === "ACTIVE").map((item) => ({ value: item.key, label: item.name }))]} />}
         <Button variant="primary">Add {singular}</Button>
       </form>
       {error && <Notice>{error}</Notice>}

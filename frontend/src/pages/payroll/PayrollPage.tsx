@@ -47,6 +47,7 @@ import {
 import { workflowLink, workflowReturn } from "../../components/HorizonWorkflowNav";
 import { Badge, StatusBadge } from "../../components/ui/Badge";
 import { PersonCell } from "../../components/ui/PersonCell";
+import { Dropdown } from "../../components/ui/Dropdown";
 import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, formatMoney, formatPeriod, humanize, payRunStatusDescription, personName } from "../../lib/format";
@@ -211,14 +212,7 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
         {error && <Notice>{error}</Notice>}
         <label>Employee code<input name="employeeCode" required defaultValue={initialCode} /></label>
         <label key={defaults.currency}>Currency<input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={defaults.currency} placeholder="e.g. INR" /></label>
-        <label>
-          Pay frequency
-          <select name="payFrequency" defaultValue="MONTHLY">
-            <option value="MONTHLY">Monthly</option>
-            <option value="BIWEEKLY">Every two weeks</option>
-            <option value="WEEKLY">Weekly</option>
-          </select>
-        </label>
+        <Dropdown label="Pay frequency" name="payFrequency" defaultValue="MONTHLY" options={payFrequencyOptions} />
         <label>Payroll start date<input name="effectiveFrom" type="date" required /></label>
         <Button variant="primary" disabled={busy}>{busy ? "Saving…" : "Save payroll settings"}</Button>
       </form>
@@ -389,6 +383,7 @@ function SalaryTemplates({
     [versions, setVersions] = useState<Record<string, SalaryTemplateVersion[]>>({}),
     [selectedVersions, setSelectedVersions] = useState<Record<string, number>>({});
   const defaults = useOrganizationDefaults();
+  const directory = useWorkforceDirectory();
   const activeComponents = components.filter((c) => c.status === "ACTIVE");
   const loadVersions = async () => {
     const entries = await Promise.all(
@@ -627,31 +622,13 @@ function SalaryTemplates({
               }}
             >
               <strong>Assign as compensation snapshot</strong>
-              <select
-                name="employeeCode"
-                aria-label="Employee"
-                required
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Select employee
-                </option>
-                {employees
-                  .filter((e) => e.status === "ACTIVE")
-                  .map((e) => (
-                    <option key={e.employeeCode}>{e.employeeCode}</option>
-                  ))}
-              </select>
+              <Dropdown label="Employee" name="employeeCode" required placeholder="Select employee"
+                options={employees.filter((e) => e.status === "ACTIVE").map((e) => ({ value: e.employeeCode, label: directory.nameOf(e.employeeCode), subLabel: e.employeeCode }))} />
               <input name="profileKey" placeholder="Profile key" required />
-              <label>
-                Template version
-                <select name="versionNumber" required value={selectedVersions[t.templateKey] ?? ""} onChange={(event) => setSelectedVersions((current) => ({ ...current, [t.templateKey]: Number(event.target.value) }))}>
-                  <option value="" disabled>Select active version</option>
-                  {(versions[t.templateKey] ?? []).filter((version) => version.status === "ACTIVE").map((version) => (
-                    <option key={version.versionNumber} value={version.versionNumber}>Version {version.versionNumber} · {version.effectiveFrom}{version.effectiveTo ? ` to ${version.effectiveTo}` : ""}</option>
-                  ))}
-                </select>
-              </label>
+              <Dropdown label="Template version" name="versionNumber" required placeholder="Select active version"
+                value={selectedVersions[t.templateKey] ? String(selectedVersions[t.templateKey]) : ""}
+                onChange={(next) => setSelectedVersions((current) => ({ ...current, [t.templateKey]: Number(next) }))}
+                options={(versions[t.templateKey] ?? []).filter((version) => version.status === "ACTIVE").map((version) => ({ value: String(version.versionNumber), label: `Version ${version.versionNumber}`, subLabel: `${formatDate(version.effectiveFrom)}${version.effectiveTo ? ` to ${formatDate(version.effectiveTo)}` : " onwards"}` }))} />
               <input
                 name="effectiveFrom"
                 aria-label="Effective from"
@@ -836,13 +813,11 @@ function EmployeeDetail({ section }: { section: string }) {
   return (
     <Page title={title} description={description}>
       <div className="toolbar employee-picker">
-        <label>Employee
-          <select value={roster.some((item) => item.employeeCode === code) ? code : code ? "__other" : ""} onChange={(event) => choose(event.target.value === "__other" ? code : event.target.value)}>
-            <option value="">Choose an employee…</option>
-            {code && !roster.some((item) => item.employeeCode === code) && <option value="__other">{code}</option>}
-            {roster.map((item) => <option key={item.employeeCode} value={item.employeeCode}>{directory.nameOf(item.employeeCode)}{directory.find(item.employeeCode) ? ` (${item.employeeCode})` : ""}{item.status === "ACTIVE" ? "" : " · inactive"}</option>)}
-          </select>
-        </label>
+        <Dropdown label="Employee" placeholder="Choose an employee…" value={code} onChange={choose} searchable
+          options={[
+            ...(code && !roster.some((item) => item.employeeCode === code) ? [{ value: code, label: code }] : []),
+            ...roster.map((item) => ({ value: item.employeeCode, label: directory.nameOf(item.employeeCode), subLabel: [directory.find(item.employeeCode) ? item.employeeCode : "", item.status === "ACTIVE" ? "" : "inactive"].filter(Boolean).join(" · ") || undefined })),
+          ]} />
         {loading && <span role="status">Loading…</span>}
       </div>
       {error && <Notice>{error}<p><Link to={workflowLink(`${appPath("/app/payroll/employees")}?employee=${encodeURIComponent(code)}`, `${appPath(`/app/payroll/${section}`)}?employee=${encodeURIComponent(code)}`)}>Review payroll employee configuration</Link></p></Notice>}
@@ -897,23 +872,8 @@ function EmployeeDetail({ section }: { section: string }) {
             Pay run
             <input name="payRunKey" placeholder="Optional" />
           </label>
-          <label>
-            Entry type
-            <select name="type" defaultValue="">
-              <option value="">All types</option>
-              {[
-                "EARNING",
-                "DEDUCTION",
-                "EMPLOYER_CONTRIBUTION",
-                "ADJUSTMENT",
-                "NET_PAY",
-              ].map((type) => (
-                <option key={type} value={type}>
-                  {label(type)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Dropdown label="Entry type" name="type" defaultValue=""
+            options={[{ value: "", label: "All types" }, ...["EARNING", "DEDUCTION", "EMPLOYER_CONTRIBUTION", "ADJUSTMENT", "NET_PAY"].map((type) => ({ value: type, label: label(type) }))]} />
           <Button>Apply filters</Button>
         </form>
       )}
@@ -1393,15 +1353,9 @@ const input = (
   </label>
 );
 const select = (name: string, items: string[]) => (
-  <label key={name}>
-    {label(name)}
-    <select name={name}>
-      {items.map((x) => (
-        <option key={x} value={x}>{label(x)}</option>
-      ))}
-    </select>
-  </label>
+  <Dropdown key={name} label={label(name)} name={name} defaultValue={items[0]} options={items.map((x) => ({ value: x, label: label(x) }))} />
 );
+const payFrequencyOptions = [{ value: "MONTHLY", label: "Monthly" }, { value: "BIWEEKLY", label: "Every two weeks" }, { value: "WEEKLY", label: "Weekly" }];
 const label = (value: string) =>
   value
     .replaceAll("_", " ")

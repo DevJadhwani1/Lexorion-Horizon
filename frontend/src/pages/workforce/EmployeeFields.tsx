@@ -1,6 +1,7 @@
 import type { Employee, Reference } from "../../features/workforce/workforceApi";
 import { personName } from "../../lib/format";
 import { Field } from "../../components/ui/Field";
+import { Dropdown } from "../../components/ui/Dropdown";
 
 /**
  * Company prefix for employee codes, 2–4 characters: the organization code when it is already that short
@@ -49,8 +50,8 @@ export function EmployeeFields({ employee, includeCode = false, suggestedCode = 
   const activeOrCurrent = (items: Reference[], current: string | null | undefined) => items.filter((item) => item.status === "ACTIVE" || item.key === current);
   const managerOptions = managers.filter((item) => item.employeeCode !== employee?.employeeCode && (item.status === "ACTIVE" || item.employeeCode === employee?.reportingManagerEmployeeCode));
   return <>
-    {includeCode && <Field label="Employee code" hint="Used on payslips and reports. It cannot be changed later.">
-      <input name="employeeCode" required defaultValue={suggestedCode} pattern="[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?" title="Letters, numbers and hyphens" />
+    {includeCode && <Field label="Employee code" hint="Assigned automatically. Codes are never reused, even after an employee leaves, so records stay unambiguous.">
+      <input value={suggestedCode} readOnly aria-readonly="true" className="readonly-value" />
     </Field>}
     <label>First name<input name="firstName" required defaultValue={employee?.firstName ?? ""} autoComplete="off" /></label>
     {employee && <label>Middle name<input name="middleName" defaultValue={employee.middleName ?? ""} autoComplete="off" /></label>}
@@ -58,23 +59,11 @@ export function EmployeeFields({ employee, includeCode = false, suggestedCode = 
     <label>Work email<input name="workEmail" type="email" required defaultValue={employee?.workEmail ?? ""} autoComplete="off" /></label>
     <label>Phone<input name="phone" type="tel" defaultValue={employee?.phone ?? ""} autoComplete="off" /></label>
     <label>Joining date<input name="joiningDate" type="date" required defaultValue={employee?.joiningDate ?? ""} /></label>
-    <label>Department
-      <select name="departmentKey" defaultValue={employee?.departmentKey ?? ""}>
-        <option value="">No department</option>
-        {activeOrCurrent(departments, employee?.departmentKey).map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
-      </select>
-    </label>
-    <label>Designation
-      <select name="designationKey" defaultValue={employee?.designationKey ?? ""}>
-        <option value="">No designation</option>
-        {activeOrCurrent(designations, employee?.designationKey).map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
-      </select>
-    </label>
-    <label>Reporting manager
-      <select name="reportingManagerEmployeeCode" defaultValue={employee?.reportingManagerEmployeeCode ?? ""}>
-        <option value="">No manager</option>
-        {managerOptions.map((item) => <option key={item.employeeCode} value={item.employeeCode}>{personName(item)} ({item.employeeCode})</option>)}
-      </select>
-    </label>
+    <Dropdown label="Department" name="departmentKey" defaultValue={employee?.departmentKey ?? ""}
+      options={[{ value: "", label: "No department" }, ...activeOrCurrent(departments, employee?.departmentKey).map((item) => ({ value: item.key, label: item.name }))]} />
+    <Dropdown label="Designation" name="designationKey" defaultValue={employee?.designationKey ?? ""}
+      options={[{ value: "", label: "No designation" }, ...activeOrCurrent(designations, employee?.designationKey).map((item) => ({ value: item.key, label: item.name }))]} />
+    <Dropdown label="Reporting manager" name="reportingManagerEmployeeCode" defaultValue={employee?.reportingManagerEmployeeCode ?? ""}
+      options={[{ value: "", label: "No manager" }, ...managerOptions.map((item) => ({ value: item.employeeCode, label: personName(item), subLabel: item.employeeCode }))]} />
   </>;
 }
