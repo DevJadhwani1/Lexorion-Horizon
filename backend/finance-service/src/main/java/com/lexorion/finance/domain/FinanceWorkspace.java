@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Local mirror of a Platform workspace. Its id is the Platform workspace id; it also owns the document sequences. */
+/** Local mirror of a Platform workspace. Its id is the Platform workspace id; it also owns the draft and receipt sequences. */
 @Entity
 @Table(name = "finance_workspaces")
 @Getter
@@ -28,4 +28,8 @@ public class FinanceWorkspace extends Auditable {
 
     @Column(name = "next_receipt_number", nullable = false)
     private long nextReceiptNumber = 1;
+
+    /** Sequence for invoice references (REF-00001). The template's number is assigned when the invoice is issued. */
+    @Column(name = "next_draft_number", nullable = false)
+    private long nextDraftNumber = 1;
 }

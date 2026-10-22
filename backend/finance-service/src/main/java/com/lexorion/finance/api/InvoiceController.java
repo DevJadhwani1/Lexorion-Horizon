@@ -40,36 +40,36 @@ public class InvoiceController {
     @PostMapping
     public ResponseEntity<InvoiceResponse> create(@Valid @RequestBody InvoiceRequest request) {
         InvoiceResponse created = service.create(request);
-        return ResponseEntity.created(URI.create("/api/finance/invoices/" + created.invoiceNumber())).body(created);
+        return ResponseEntity.created(URI.create("/api/finance/invoices/" + created.reference())).body(created);
     }
 
-    @GetMapping("/{invoiceNumber}")
-    public InvoiceResponse get(@PathVariable String invoiceNumber) {
-        return service.get(invoiceNumber);
+    @GetMapping("/{reference}")
+    public InvoiceResponse get(@PathVariable String reference) {
+        return service.get(reference);
     }
 
-    @PutMapping("/{invoiceNumber}")
-    public InvoiceResponse update(@PathVariable String invoiceNumber, @Valid @RequestBody InvoiceRequest request) {
-        return service.update(invoiceNumber, request);
+    @PutMapping("/{reference}")
+    public InvoiceResponse update(@PathVariable String reference, @Valid @RequestBody InvoiceRequest request) {
+        return service.update(reference, request);
     }
 
-    @PostMapping("/{invoiceNumber}/issue")
-    public InvoiceResponse issue(@PathVariable String invoiceNumber) {
-        return service.issue(invoiceNumber);
+    @PostMapping("/{reference}/issue")
+    public InvoiceResponse issue(@PathVariable String reference) {
+        return service.issue(reference);
     }
 
-    @PostMapping("/{invoiceNumber}/void")
-    public InvoiceResponse voidInvoice(@PathVariable String invoiceNumber, @Valid @RequestBody VoidInvoice request) {
-        return service.voidInvoice(invoiceNumber, request);
+    @PostMapping("/{reference}/void")
+    public InvoiceResponse voidInvoice(@PathVariable String reference, @Valid @RequestBody VoidInvoice request) {
+        return service.voidInvoice(reference, request);
     }
 
-    @GetMapping("/{invoiceNumber}/payments")
-    public List<PaymentResponse> payments(@PathVariable String invoiceNumber) {
-        return service.payments(invoiceNumber);
+    @GetMapping("/{reference}/payments")
+    public List<PaymentResponse> payments(@PathVariable String reference) {
+        return service.payments(reference);
     }
 
-    @PostMapping("/{invoiceNumber}/payments")
-    public ResponseEntity<PaymentResponse> recordPayment(@PathVariable String invoiceNumber, @Valid @RequestBody RecordPayment request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.recordPayment(invoiceNumber, request));
+    @PostMapping("/{reference}/payments")
+    public ResponseEntity<PaymentResponse> recordPayment(@PathVariable String reference, @Valid @RequestBody RecordPayment request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.recordPayment(reference, request));
     }
 }

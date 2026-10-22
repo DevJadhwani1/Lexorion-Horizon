@@ -30,17 +30,21 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             Pageable pageable);
 
     @EntityGraph(attributePaths = {"client", "lines"})
-    Optional<Invoice> findByWorkspaceIdAndInvoiceNumber(UUID workspaceId, String invoiceNumber);
+    Optional<Invoice> findByWorkspaceIdAndReference(UUID workspaceId, String reference);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select i from Invoice i where i.workspace.id = :workspaceId and i.invoiceNumber = :invoiceNumber")
-    Optional<Invoice> findScopedForUpdate(@Param("workspaceId") UUID workspaceId, @Param("invoiceNumber") String invoiceNumber);
+    @Query("select i from Invoice i where i.workspace.id = :workspaceId and i.reference = :reference")
+    Optional<Invoice> findScopedForUpdate(@Param("workspaceId") UUID workspaceId, @Param("reference") String reference);
+
+    boolean existsByWorkspaceIdAndReference(UUID workspaceId, String reference);
 
     @EntityGraph(attributePaths = "client")
     List<Invoice> findByWorkspaceIdAndStatusIn(UUID workspaceId, Collection<InvoiceStatus> statuses);
 
     @Query("select count(i) from Invoice i where i.workspace.id = :workspaceId and i.status = :status")
     long countByStatus(@Param("workspaceId") UUID workspaceId, @Param("status") InvoiceStatus status);
+
+    boolean existsByWorkspaceIdAndInvoiceNumber(UUID workspaceId, String invoiceNumber);
 
     @Query("""
             select i.currency, sum(i.total) from Invoice i

@@ -9,10 +9,12 @@ export const paymentMethods: PaymentMethod[] = ["BANK_TRANSFER", "UPI", "CARD", 
 export interface BillingClient {
   clientKey: string;
   displayName: string;
+  contactName: string | null;
   email: string | null;
   phone: string | null;
   billingAddress: string | null;
   taxId: string | null;
+  region: string | null;
   currency: string;
   paymentTermsDays: number;
   status: ClientStatus;
@@ -24,6 +26,8 @@ export interface BillingClient {
 export interface ClientInput {
   clientKey?: string;
   displayName: string;
+  contactName?: string;
+  region?: string;
   email?: string;
   phone?: string;
   billingAddress?: string;
@@ -33,6 +37,7 @@ export interface ClientInput {
 }
 export interface InvoiceLine {
   lineNumber: number;
+  itemCode: string | null;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -42,7 +47,10 @@ export interface InvoiceLine {
   total: number;
 }
 export interface InvoiceSummary {
-  invoiceNumber: string;
+  /** Stable, URL-safe identifier (REF-00001). Use it in links and API paths. */
+  reference: string;
+  /** The template's number, assigned when the invoice is issued; null for drafts. */
+  invoiceNumber: string | null;
   clientKey: string;
   clientName: string;
   status: InvoiceStatus;
@@ -55,30 +63,39 @@ export interface InvoiceSummary {
   balanceDue: number;
   updatedAt: string;
 }
+export interface BillTo { name: string; contactName: string | null; address: string | null; email: string | null; phone: string | null; taxId: string | null; region: string | null }
+export interface TaxLine { label: string; amount: number }
 export interface Invoice extends InvoiceSummary {
-  clientEmail: string | null;
-  clientBillingAddress: string | null;
-  clientTaxId: string | null;
+  billTo: BillTo;
+  placeOfSupply: string | null;
   notes: string | null;
+  customFields: Record<string, string>;
   subtotal: number;
   taxTotal: number;
+  taxBreakdown: TaxLine[];
+  /** The live template while a draft; the copy frozen at issue afterwards. */
+  template: RenderTemplate;
   issuedAt: string | null;
   voidedAt: string | null;
   voidReason: string | null;
   lines: InvoiceLine[];
   createdAt: string;
 }
-export interface InvoiceLineInput { description: string; quantity: number; unitPrice: number; taxRate?: number }
+export interface InvoiceLineInput { itemCode?: string; description: string; quantity: number; unitPrice: number; taxRate?: number }
 export interface InvoiceInput {
   clientKey: string;
+  templateKey?: string;
   issueDate?: string;
   dueDate?: string;
+  placeOfSupply?: string;
   notes?: string;
+  customFields?: Record<string, string>;
   lines: InvoiceLineInput[];
 }
 export interface Payment {
   receiptNumber: string;
-  invoiceNumber: string;
+  invoiceReference: string;
+  invoiceNumber: string | null;
   clientKey: string;
   clientName: string;
   amount: number;
@@ -130,6 +147,64 @@ export const issueInvoice = (number: string) => apiRequest<Invoice>(`${invoicePa
 export const voidInvoice = (number: string, reason: string) => apiRequest<Invoice>(`${invoicePath(number)}/void`, { method: "POST", body: { reason } });
 export const getInvoicePayments = (number: string) => apiRequest<Payment[]>(`${invoicePath(number)}/payments`);
 export const recordPayment = (number: string, body: PaymentInput) => apiRequest<Payment>(`${invoicePath(number)}/payments`, { method: "POST", body });
+export type TemplateLayout = "MODERN" | "CLASSIC" | "MINIMAL";
+export type TaxMode = "NONE" | "SIMPLE" | "GST";
+export type FieldType = "TEXT" | "DATE" | "NUMBER";
+export type DateStyle = "ORDINAL" | "MEDIUM" | "NUMERIC";
+export interface LabelledValue { label: string; value: string }
+export interface CustomField { key: string; label: string; type: FieldType; required?: boolean }
+/** A subscriber's bill format. Every section is present in responses; requests may omit any of them. */
+export interface TemplateConfig {
+  branding: { logo?: string | null; primaryColor: string; accentColor: string };
+  seller: { legalName?: string | null; tagline?: string | null; subline?: string | null; address?: string | null; phone?: string | null; email?: string | null; website?: string | null; region?: string | null; identifiers: LabelledValue[] };
+  document: { title: string; subtitle?: string | null; copyLabel?: string | null; detailsTitle: string };
+  numbering: { pattern: string; padding: number; fiscalYearStartMonth: number };
+  tax: { mode: TaxMode; label: string };
+  columns: { showItemCode: boolean; itemCodeLabel: string };
+  customFields: CustomField[];
+  paymentDetails: LabelledValue[];
+  terms: string[];
+  defaultNotes?: string | null;
+  signatory: { name?: string | null; title?: string | null; signatureImage?: string | null };
+  footerNote?: string | null;
+  showAmountInWords: boolean;
+  dateStyle: DateStyle;
+}
+export interface RenderTemplate { templateKey: string | null; name: string; layout: TemplateLayout; config: TemplateConfig }
+export interface InvoiceTemplate {
+  templateKey: string;
+  name: string;
+  layout: TemplateLayout;
+  isDefault: boolean;
+  status: "ACTIVE" | "ARCHIVED";
+  config: TemplateConfig;
+  /** The number the next invoice issued today would receive. */
+  nextNumber: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface TemplateInput { templateKey?: string; name: string; layout: TemplateLayout; config: TemplateConfig; makeDefault?: boolean }
+
+const templatePath = (key: string) => `/api/finance/templates/${encodeURIComponent(key)}`;
+export const getTemplates = () => apiRequest<InvoiceTemplate[]>("/api/finance/templates");
+export const getTemplate = (key: string) => apiRequest<InvoiceTemplate>(templatePath(key));
+export const createTemplate = (body: TemplateInput) => apiRequest<InvoiceTemplate>("/api/finance/templates", { method: "POST", body });
+export const updateTemplate = (key: string, body: Partial<Omit<TemplateInput, "templateKey" | "makeDefault">> & { status?: "ACTIVE" | "ARCHIVED" }) =>
+  apiRequest<InvoiceTemplate>(templatePath(key), { method: "PUT", body });
+export const makeDefaultTemplate = (key: string) => apiRequest<InvoiceTemplate>(`${templatePath(key)}/default`, { method: "POST" });
+export const getNextNumber = (key: string, date: string) =>
+  apiRequest<{ number: string }>(`${templatePath(key)}/next-number?date=${encodeURIComponent(date)}`);
+
+/** Mirrors the service's numbering so the template editor can show an example before saving. */
+export function renderNumber(numbering: TemplateConfig["numbering"], date: string, serial: number): string {
+  const [year, month] = date.split("-").map(Number);
+  const start = numbering.fiscalYearStartMonth === 1 ? year : month >= numbering.fiscalYearStartMonth ? year : year - 1;
+  const two = (value: number) => String(value % 100).padStart(2, "0");
+  const fiscal = numbering.fiscalYearStartMonth === 1 ? String(year) : `${two(start)}-${two(start + 1)}`;
+  return numbering.pattern.replace("{SEQ}", String(serial).padStart(numbering.padding, "0")).replace("{FY}", fiscal)
+    .replace("{YYYY}", String(year)).replace("{YY}", two(year)).replace("{MM}", String(month).padStart(2, "0"));
+}
+
 export const getPayments = (page = 0, size = 20) => apiRequest<Page<Payment>>(`/api/finance/payments?page=${page}&size=${size}`);
 
 /** Line amounts as the service calculates them: round the subtotal and the tax separately, half up, to cents. */

@@ -36,6 +36,10 @@ public class BillingClient extends Auditable {
     @Column(name = "display_name", nullable = false, length = 160)
     private String displayName;
 
+    /** Person the bill is addressed to, for example "Ramya Chandran · Accounts Payable". */
+    @Column(name = "contact_name", length = 120)
+    private String contactName;
+
     @Column(length = 254)
     private String email;
 
@@ -47,6 +51,10 @@ public class BillingClient extends Auditable {
 
     @Column(name = "tax_id", length = 32)
     private String taxId;
+
+    /** State or region, used as the default place of supply. */
+    @Column(length = 64)
+    private String region;
 
     @Column(nullable = false, length = 3)
     private String currency;

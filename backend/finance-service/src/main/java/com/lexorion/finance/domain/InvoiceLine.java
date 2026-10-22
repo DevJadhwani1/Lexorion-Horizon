@@ -32,6 +32,10 @@ public class InvoiceLine {
     @Column(name = "line_number", nullable = false)
     private int lineNumber;
 
+    /** Item, SAC or HSN code, as the template labels it. */
+    @Column(name = "item_code", length = 32)
+    private String itemCode;
+
     @Column(nullable = false, length = 300)
     private String description;
 

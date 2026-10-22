@@ -27,7 +27,9 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "finance_invoices",
-        uniqueConstraints = @UniqueConstraint(name = "uk_finance_invoice_workspace_number", columnNames = {"workspace_id", "invoice_number"}),
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_finance_invoice_workspace_number", columnNames = {"workspace_id", "invoice_number"}),
+                @UniqueConstraint(name = "uk_finance_invoice_workspace_reference", columnNames = {"workspace_id", "reference"})},
         indexes = {
                 @Index(name = "idx_finance_invoice_workspace_status", columnList = "workspace_id,status"),
                 @Index(name = "idx_finance_invoice_client", columnList = "client_id")})
@@ -43,7 +45,12 @@ public class Invoice extends Auditable {
     @JoinColumn(name = "workspace_id", nullable = false, updatable = false)
     private FinanceWorkspace workspace;
 
-    @Column(name = "invoice_number", nullable = false, updatable = false, length = 32)
+    /** Stable, URL-safe identifier, for example {@code REF-00001}. Never changes. */
+    @Column(nullable = false, updatable = false, length = 32)
+    private String reference;
+
+    /** The template's sequential number, for example {@code OH/26-27/0001}. Assigned when the invoice is issued. */
+    @Column(name = "invoice_number", length = 32)
     private String invoiceNumber;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -65,6 +72,21 @@ public class Invoice extends Auditable {
 
     @Column(length = 2000)
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    private InvoiceTemplate template;
+
+    /** Template frozen at issue: {@code {"templateKey","name","layout","config"}} as JSON. */
+    @Column(name = "template_snapshot", columnDefinition = "text")
+    private String templateSnapshot;
+
+    /** Values for the template's industry fields, keyed by field key, as JSON. */
+    @Column(name = "custom_fields", columnDefinition = "text")
+    private String customFields;
+
+    @Column(name = "place_of_supply", length = 64)
+    private String placeOfSupply;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
@@ -90,6 +112,10 @@ public class Invoice extends Auditable {
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineNumber ASC")
     private List<InvoiceLine> lines = new ArrayList<>();
+
+    public boolean awaitingNumber() {
+        return invoiceNumber == null;
+    }
 
     public BigDecimal balanceDue() {
         return total.subtract(amountPaid);

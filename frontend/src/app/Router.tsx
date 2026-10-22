@@ -15,6 +15,7 @@ import { WorkforcePage } from "../pages/workforce/WorkforcePage";
 import { EmployeeSetupWizard } from "../pages/workforce/EmployeeSetupWizard";
 import { PayrollPage } from "../pages/payroll/PayrollPage";
 import { FinancePage } from "../pages/finance/FinancePage";
+import { TemplatesPage } from "../pages/finance/TemplatesPage";
 import { PlatformHomePage } from "../pages/platform/PlatformHomePage";
 import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pages/platform/PlatformOrganizationsPage";
 import { PlatformResourcesPage } from "../pages/platform/PlatformResourcesPage";
@@ -129,9 +130,12 @@ function financeRoutes(): RouteObject[] { return [
   { path: "finance/overview", element: <FinancePage sectionKey="overview" /> },
   { path: "finance/invoices", element: <FinancePage sectionKey="invoices" /> },
   { path: "finance/invoices/new", element: <FinancePage sectionKey="new-invoice" /> },
-  { path: "finance/invoices/:invoiceNumber", element: <FinancePage sectionKey="invoice" /> },
+  { path: "finance/invoices/:reference", element: <FinancePage sectionKey="invoice" /> },
   { path: "finance/clients", element: <FinancePage sectionKey="clients" /> },
   { path: "finance/payments", element: <FinancePage sectionKey="payments" /> },
+  { path: "finance/templates", element: <TemplatesPage section="list" /> },
+  { path: "finance/templates/new", element: <TemplatesPage section="new" /> },
+  { path: "finance/templates/:templateKey", element: <TemplatesPage section="edit" /> },
 ]; }
 
 const host = consoleHost();

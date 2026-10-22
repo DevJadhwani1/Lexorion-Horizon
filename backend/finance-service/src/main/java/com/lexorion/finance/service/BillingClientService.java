@@ -66,7 +66,9 @@ public class BillingClientService {
         client.setWorkspace(workspace);
         client.setClientKey(key);
         client.setDisplayName(request.displayName().trim());
+        client.setContactName(blankToNull(request.contactName()));
         client.setEmail(blankToNull(request.email()));
+        client.setRegion(blankToNull(request.region()));
         client.setPhone(blankToNull(request.phone()));
         client.setBillingAddress(blankToNull(request.billingAddress()));
         client.setTaxId(blankToNull(request.taxId()));
@@ -84,6 +86,8 @@ public class BillingClientService {
             if (request.displayName().isBlank()) throw new FinanceException(400, "Client name is required");
             client.setDisplayName(request.displayName().trim());
         }
+        if (request.contactName() != null) client.setContactName(blankToNull(request.contactName()));
+        if (request.region() != null) client.setRegion(blankToNull(request.region()));
         if (request.email() != null) client.setEmail(blankToNull(request.email()));
         if (request.phone() != null) client.setPhone(blankToNull(request.phone()));
         if (request.billingAddress() != null) client.setBillingAddress(blankToNull(request.billingAddress()));
