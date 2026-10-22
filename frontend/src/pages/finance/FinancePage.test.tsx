@@ -5,6 +5,8 @@ import { FinancePage, addDays, localToday } from "./FinancePage";
 import { TemplatesPage } from "./TemplatesPage";
 import { ClientPages } from "./ClientPages";
 import { InvoiceWizardPage } from "./InvoiceWizard";
+import { BooksPage } from "./BooksPages";
+import { ItemPages } from "./ItemPages";
 import { gstinProblem, gstinState } from "../../features/finance/billingData";
 import { InvoiceDocument, documentDate } from "./InvoiceDocument";
 import * as financeApi from "../../features/finance/financeApi";
@@ -16,7 +18,8 @@ vi.mock("../../features/admin/adminApi", async (load) => ({ ...(await load<typeo
 vi.mock("../../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: { key: "books", displayName: "Books", products: [{ key: "finance" }] } }) }));
 vi.mock("../../features/finance/financeApi", async (load) => {
   const actual = await load<typeof import("../../features/finance/financeApi")>();
-  return { ...actual, getClients: vi.fn(), getClient: vi.fn(), createClient: vi.fn(), updateClient: vi.fn(), getTemplates: vi.fn(), createTemplate: vi.fn(), createInvoice: vi.fn(), getInvoice: vi.fn(), getInvoicePayments: vi.fn(), getNextNumber: vi.fn(), issueInvoice: vi.fn(), recordPayment: vi.fn(), getBillingSummary: vi.fn(), getInvoices: vi.fn() };
+  return { ...actual, getClients: vi.fn(), getClient: vi.fn(), getItems: vi.fn(async () => []), getNextItemCode: vi.fn(), createItem: vi.fn(),
+    getFiscalYears: vi.fn(async () => []), getYearSummary: vi.fn(), getStatement: vi.fn(), createClient: vi.fn(), updateClient: vi.fn(), getTemplates: vi.fn(), createTemplate: vi.fn(), createInvoice: vi.fn(), getInvoice: vi.fn(), getInvoicePayments: vi.fn(), getNextNumber: vi.fn(), issueInvoice: vi.fn(), recordPayment: vi.fn(), getBillingSummary: vi.fn(), getInvoices: vi.fn() };
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
@@ -38,7 +41,7 @@ const draft: financeApi.Invoice = {
   customFields: { candidate: "Saksham Jain", joiningDate: "2026-04-10" }, subtotal: 180000, taxTotal: 32400, total: 212400, amountPaid: 0, balanceDue: 212400,
   taxBreakdown: [{ label: "CGST", amount: 16200 }, { label: "SGST", amount: 16200 }], issuedAt: null, voidedAt: null, voidReason: null, createdAt: "", updatedAt: "",
   template: { templateKey: "recruitment", name: "Recruitment", layout: "MODERN", config: recruitment },
-  lines: [{ lineNumber: 1, itemCode: "REC-001", description: "Recruitment fee — Saksham Jain", quantity: 1, unitPrice: 180000, taxRate: 18, subtotal: 180000, taxAmount: 32400, total: 212400 }],
+  lines: [{ lineNumber: 1, itemCode: "REC-001", hsnSac: "998512", unit: null, description: "Recruitment fee — Saksham Jain", quantity: 1, unitPrice: 180000, taxRate: 18, subtotal: 180000, taxAmount: 32400, total: 212400 }],
 };
 
 describe("Finance helpers", () => {
@@ -116,7 +119,7 @@ describe("Finance billing workspace", () => {
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/app/finance/invoices/REF-00001"));
     expect(financeApi.createInvoice).toHaveBeenCalledWith(expect.objectContaining({
       clientKey: "mastek", templateKey: "recruitment", issueDate: "2026-05-30", customFields: { candidate: "Saksham Jain", joiningDate: "2026-04-10" },
-      lines: [{ itemCode: "REC-001", description: "Recruitment fee", quantity: 1, unitPrice: 180000, taxRate: 18 }],
+      lines: [{ itemCode: "REC-001", hsnSac: undefined, unit: undefined, description: "Recruitment fee", quantity: 1, unitPrice: 180000, taxRate: 18 }],
     }));
     expect(financeApi.issueInvoice).not.toHaveBeenCalled();
   });
@@ -280,5 +283,70 @@ describe("Clients", () => {
     const dialog = await screen.findByRole("dialog", { name: "Archive Mastek Limited?" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Archive client" }));
     await waitFor(() => expect(financeApi.updateClient).toHaveBeenCalledWith("mastek", { status: "ARCHIVED" }));
+  });
+});
+
+describe("Books, items and templates", () => {
+  it("shows the financial year month by month with the opening balance carried forward", async () => {
+    vi.mocked(financeApi.getFiscalYears).mockResolvedValue([{ label: "2027-28", start: "2027-04-01", end: "2028-03-31", current: true }, { label: "2026-27", start: "2026-04-01", end: "2027-03-31", current: false }]);
+    const month = (m: string, values: Partial<financeApi.MonthRow> = {}): financeApi.MonthRow => ({ month: m, start: `${m}-01`, end: `${m}-28`, invoicesIssued: 0, invoicesVoided: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0, otherTax: 0, invoiced: 0, collected: 0, closingReceivables: 124200, ...values });
+    const months = ["2027-04", "2027-05", "2027-06", "2027-07", "2027-08", "2027-09", "2027-10", "2027-11", "2027-12", "2028-01", "2028-02", "2028-03"].map((m) => month(m));
+    months[0] = month("2027-04", { invoicesIssued: 1, taxable: 5000, cgst: 450, sgst: 450, invoiced: 5900, closingReceivables: 130100 });
+    vi.mocked(financeApi.getYearSummary).mockResolvedValue({ fiscalYear: "2027-28", start: "2027-04-01", end: "2028-03-31", booksLockedUntil: "2027-03-31",
+      currencies: [{ currency: "INR", openingReceivables: 124200, months, total: month("total", { invoicesIssued: 1, taxable: 5000, cgst: 450, sgst: 450, invoiced: 5900 }), closingReceivables: 130100 }] });
+    render(<MemoryRouter initialEntries={["/app/finance/books"]}><Routes><Route path="/app/finance/books" element={<BooksPage section="summary" />} /></Routes></MemoryRouter>);
+    expect(await screen.findByText("FY 2027-28 month by month")).toBeTruthy();
+    expect(financeApi.getYearSummary).toHaveBeenCalledWith("2027-28");
+    expect(screen.getByText(/Books are locked up to/)).toBeTruthy();
+    expect(screen.getAllByText("₹1,24,200.00").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Apr 2027" }).getAttribute("href")).toBe("/app/finance/books/sales-register?fy=2027-28&month=2027-04");
+    expect(screen.getByText("Total FY 2027-28")).toBeTruthy();
+  });
+
+  it("suggests the next code for a service line when adding an item", async () => {
+    vi.mocked(financeApi.getNextItemCode).mockResolvedValue({ code: "REC-004" });
+    vi.mocked(financeApi.createItem).mockResolvedValue({ itemCode: "REC-004", name: "Recruitment fee", description: null, kind: "SERVICE", category: "Recruitment", hsnSac: "998512", unit: "Placement", unitPrice: 180000, taxRate: 18, status: "ACTIVE", createdAt: "", updatedAt: "" });
+    render(<MemoryRouter initialEntries={["/app/finance/items/new"]}><CurrentLocation /><Routes>
+      <Route path="/app/finance/items/new" element={<ItemPages section="new" />} />
+      <Route path="/app/finance/items/:itemCode" element={<p>saved</p>} />
+    </Routes></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Recruitment fee" } });
+    fireEvent.change(screen.getByLabelText(/Service line/), { target: { value: "Recruitment" } });
+    await waitFor(() => expect((screen.getByLabelText("Item code") as HTMLInputElement).value).toBe("REC-004"));
+    expect(financeApi.getNextItemCode).toHaveBeenLastCalledWith("REC");
+    fireEvent.change(screen.getByLabelText(/SAC code/), { target: { value: "99851" } });
+    expect(screen.getByText("Use 4, 6 or 8 digits.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/SAC code/), { target: { value: "998512" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save item" }));
+    await waitFor(() => expect(financeApi.createItem).toHaveBeenCalledWith(expect.objectContaining({ itemCode: "REC-004", name: "Recruitment fee", category: "Recruitment", hsnSac: "998512", kind: "SERVICE" })));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/app/finance/items/REC-004"));
+  });
+
+  it("fills an invoice line from the items registry", async () => {
+    vi.mocked(financeApi.getClients).mockResolvedValue([client]);
+    vi.mocked(financeApi.getTemplates).mockResolvedValue([{ ...template, config: { ...recruitment, columns: { ...recruitment.columns, showHsnSac: true } } }]);
+    vi.mocked(financeApi.getItems).mockResolvedValue([{ itemCode: "REC-001", name: "Recruitment fee", description: "Recruitment fee — permanent placement", kind: "SERVICE", category: "Recruitment", hsnSac: "998512", unit: "Placement", unitPrice: 180000, taxRate: 18, status: "ACTIVE", createdAt: "", updatedAt: "" }]);
+    vi.mocked(financeApi.getNextNumber).mockResolvedValue({ number: "OH/26-27/0001" });
+    render(<MemoryRouter initialEntries={["/app/finance/invoices/new?client=mastek"]}><Routes><Route path="/app/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} /></Routes></MemoryRouter>);
+    fireEvent.click(await screen.findByRole("button", { name: "Continue to line items" }));
+    chooseOption("Line 1 item or service", /REC-001 · Recruitment fee/);
+    expect((screen.getByLabelText("Line 1 description") as HTMLInputElement).value).toBe("Recruitment fee — permanent placement");
+    expect((screen.getByLabelText("Line 1 HSN/SAC") as HTMLInputElement).value).toBe("998512");
+    expect((screen.getByLabelText("Line 1 unit") as HTMLInputElement).value).toBe("Placement");
+    expect((screen.getByLabelText("Line 1 unit price") as HTMLInputElement).value).toBe("180000");
+    const bill = screen.getByRole("article", { name: "Invoice draft" });
+    expect(bill.textContent).toContain("998512");
+    expect(bill.textContent).toContain("₹2,12,400.00");
+  });
+
+  it("switches the industry details section off for a plain bill and back on with its fields", async () => {
+    render(<MemoryRouter initialEntries={["/app/finance/templates/new?preset=recruitment"]}><Routes><Route path="/app/finance/templates/new" element={<TemplatesPage section="new" />} /></Routes></MemoryRouter>);
+    const preview = screen.getByRole("region", { name: "Preview" });
+    expect(within(preview).queryByLabelText("Recruitment engagement")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Show an industry details section on this bill"));
+    expect(within(preview).queryByLabelText("Recruitment engagement")).toBeNull();
+    expect(screen.getByText(/a plain invoice that suits any business/)).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Show an industry details section on this bill"));
+    expect(screen.getAllByLabelText("Field label").map((input) => (input as HTMLInputElement).value)).toEqual(["Candidate", "Position", "Joining date"]);
   });
 });

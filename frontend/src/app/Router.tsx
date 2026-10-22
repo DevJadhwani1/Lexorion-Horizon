@@ -17,6 +17,8 @@ import { PayrollPage } from "../pages/payroll/PayrollPage";
 import { FinancePage } from "../pages/finance/FinancePage";
 import { TemplatesPage } from "../pages/finance/TemplatesPage";
 import { ClientPages } from "../pages/finance/ClientPages";
+import { ItemPages } from "../pages/finance/ItemPages";
+import { BooksPage } from "../pages/finance/BooksPages";
 import { InvoiceWizardPage } from "../pages/finance/InvoiceWizard";
 import { PlatformHomePage } from "../pages/platform/PlatformHomePage";
 import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pages/platform/PlatformOrganizationsPage";
@@ -137,6 +139,13 @@ function financeRoutes(): RouteObject[] { return [
   { path: "finance/clients", element: <ClientPages section="list" /> },
   { path: "finance/clients/new", element: <ClientPages section="new" /> },
   { path: "finance/clients/:clientKey", element: <ClientPages section="profile" /> },
+  { path: "finance/items", element: <ItemPages section="list" /> },
+  { path: "finance/items/new", element: <ItemPages section="new" /> },
+  { path: "finance/items/:itemCode", element: <ItemPages section="profile" /> },
+  { path: "finance/books", element: <BooksPage section="summary" /> },
+  { path: "finance/books/sales-register", element: <BooksPage section="sales-register" /> },
+  { path: "finance/books/journal", element: <BooksPage section="journal" /> },
+  { path: "finance/books/settings", element: <BooksPage section="settings" /> },
   { path: "finance/payments", element: <FinancePage sectionKey="payments" /> },
   { path: "finance/templates", element: <TemplatesPage section="list" /> },
   { path: "finance/templates/new", element: <TemplatesPage section="new" /> },

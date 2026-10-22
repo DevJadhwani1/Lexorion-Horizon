@@ -3,7 +3,7 @@ import type { BillTo, InvoiceStatus, RenderTemplate, TaxLine } from "../../featu
 import { amountInWords } from "../../lib/amountInWords";
 import { formatMoney } from "../../lib/format";
 
-export interface DocumentLine { lineNumber: number; itemCode?: string | null; description: string; quantity: number; unitPrice: number; taxRate: number; subtotal: number; taxAmount: number; total: number }
+export interface DocumentLine { lineNumber: number; itemCode?: string | null; hsnSac?: string | null; unit?: string | null; description: string; quantity: number; unitPrice: number; taxRate: number; subtotal: number; taxAmount: number; total: number }
 /** What a bill shows. An issued invoice supplies it directly; the template editor builds a sample. */
 export interface DocumentData {
   number: string | null;
@@ -102,12 +102,13 @@ export function InvoiceDocument({ data, template, fallbackSellerName, locale }: 
     </section>}
     <table className="invoice-doc-items">
       <thead><tr>
-        <th>Sr.</th>{c.columns.showItemCode && <th>{c.columns.itemCodeLabel}</th>}<th className="invoice-doc-description">Description</th>
+        <th>Sr.</th>{c.columns.showItemCode && <th>{c.columns.itemCodeLabel}</th>}<th className="invoice-doc-description">Description</th>{c.columns.showHsnSac && <th>HSN/SAC</th>}
         <th className="num">Qty</th><th className="num">Rate</th>{showTax && <th className="num">Taxable</th>}{showTax && <th className="num">{taxHeading}</th>}<th className="num">Total</th>
       </tr></thead>
       <tbody>{data.lines.map((line) => <tr key={line.lineNumber}>
         <td className="invoice-doc-sr">{line.lineNumber}</td>{c.columns.showItemCode && <td className="invoice-doc-code">{line.itemCode || "—"}</td>}
-        <td className="invoice-doc-description">{line.description}</td><td className="num">{line.quantity}</td><td className="num">{money(line.unitPrice)}</td>
+        <td className="invoice-doc-description">{line.description}</td>{c.columns.showHsnSac && <td className="invoice-doc-code">{line.hsnSac || "—"}</td>}
+        <td className="num">{line.quantity}{line.unit && <small className="invoice-doc-unit"> {line.unit}</small>}</td><td className="num">{money(line.unitPrice)}</td>
         {showTax && <td className="num">{money(line.subtotal)}</td>}{showTax && <td className="num">{line.taxRate ? `${line.taxRate}%` : "—"}</td>}<td className="num strong">{money(line.total)}</td>
       </tr>)}</tbody>
     </table>

@@ -77,7 +77,7 @@ public record TemplateConfig(
 
     public record Tax(TaxMode mode, @Size(max = 24) String label) { }
 
-    public record Columns(Boolean showItemCode, @Size(max = 24) String itemCodeLabel) { }
+    public record Columns(Boolean showItemCode, @Size(max = 24) String itemCodeLabel, Boolean showHsnSac) { }
 
     public record CustomField(
             @NotBlank @Pattern(regexp = FIELD_KEY, message = "must start with a letter and use only letters and numbers") String key,
@@ -102,7 +102,7 @@ public record TemplateConfig(
         DocumentText d = document == null ? new DocumentText(null, null, null, null) : document;
         Numbering n = numbering == null ? new Numbering(null, null, null) : numbering;
         Tax t = tax == null ? new Tax(null, null) : tax;
-        Columns c = columns == null ? new Columns(null, null) : columns;
+        Columns c = columns == null ? new Columns(null, null, null) : columns;
         Signatory g = signatory == null ? new Signatory(null, null, null) : signatory;
         return new TemplateConfig(
                 new Branding(b.logo(), or(b.primaryColor(), "#1D2B7A"), or(b.accentColor(), "#7CB342")),
@@ -112,7 +112,7 @@ public record TemplateConfig(
                 new Numbering(or(n.pattern(), "INV-{SEQ}"), n.padding() == null ? 5 : n.padding(),
                         n.fiscalYearStartMonth() == null ? 4 : n.fiscalYearStartMonth()),
                 new Tax(t.mode() == null ? TaxMode.SIMPLE : t.mode(), or(t.label(), t.mode() == TaxMode.GST ? "GST" : "Tax")),
-                new Columns(c.showItemCode() != null && c.showItemCode(), or(c.itemCodeLabel(), "Code")),
+                new Columns(c.showItemCode() != null && c.showItemCode(), or(c.itemCodeLabel(), "Code"), c.showHsnSac() != null && c.showHsnSac()),
                 customFields == null ? List.of() : customFields,
                 paymentDetails == null ? List.of() : paymentDetails,
                 terms == null ? List.of() : terms,

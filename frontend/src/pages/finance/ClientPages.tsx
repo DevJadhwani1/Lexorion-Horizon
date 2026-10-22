@@ -17,6 +17,7 @@ import { formatDate, keyFromName } from "../../lib/format";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { Table } from "../admin/AdminPage";
 import { Pagination } from "../workforce/WorkforcePage";
+import { ClientStatement } from "./BooksPages";
 
 const clientsPath = (path = "") => appPath(`/app/finance/clients${path}`);
 const clientPath = (client: { clientKey: string }) => clientsPath(`/${encodeURIComponent(client.clientKey)}`);
@@ -358,5 +359,6 @@ function ClientProfile() {
         </tr>)}
       </Table> : <Empty>No invoices for {client.displayName} yet. {client.status === "ACTIVE" && <Link to={newInvoicePath(client)}>Create the first one</Link>}</Empty>}
     </section>}
+    {!editing && <ClientStatement clientKey={client.clientKey} />}
   </Page>;
 }

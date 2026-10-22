@@ -41,6 +41,8 @@ export interface ClientInput {
 export interface InvoiceLine {
   lineNumber: number;
   itemCode: string | null;
+  hsnSac: string | null;
+  unit: string | null;
   description: string;
   quantity: number;
   unitPrice: number;
@@ -84,7 +86,7 @@ export interface Invoice extends InvoiceSummary {
   lines: InvoiceLine[];
   createdAt: string;
 }
-export interface InvoiceLineInput { itemCode?: string; description: string; quantity: number; unitPrice: number; taxRate?: number }
+export interface InvoiceLineInput { itemCode?: string; hsnSac?: string; unit?: string; description: string; quantity: number; unitPrice: number; taxRate?: number }
 export interface InvoiceInput {
   clientKey: string;
   templateKey?: string;
@@ -165,7 +167,7 @@ export interface TemplateConfig {
   document: { title: string; subtitle?: string | null; copyLabel?: string | null; detailsTitle: string };
   numbering: { pattern: string; padding: number; fiscalYearStartMonth: number };
   tax: { mode: TaxMode; label: string };
-  columns: { showItemCode: boolean; itemCodeLabel: string };
+  columns: { showItemCode: boolean; itemCodeLabel: string; showHsnSac?: boolean };
   customFields: CustomField[];
   paymentDetails: LabelledValue[];
   terms: string[];
@@ -218,4 +220,94 @@ export function lineAmounts(line: { quantity: number; unitPrice: number; taxRate
   const subtotal = round((Number(line.quantity) || 0) * (Number(line.unitPrice) || 0));
   const tax = round(subtotal * (Number(line.taxRate) || 0) / 100);
   return { subtotal, tax, total: round(subtotal + tax) };
+}
+
+// ---------------------------------------------------------------- items and services registry
+
+export type ItemKind = "SERVICE" | "GOODS";
+export interface BillableItem {
+  itemCode: string;
+  name: string;
+  description: string | null;
+  kind: ItemKind;
+  category: string | null;
+  hsnSac: string | null;
+  unit: string | null;
+  unitPrice: number | null;
+  taxRate: number | null;
+  status: ClientStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface ItemInput {
+  itemCode?: string; codePrefix?: string; name: string; description?: string; kind?: ItemKind; category?: string;
+  hsnSac?: string; unit?: string; unitPrice?: number; taxRate?: number;
+}
+const itemPath = (code: string) => `/api/finance/items/${encodeURIComponent(code)}`;
+export const getItems = () => apiRequest<BillableItem[]>("/api/finance/items");
+export const getItem = (code: string) => apiRequest<BillableItem>(itemPath(code));
+export const createItem = (body: ItemInput) => apiRequest<BillableItem>("/api/finance/items", { method: "POST", body });
+export const updateItem = (code: string, body: Partial<ItemInput> & { status?: ClientStatus; clearUnitPrice?: boolean; clearTaxRate?: boolean }) =>
+  apiRequest<BillableItem>(itemPath(code), { method: "PATCH", body });
+export const getNextItemCode = (prefix: string) => apiRequest<{ code: string }>(`/api/finance/items/next-code?prefix=${encodeURIComponent(prefix)}`);
+
+// ---------------------------------------------------------------- books
+
+export type LedgerAccount = "RECEIVABLES" | "SALES" | "OUTPUT_CGST" | "OUTPUT_SGST" | "OUTPUT_IGST" | "OUTPUT_TAX" | "BANK" | "CASH";
+export type VoucherType = "INVOICE" | "RECEIPT" | "INVOICE_VOID";
+export const ledgerAccounts: { value: LedgerAccount; label: string }[] = [
+  { value: "RECEIVABLES", label: "Accounts receivable" }, { value: "SALES", label: "Sales" }, { value: "OUTPUT_CGST", label: "Output CGST" },
+  { value: "OUTPUT_SGST", label: "Output SGST" }, { value: "OUTPUT_IGST", label: "Output IGST" }, { value: "OUTPUT_TAX", label: "Output tax" },
+  { value: "BANK", label: "Bank" }, { value: "CASH", label: "Cash" },
+];
+export const voucherLabels: Record<VoucherType, string> = { INVOICE: "Invoice", RECEIPT: "Receipt", INVOICE_VOID: "Invoice voided" };
+export interface BookSettings { fiscalYearStartMonth: number; booksLockedUntil: string | null; currentFiscalYear: string }
+export interface FiscalYearOption { label: string; start: string; end: string; current: boolean }
+export interface MonthRow {
+  month: string; start: string; end: string; invoicesIssued: number; invoicesVoided: number; taxable: number; cgst: number; sgst: number;
+  igst: number; otherTax: number; invoiced: number; collected: number; closingReceivables: number;
+}
+export interface CurrencySummary { currency: string; openingReceivables: number; months: MonthRow[]; total: MonthRow; closingReceivables: number }
+export interface YearSummary { fiscalYear: string; start: string; end: string; booksLockedUntil: string | null; currencies: CurrencySummary[] }
+export interface SalesRegisterRow {
+  date: string; voucherType: VoucherType; invoiceNumber: string; reference: string; clientKey: string; clientName: string; clientTaxId: string | null;
+  placeOfSupply: string | null; currency: string; taxable: number; cgst: number; sgst: number; igst: number; otherTax: number; total: number;
+}
+export interface RegisterTotal { currency: string; invoices: number; taxable: number; cgst: number; sgst: number; igst: number; otherTax: number; total: number }
+export interface SalesRegister { fiscalYear: string; month: string | null; rows: SalesRegisterRow[]; totals: RegisterTotal[] }
+export interface JournalLine {
+  date: string; voucherType: VoucherType; voucherNumber: string; invoiceReference: string; clientKey: string; clientName: string;
+  account: LedgerAccount; accountName: string; currency: string; debit: number; credit: number; narration: string;
+}
+export interface Journal { fiscalYear: string; month: string | null; content: JournalLine[]; page: number; size: number; totalElements: number; totalPages: number; totals: { currency: string; debit: number; credit: number }[] }
+export interface StatementLine { date: string; voucherType: VoucherType; voucherNumber: string; invoiceReference: string; narration: string; debit: number; credit: number; balance: number }
+export interface Statement {
+  fiscalYear: string; start: string; end: string; clientKey: string; clientName: string;
+  currencies: { currency: string; openingBalance: number; lines: StatementLine[]; totalDebit: number; totalCredit: number; closingBalance: number }[];
+}
+const books = (path: string, params: Record<string, string | number | undefined> = {}) => {
+  const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)]));
+  return `/api/finance/books${path}${query.size ? `?${query}` : ""}`;
+};
+export const getBookSettings = () => apiRequest<BookSettings>(books("/settings"));
+export const updateBookSettings = (body: { fiscalYearStartMonth: number; booksLockedUntil: string | null }) => apiRequest<BookSettings>(books("/settings"), { method: "PUT", body });
+export const getFiscalYears = () => apiRequest<FiscalYearOption[]>(books("/years"));
+export const getYearSummary = (fy?: string) => apiRequest<YearSummary>(books("/summary", { fy }));
+export const getSalesRegister = (fy?: string, month?: string) => apiRequest<SalesRegister>(books("/sales-register", { fy, month }));
+export const getJournal = (filter: { fy?: string; month?: string; account?: string; clientKey?: string; page?: number; size?: number }) =>
+  apiRequest<Journal>(books("/journal", filter));
+export const getStatement = (clientKey: string, fy?: string) => apiRequest<Statement>(books(`/statements/${encodeURIComponent(clientKey)}`, { fy }));
+
+/** Downloads rows as a UTF-8 CSV that Excel opens correctly. */
+export function downloadCsv(filename: string, rows: (string | number | null | undefined)[][]) {
+  const cell = (value: string | number | null | undefined) => {
+    const text = value === null || value === undefined ? "" : String(value);
+    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  const blob = new Blob(["\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
 }

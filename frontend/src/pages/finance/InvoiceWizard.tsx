@@ -9,8 +9,8 @@ import { Dropdown } from "../../components/ui/Dropdown";
 import { Notice, Page } from "../../components/ui/Page";
 import { STATE_OPTIONS, termsLabel } from "../../features/finance/billingData";
 import {
-  createInvoice, getClients, getInvoice, getNextNumber, getTemplates, issueInvoice, lineAmounts, updateInvoice,
-  type BillingClient, type Invoice, type InvoiceInput, type InvoiceTemplate, type TaxLine, type TemplateConfig,
+  createInvoice, getClients, getInvoice, getItems, getNextNumber, getTemplates, issueInvoice, lineAmounts, updateInvoice,
+  type BillableItem, type BillingClient, type Invoice, type InvoiceInput, type InvoiceTemplate, type TaxLine, type TemplateConfig,
 } from "../../features/finance/financeApi";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, formatMoney } from "../../lib/format";
@@ -18,14 +18,15 @@ import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { countryName } from "./ClientPages";
 import { addDays, localToday } from "./FinancePage";
 import { InvoiceDocument, type DocumentData } from "./InvoiceDocument";
+import { UNITS } from "./ItemPages";
 
 const financePath = (path = "") => appPath(`/app/finance${path}`);
 const message = (reason: unknown, fallback: string) => reason instanceof ApiError || reason instanceof Error ? reason.message : fallback;
 type Step = "details" | "items";
 const STEPS: { key: Step; title: string }[] = [{ key: "details", title: "Client and details" }, { key: "items", title: "Line items and save" }];
 
-interface LineDraft { itemCode: string; description: string; quantity: string; unitPrice: string; taxRate: string }
-const emptyLine = (taxRate = ""): LineDraft => ({ itemCode: "", description: "", quantity: "1", unitPrice: "", taxRate });
+interface LineDraft { itemCode: string; hsnSac: string; unit: string; description: string; quantity: string; unitPrice: string; taxRate: string }
+const emptyLine = (taxRate = ""): LineDraft => ({ itemCode: "", hsnSac: "", unit: "", description: "", quantity: "1", unitPrice: "", taxRate });
 
 /** New invoice (`/invoices/new?client=KEY`) or a draft being edited (`/invoices/:reference/edit`). */
 export function InvoiceWizardPage({ mode }: { mode: "new" | "edit" }) {
@@ -63,9 +64,9 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
   const defaults = useOrganizationDefaults();
   const organizationName = useAuth().organization?.organizationName;
   const [ask, confirmDialog] = useConfirm();
-  const [sources, setSources] = useState<{ clients: BillingClient[]; templates: InvoiceTemplate[] } | null>(null), [loadError, setLoadError] = useState("");
+  const [sources, setSources] = useState<{ clients: BillingClient[]; templates: InvoiceTemplate[]; items: BillableItem[] } | null>(null), [loadError, setLoadError] = useState("");
   useEffect(() => {
-    Promise.all([getClients(), getTemplates()]).then(([clients, templates]) => setSources({ clients, templates }))
+    Promise.all([getClients(), getTemplates(), getItems().catch(() => [] as BillableItem[])]).then(([clients, templates, items]) => setSources({ clients, templates, items }))
       .catch((reason) => setLoadError(message(reason, "Unable to load clients and templates")));
   }, []);
   const [step, setStep] = useState<Step>("details");
@@ -75,7 +76,7 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
   const [dueDate, setDueDate] = useState(invoice?.dueDate ?? "");
   const [placeOfSupply, setPlaceOfSupply] = useState<string | null>(invoice ? invoice.placeOfSupply ?? "" : null);
   const [fields, setFields] = useState<Record<string, string>>(invoice?.customFields ?? {});
-  const [lines, setLines] = useState<LineDraft[]>(invoice?.lines.map((line) => ({ itemCode: line.itemCode ?? "", description: line.description, quantity: String(line.quantity), unitPrice: String(line.unitPrice), taxRate: line.taxRate ? String(line.taxRate) : "" })) ?? [emptyLine()]);
+  const [lines, setLines] = useState<LineDraft[]>(invoice?.lines.map((line) => ({ itemCode: line.itemCode ?? "", hsnSac: line.hsnSac ?? "", unit: line.unit ?? "", description: line.description, quantity: String(line.quantity), unitPrice: String(line.unitPrice), taxRate: line.taxRate ? String(line.taxRate) : "" })) ?? [emptyLine()]);
   const [notes, setNotes] = useState<string | null>(invoice ? invoice.notes ?? "" : null);
   const [nextNumber, setNextNumber] = useState("");
   const [error, setError] = useState(""), [busy, setBusy] = useState(false);
@@ -88,6 +89,8 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
   const client = clients.find((item) => item.clientKey === clientKey);
   const gst = config?.tax.mode === "GST";
   const showCodes = Boolean(config?.columns.showItemCode);
+  const showHsn = Boolean(config?.columns.showHsnSac);
+  const registry = (sources?.items ?? []).filter((item) => item.status === "ACTIVE");
   // The client's state (or country, abroad) until someone types a different place of supply.
   const clientPlace = client ? client.region || (client.country && client.country !== "IN" ? countryName(client.country) : "") : "";
   const supply = placeOfSupply ?? clientPlace;
@@ -113,7 +116,7 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
     placeOfSupply: placeOfSupply === null ? undefined : placeOfSupply.trim(),
     notes: notes === null ? undefined : notes.trim(),
     customFields: Object.fromEntries((config?.customFields ?? []).map((field) => [field.key, (fields[field.key] ?? "").trim()]).filter(([, value]) => value)),
-    lines: lines.map((line) => ({ itemCode: showCodes ? line.itemCode.trim() || undefined : undefined, description: line.description.trim(),
+    lines: lines.map((line) => ({ itemCode: line.itemCode.trim() || undefined, hsnSac: line.hsnSac.trim() || undefined, unit: line.unit.trim() || undefined, description: line.description.trim(),
       quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), taxRate: line.taxRate ? Number(line.taxRate) : 0 })),
   });
   const missingRequired = (config?.customFields ?? []).filter((field) => field.required && !(fields[field.key] ?? "").trim());
@@ -136,7 +139,7 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
     billTo: client ? { name: client.displayName, contactName: client.contactName, address: client.billingAddress, email: client.email, phone: client.phone, taxId: client.taxId, region: client.region, country: client.country }
       : { name: "—", contactName: null, address: null, email: null, phone: null, taxId: null, region: null },
     customFields: fields,
-    lines: lines.map((line, index) => ({ lineNumber: index + 1, itemCode: line.itemCode || null, description: line.description || "—", quantity: Number(line.quantity) || 0,
+    lines: lines.map((line, index) => ({ lineNumber: index + 1, itemCode: line.itemCode || null, hsnSac: line.hsnSac || null, unit: line.unit || null, description: line.description || "—", quantity: Number(line.quantity) || 0,
       unitPrice: Number(line.unitPrice) || 0, taxRate: Number(line.taxRate) || 0, subtotal: amounts[index].subtotal, taxAmount: amounts[index].tax, total: amounts[index].total })),
     subtotal, taxBreakdown: previewTaxes(config, tax, supply), total, amountPaid: 0, balanceDue: total, notes: notes ?? config?.defaultNotes ?? null,
   };
@@ -213,11 +216,26 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
           {lines.map((line, index) => {
             const set = (change: Partial<LineDraft>) => setLines((current) => current.map((item, at) => at === index ? { ...item, ...change } : item));
             return <li key={index} className="line-item">
+              {registry.length > 0 && <div className="line-pick">
+                <Dropdown label={`Line ${index + 1} item or service`} value={registry.some((item) => item.itemCode === line.itemCode) ? line.itemCode : ""} searchable placeholder="Pick from your items and services"
+                  onChange={(code) => {
+                    const item = registry.find((entry) => entry.itemCode === code);
+                    if (!item) { set({ itemCode: "" }); return; }
+                    set({ itemCode: item.itemCode, hsnSac: item.hsnSac ?? "", unit: item.unit ?? "", description: item.description || item.name,
+                      ...(item.unitPrice !== null ? { unitPrice: String(item.unitPrice) } : {}), ...(item.taxRate !== null ? { taxRate: String(item.taxRate) } : {}) });
+                  }}
+                  options={[{ value: "", label: "Not from the registry" }, ...registry.map((item) => ({ value: item.itemCode, label: `${item.itemCode} · ${item.name}`,
+                    subLabel: [item.hsnSac && `${item.kind === "SERVICE" ? "SAC" : "HSN"} ${item.hsnSac}`, item.unitPrice !== null && money(item.unitPrice)].filter(Boolean).join(" · ") || undefined,
+                    keywords: [item.category ?? "", item.hsnSac ?? ""] }))]} />
+              </div>}
               <label className="line-description">Description
                 <input aria-label={`Line ${index + 1} description`} required maxLength={300} value={line.description} placeholder="Service or item" onChange={(event) => set({ description: event.target.value })} /></label>
               {showCodes && <label>{config?.columns.itemCodeLabel}
                 <input aria-label={`Line ${index + 1} ${config?.columns.itemCodeLabel}`} maxLength={32} value={line.itemCode} onChange={(event) => set({ itemCode: event.target.value })} /></label>}
+              {(showHsn || line.hsnSac) && <label>HSN/SAC<input aria-label={`Line ${index + 1} HSN/SAC`} inputMode="numeric" maxLength={8} value={line.hsnSac}
+                aria-invalid={Boolean(line.hsnSac) && !/^\d{4}(\d{2}){0,2}$/.test(line.hsnSac)} onChange={(event) => set({ hsnSac: event.target.value.replaceAll(/\D/g, "") })} /></label>}
               <label>Qty<input aria-label={`Line ${index + 1} quantity`} required type="number" min="0.0001" step="any" value={line.quantity} onChange={(event) => set({ quantity: event.target.value })} /></label>
+              <label>Unit<input aria-label={`Line ${index + 1} unit`} maxLength={16} list="invoice-units" value={line.unit} placeholder="Nos" onChange={(event) => set({ unit: event.target.value })} /></label>
               <label>Unit price<input aria-label={`Line ${index + 1} unit price`} required type="number" min="0" step="0.01" value={line.unitPrice} onChange={(event) => set({ unitPrice: event.target.value })} /></label>
               <label>Tax %<input aria-label={`Line ${index + 1} tax rate`} type="number" min="0" max="100" step="any" value={line.taxRate} placeholder="0" onChange={(event) => set({ taxRate: event.target.value })} /></label>
               <div className="line-amount"><span>Amount</span><strong>{money(amounts[index].total)}</strong></div>
@@ -225,6 +243,8 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
             </li>;
           })}
         </ol>
+        <datalist id="invoice-units">{UNITS.map((unit) => <option key={unit} value={unit} />)}</datalist>
+        {registry.length === 0 && <p className="snapshot-note">Bill the same services often? <Link to={financePath("/items/new")}>Add them to Items and services</Link> to pick them here with their code, HSN/SAC and rate.</p>}
         <Button type="button" size="sm" disabled={lines.length >= 100} onClick={() => setLines((current) => [...current, emptyLine(current[current.length - 1]?.taxRate ?? "")])}>Add line</Button>
         <dl className="pay-estimate" aria-label="Invoice totals">
           <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>

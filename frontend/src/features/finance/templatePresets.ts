@@ -8,7 +8,7 @@ export function blankTemplateConfig(): TemplateConfig {
     document: { title: "Invoice", subtitle: "", copyLabel: "", detailsTitle: "Details" },
     numbering: { pattern: "INV-{SEQ}", padding: 5, fiscalYearStartMonth: 4 },
     tax: { mode: "SIMPLE", label: "Tax" },
-    columns: { showItemCode: false, itemCodeLabel: "Code" },
+    columns: { showItemCode: false, itemCodeLabel: "Code", showHsnSac: false },
     customFields: [],
     paymentDetails: [],
     terms: [],
@@ -59,7 +59,7 @@ export const templatePresets: TemplatePreset[] = [
     apply: (config) => {
       const base = indianGst(config);
       return { ...base, document: { ...base.document, detailsTitle: "Recruitment engagement" },
-        columns: { showItemCode: true, itemCodeLabel: "Code" },
+        columns: { showItemCode: true, itemCodeLabel: "Code", showHsnSac: true },
         customFields: fields(["Candidate", "TEXT", true], ["Position", "TEXT"], ["Joining date", "DATE"]),
         terms: ["Payment due within 30 days of invoice date.", "Replacement guarantee as per the signed service agreement."] };
     },
@@ -70,7 +70,7 @@ export const templatePresets: TemplatePreset[] = [
     apply: (config) => {
       const base = indianGst(config);
       return { ...base, document: { ...base.document, detailsTitle: "Engagement" },
-        columns: { showItemCode: true, itemCodeLabel: "SAC" },
+        columns: { showItemCode: true, itemCodeLabel: "Code", showHsnSac: true },
         customFields: fields(["Project", "TEXT", true], ["Period from", "DATE"], ["Period to", "DATE"], ["PO number", "TEXT"]),
         terms: ["Payment due within 15 days of invoice date."] };
     },
@@ -81,7 +81,7 @@ export const templatePresets: TemplatePreset[] = [
     apply: (config) => {
       const base = indianGst(config);
       return { ...base, document: { ...base.document, detailsTitle: "Billing period" },
-        columns: { showItemCode: true, itemCodeLabel: "SAC" },
+        columns: { showItemCode: true, itemCodeLabel: "Code", showHsnSac: true },
         customFields: fields(["Project", "TEXT"], ["Billing month", "TEXT", true], ["Hours", "NUMBER"], ["PO number", "TEXT"]) };
     },
   },
@@ -98,7 +98,7 @@ export const templatePresets: TemplatePreset[] = [
     apply: (config) => {
       const base = indianGst(config);
       return { ...base, document: { ...base.document, detailsTitle: "Dispatch details" },
-        columns: { showItemCode: true, itemCodeLabel: "HSN" },
+        columns: { showItemCode: true, itemCodeLabel: "Code", showHsnSac: true },
         customFields: fields(["PO number", "TEXT"], ["Delivery note", "TEXT"], ["Dispatched via", "TEXT"], ["Vehicle number", "TEXT"]) };
     },
   },

@@ -127,6 +127,8 @@ function TemplateEditor({ template, initialName, initialLayout, initialConfig, o
   const [name, setName] = useState(initialName), [layout, setLayout] = useState(initialLayout);
   const [config, setConfig] = useState<TemplateConfig>(() => ({ ...blankTemplateConfig(), ...initialConfig }));
   const [makeDefault, setMakeDefault] = useState(false);
+  // Fields switched off are kept until save, so switching the section back on restores them.
+  const [removedFields, setRemovedFields] = useState<CustomField[]>([]);
   // Saved fields keep their keys when renamed: invoices store values under them.
   const [savedKeys] = useState(() => new Set(template ? initialConfig.customFields.map((field) => field.key) : []));
   const [error, setError] = useState(""), [saved, setSaved] = useState(""), [busy, setBusy] = useState(false);
@@ -229,16 +231,22 @@ function TemplateEditor({ template, initialName, initialLayout, initialConfig, o
             options={[{ value: "GST", label: "Indian GST", subLabel: "CGST + SGST or IGST by place of supply" }, { value: "SIMPLE", label: "Single tax line", subLabel: "VAT, sales tax…" }, { value: "NONE", label: "No tax" }]} />
           {config.tax.mode === "SIMPLE" && <label>Tax label<input maxLength={24} value={config.tax.label} onChange={(event) => section("tax", { label: event.target.value })} /></label>}
           <label className="template-check"><input type="checkbox" checked={config.columns.showItemCode} onChange={(event) => section("columns", { showItemCode: event.target.checked })} />Item code column</label>
-          {config.columns.showItemCode && <label>Code column label<input maxLength={24} value={config.columns.itemCodeLabel} placeholder="SAC, HSN, SKU…" onChange={(event) => section("columns", { itemCodeLabel: event.target.value })} /></label>}
+          {config.columns.showItemCode && <label>Code column label<input maxLength={24} value={config.columns.itemCodeLabel} placeholder="Code, SKU, Ref…" onChange={(event) => section("columns", { itemCodeLabel: event.target.value })} /></label>}
+          <label className="template-check"><input type="checkbox" checked={Boolean(config.columns.showHsnSac)} onChange={(event) => section("columns", { showHsnSac: event.target.checked })} />HSN/SAC column</label>
         </div>
         {config.tax.mode === "GST" && !config.seller.region && <Notice tone="info">Add your state under “Your company” so supplies within it show CGST + SGST.</Notice>}
       </fieldset>
 
       <fieldset>
-        <legend>Invoice fields for your industry</legend>
-        <p>Captured on every invoice and printed in their own section, for example Candidate and Joining date for recruitment.</p>
-        <div className="form-grid"><label className="form-wide">Section heading<input maxLength={60} value={config.document.detailsTitle} onChange={(event) => section("document", { detailsTitle: event.target.value })} /></label></div>
-        <FieldList fields={config.customFields} savedKeys={savedKeys} onChange={(customFields) => set("customFields", customFields)} />
+        <legend>Industry details section</legend>
+        <p>An optional block between the addresses and the line items, for details your industry puts on every bill: Candidate and Joining date for recruitment, Project and Period for consulting, PO and Vehicle number for trading.</p>
+        <label className="template-check"><input type="checkbox" checked={config.customFields.length > 0}
+          onChange={(event) => set("customFields", event.target.checked ? (removedFields.length ? removedFields : [{ key: "reference", label: "Reference", type: "TEXT", required: false }]) : (setRemovedFields(config.customFields), []))} />
+          Show an industry details section on this bill</label>
+        {config.customFields.length > 0 ? <>
+          <div className="form-grid"><label className="form-wide">Section heading<input maxLength={60} value={config.document.detailsTitle} onChange={(event) => section("document", { detailsTitle: event.target.value })} /></label></div>
+          <FieldList fields={config.customFields} savedKeys={savedKeys} onChange={(customFields) => set("customFields", customFields)} />
+        </> : <p className="snapshot-note">Off: this template is a plain invoice that suits any business. Turn it on to capture extra details on each invoice.</p>}
       </fieldset>
 
       <fieldset>

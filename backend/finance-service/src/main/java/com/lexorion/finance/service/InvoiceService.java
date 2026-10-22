@@ -50,17 +50,19 @@ public class InvoiceService {
     private final PaymentRepository payments;
     private final InvoiceTemplateService templates;
     private final InvoiceNumbering numbering;
+    private final LedgerService ledger;
     private final JsonMapper json;
     private final Clock clock;
 
     public InvoiceService(FinanceWorkspaceScope scope, BillingClientService clients, InvoiceRepository invoices,
-            PaymentRepository payments, InvoiceTemplateService templates, InvoiceNumbering numbering, JsonMapper json, Clock clock) {
+            PaymentRepository payments, InvoiceTemplateService templates, InvoiceNumbering numbering, LedgerService ledger, JsonMapper json, Clock clock) {
         this.scope = scope;
         this.clients = clients;
         this.invoices = invoices;
         this.payments = payments;
         this.templates = templates;
         this.numbering = numbering;
+        this.ledger = ledger;
         this.json = json;
         this.clock = clock;
     }
@@ -120,6 +122,7 @@ public class InvoiceService {
         if (invoice.getStatus() != InvoiceStatus.DRAFT) throw new FinanceException(409, "Only draft invoices can be issued");
         if (invoice.getTotal().signum() <= 0) throw new FinanceException(409, "An invoice must have a total above zero to be issued");
         if (invoice.getClient().getStatus() != ClientStatus.ACTIVE) throw new FinanceException(409, "The client is archived");
+        LedgerService.requireOpen(workspace, invoice.getIssueDate(), "The invoice date");
         RenderTemplate template = templates.render(invoice.getTemplate());
         Map<String, String> values = customFields(invoice);
         for (TemplateConfig.CustomField field : template.config().customFields())
@@ -129,7 +132,9 @@ public class InvoiceService {
         invoice.setTemplateSnapshot(json.writeValueAsString(new DocumentSnapshot(template, BillTo.from(invoice.getClient()))));
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setIssuedAt(Instant.now(clock));
-        return response(invoices.saveAndFlush(invoice));
+        Invoice issued = invoices.saveAndFlush(invoice);
+        ledger.postInvoice(issued, taxBreakdown(issued, template.config()), issued.getIssueDate());
+        return response(issued);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -139,10 +144,15 @@ public class InvoiceService {
             throw new FinanceException(409, "Only draft or unpaid issued invoices can be voided");
         if (invoice.getAmountPaid().signum() != 0 || payments.existsByInvoiceId(invoice.getId()))
             throw new FinanceException(409, "Invoices with recorded payments cannot be voided");
+        boolean posted = invoice.getStatus() == InvoiceStatus.ISSUED;
+        // An issued invoice stays in the period it was issued in; the void is a reversal dated today.
+        if (posted) LedgerService.requireOpen(invoice.getWorkspace(), today(), "A void");
         invoice.setStatus(InvoiceStatus.VOID);
         invoice.setVoidedAt(Instant.now(clock));
         invoice.setVoidReason(request.reason().trim());
-        return response(invoices.saveAndFlush(invoice));
+        Invoice voided = invoices.saveAndFlush(invoice);
+        if (posted) ledger.postVoid(voided, today());
+        return response(voided);
     }
 
     @Transactional(readOnly = true)
@@ -162,6 +172,7 @@ public class InvoiceService {
         if (amount.compareTo(invoice.balanceDue()) > 0) throw new FinanceException(400, "Payment exceeds the balance due");
         if (request.paymentDate().isAfter(today())) throw new FinanceException(400, "Payment date cannot be in the future");
         if (request.paymentDate().isBefore(invoice.getIssueDate())) throw new FinanceException(400, "Payment date cannot be before the invoice date");
+        LedgerService.requireOpen(workspace, request.paymentDate(), "The payment date");
         Payment payment = new Payment();
         payment.setWorkspace(workspace);
         payment.setInvoice(invoice);
@@ -176,7 +187,9 @@ public class InvoiceService {
         invoice.setAmountPaid(invoice.getAmountPaid().add(amount));
         invoice.setStatus(invoice.balanceDue().signum() == 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIALLY_PAID);
         invoices.save(invoice);
-        return PaymentResponse.from(payments.saveAndFlush(payment));
+        Payment saved = payments.saveAndFlush(payment);
+        ledger.postReceipt(saved);
+        return PaymentResponse.from(saved);
     }
 
     private void apply(Invoice invoice, InvoiceRequest request, boolean creating) {
@@ -205,6 +218,8 @@ public class InvoiceService {
             line.setInvoice(invoice);
             line.setLineNumber(number++);
             line.setItemCode(blankToNull(item.itemCode()));
+            line.setHsnSac(blankToNull(item.hsnSac()));
+            line.setUnit(blankToNull(item.unit()));
             line.setDescription(item.description().trim());
             line.setQuantity(item.quantity());
             line.setUnitPrice(item.unitPrice());

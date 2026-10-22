@@ -32,4 +32,12 @@ public class FinanceWorkspace extends Auditable {
     /** Sequence for invoice references (REF-00001). The template's number is assigned when the invoice is issued. */
     @Column(name = "next_draft_number", nullable = false)
     private long nextDraftNumber = 1;
+
+    /** Month the financial year starts in (4 = April, the Indian financial year). Reports and statements use it. */
+    @Column(name = "fiscal_year_start_month", nullable = false)
+    private int fiscalYearStartMonth = 4;
+
+    /** Nothing may be posted to the books on or before this date. */
+    @Column(name = "books_locked_until")
+    private java.time.LocalDate booksLockedUntil;
 }

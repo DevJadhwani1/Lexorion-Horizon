@@ -60,6 +60,8 @@ class InvoiceTemplateIntegrationTest {
               "dateStyle":"ORDINAL"}}""";
 
     @Autowired MockMvc mvc;
+    @Autowired LedgerEntryRepository ledger;
+    @Autowired BillableItemRepository items;
     @Autowired PaymentRepository payments;
     @Autowired InvoiceRepository invoices;
     @Autowired InvoiceTemplateRepository templates;
@@ -70,8 +72,10 @@ class InvoiceTemplateIntegrationTest {
 
     @BeforeEach
     void setup() {
+        ledger.deleteAll();
         payments.deleteAll();
         invoices.deleteAll();
+        items.deleteAll();
         templates.deleteAll();
         sequences.deleteAll();
         clients.deleteAll();

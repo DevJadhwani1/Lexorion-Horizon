@@ -36,6 +36,13 @@ public class InvoiceLine {
     @Column(name = "item_code", length = 32)
     private String itemCode;
 
+    /** HSN (goods) or SAC (services) code under GST. */
+    @Column(name = "hsn_sac", length = 8)
+    private String hsnSac;
+
+    @Column(length = 16)
+    private String unit;
+
     @Column(nullable = false, length = 300)
     private String description;
 

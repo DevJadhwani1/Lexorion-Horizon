@@ -71,6 +71,8 @@ public final class BillingDtos {
 
     public record InvoiceLineRequest(
             @Size(max = 32) String itemCode,
+            @Pattern(regexp = "^\\d{4}(\\d{2}){0,2}$", message = "must be 4, 6 or 8 digits") String hsnSac,
+            @Size(max = 16) String unit,
             @NotBlank @Size(max = 300) String description,
             @NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 15, fraction = 4) BigDecimal quantity,
             @NotNull @DecimalMin("0") @Digits(integer = 17, fraction = 2) BigDecimal unitPrice,
@@ -92,10 +94,10 @@ public final class BillingDtos {
 
     public record VoidInvoice(@NotBlank @Size(max = 300) String reason) { }
 
-    public record InvoiceLineResponse(int lineNumber, String itemCode, String description, BigDecimal quantity, BigDecimal unitPrice,
+    public record InvoiceLineResponse(int lineNumber, String itemCode, String hsnSac, String unit, String description, BigDecimal quantity, BigDecimal unitPrice,
             BigDecimal taxRate, BigDecimal subtotal, BigDecimal taxAmount, BigDecimal total) {
         static InvoiceLineResponse from(InvoiceLine l) {
-            return new InvoiceLineResponse(l.getLineNumber(), l.getItemCode(), l.getDescription(), l.getQuantity(), l.getUnitPrice(),
+            return new InvoiceLineResponse(l.getLineNumber(), l.getItemCode(), l.getHsnSac(), l.getUnit(), l.getDescription(), l.getQuantity(), l.getUnitPrice(),
                     l.getTaxRate(), l.getSubtotal(), l.getTaxAmount(), l.getTotal());
         }
     }

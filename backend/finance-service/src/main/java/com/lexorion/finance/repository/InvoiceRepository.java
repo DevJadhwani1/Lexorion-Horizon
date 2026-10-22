@@ -48,6 +48,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     boolean existsByWorkspaceIdAndInvoiceNumber(UUID workspaceId, String invoiceNumber);
 
+    @EntityGraph(attributePaths = {"client", "workspace"})
+    List<Invoice> findByIssuedAtIsNotNull();
+
     @Query("""
             select i.currency, sum(i.total) from Invoice i
             where i.workspace.id = :workspaceId and i.status <> com.lexorion.finance.domain.InvoiceStatus.DRAFT

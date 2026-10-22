@@ -5500,3 +5500,10 @@ select:not([multiple]):not([size]) {
 .line-amount{display:grid;gap:4px;font-size:13px;color:#344054;text-align:right}
 .line-amount strong{color:#101828;font-size:15px;font-variant-numeric:tabular-nums;padding:8px 0}
 .line-item .line-remove{position:absolute;top:8px;right:10px}
+.invoice-doc-unit{color:var(--doc-muted);font-size:10px}
+.line-item .line-pick{grid-column:1/-1}
+.line-item .line-pick .dropdown-field{max-width:calc(100% - 90px)}
+.books-total td{font-weight:700;background:#f9fafb;border-top:2px solid #d0d5dd}
+.books-opening td{color:#475467;font-style:italic}
+.books-reversal td{color:#b42318}
+@media print{.statement-print-area,.statement-print-area *{visibility:visible}.statement-print-area{position:absolute;inset:0 auto auto 0;width:100%}}
