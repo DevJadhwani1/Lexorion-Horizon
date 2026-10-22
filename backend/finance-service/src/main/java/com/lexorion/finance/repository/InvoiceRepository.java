@@ -23,10 +23,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             where i.workspace.id = :workspaceId
               and (:status is null or i.status = :status)
               and (:clientKey is null or i.client.clientKey = :clientKey)
+              and (:search is null or lower(i.reference) like :search or lower(coalesce(i.invoiceNumber, '')) like :search
+                   or lower(i.client.displayName) like :search)
               and (:overdueOnly = false or (i.status in (com.lexorion.finance.domain.InvoiceStatus.ISSUED, com.lexorion.finance.domain.InvoiceStatus.PARTIALLY_PAID) and i.dueDate < :today))
             """)
     Page<Invoice> search(@Param("workspaceId") UUID workspaceId, @Param("status") InvoiceStatus status,
-            @Param("clientKey") String clientKey, @Param("overdueOnly") boolean overdueOnly, @Param("today") LocalDate today,
+            @Param("clientKey") String clientKey, @Param("search") String search, @Param("overdueOnly") boolean overdueOnly, @Param("today") LocalDate today,
             Pageable pageable);
 
     @EntityGraph(attributePaths = {"client", "lines"})

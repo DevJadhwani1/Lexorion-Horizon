@@ -69,9 +69,10 @@ public class BillingClientService {
         client.setContactName(blankToNull(request.contactName()));
         client.setEmail(blankToNull(request.email()));
         client.setRegion(blankToNull(request.region()));
+        client.setCountry(country(request.country()));
+        client.setTaxId(taxId(blankToNull(request.taxId()), client.getCountry()));
         client.setPhone(blankToNull(request.phone()));
         client.setBillingAddress(blankToNull(request.billingAddress()));
-        client.setTaxId(blankToNull(request.taxId()));
         client.setCurrency(currency(request.currency()));
         client.setPaymentTermsDays(request.paymentTermsDays() == null ? DEFAULT_PAYMENT_TERMS : request.paymentTermsDays());
         client.setStatus(ClientStatus.ACTIVE);
@@ -88,10 +89,12 @@ public class BillingClientService {
         }
         if (request.contactName() != null) client.setContactName(blankToNull(request.contactName()));
         if (request.region() != null) client.setRegion(blankToNull(request.region()));
+        if (request.country() != null) client.setCountry(country(request.country()));
         if (request.email() != null) client.setEmail(blankToNull(request.email()));
         if (request.phone() != null) client.setPhone(blankToNull(request.phone()));
         if (request.billingAddress() != null) client.setBillingAddress(blankToNull(request.billingAddress()));
-        if (request.taxId() != null) client.setTaxId(blankToNull(request.taxId()));
+        if (request.taxId() != null || request.country() != null)
+            client.setTaxId(taxId(request.taxId() != null ? blankToNull(request.taxId()) : client.getTaxId(), client.getCountry()));
         if (request.currency() != null) client.setCurrency(currency(request.currency()));
         if (request.paymentTermsDays() != null) client.setPaymentTermsDays(request.paymentTermsDays());
         if (request.status() != null) client.setStatus(request.status());
@@ -112,6 +115,21 @@ public class BillingClientService {
         String key = base;
         for (int suffix = 2; clients.existsByWorkspaceIdAndClientKey(workspaceId, key); suffix++) key = base + "-" + suffix;
         return key;
+    }
+
+    private static final java.util.regex.Pattern GSTIN = java.util.regex.Pattern.compile("^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$");
+
+    private static String country(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /** Indian clients' tax IDs are GSTINs: 15 characters, state code first (27AAACM9908Q2ZP). */
+    static String taxId(String value, String country) {
+        if (value == null) return null;
+        String normalized = value.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", "");
+        if ("IN".equals(country) && !GSTIN.matcher(normalized).matches())
+            throw new FinanceException(400, "GSTIN must be 15 characters, for example 27AAACM9908Q2ZP");
+        return normalized;
     }
 
     static String currency(String value) {

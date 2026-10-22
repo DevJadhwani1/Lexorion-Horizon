@@ -12,6 +12,7 @@ import {
   type CustomField, type InvoiceTemplate, type LabelledValue, type TemplateConfig, type TemplateLayout,
 } from "../../features/finance/financeApi";
 import { blankTemplateConfig, fieldKey, templatePresets } from "../../features/finance/templatePresets";
+import { STATE_OPTIONS } from "../../features/finance/billingData";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { humanize } from "../../lib/format";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
@@ -192,7 +193,10 @@ function TemplateEditor({ template, initialName, initialLayout, initialConfig, o
           <label>Phone<input maxLength={64} value={config.seller.phone ?? ""} onChange={(event) => section("seller", { phone: event.target.value })} /></label>
           <label>Email<input type="email" maxLength={254} value={config.seller.email ?? ""} onChange={(event) => section("seller", { email: event.target.value })} /></label>
           <label>Website<input maxLength={120} value={config.seller.website ?? ""} onChange={(event) => section("seller", { website: event.target.value })} /></label>
-          <label>State / region<input maxLength={64} value={config.seller.region ?? ""} placeholder="Maharashtra" onChange={(event) => section("seller", { region: event.target.value })} /></label>
+          {config.tax.mode === "GST"
+            ? <Dropdown label="State of registration" value={config.seller.region ?? ""} searchable placeholder="Choose a state" hint="Decides CGST + SGST or IGST."
+                onChange={(region) => section("seller", { region })} options={[{ value: "", label: "Not set" }, ...STATE_OPTIONS]} />
+            : <label>State / region<input maxLength={64} value={config.seller.region ?? ""} onChange={(event) => section("seller", { region: event.target.value })} /></label>}
         </div>
         <h4>Registration numbers</h4>
         <LabelledList items={config.seller.identifiers} labelHint="GSTIN, PAN, CIN, VAT…" max={8} onChange={(identifiers) => section("seller", { identifiers })} addLabel="Add registration number" />

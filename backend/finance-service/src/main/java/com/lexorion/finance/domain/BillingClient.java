@@ -56,6 +56,10 @@ public class BillingClient extends Auditable {
     @Column(length = 64)
     private String region;
 
+    /** ISO 3166-1 alpha-2 country code, for example IN. */
+    @Column(length = 2)
+    private String country;
+
     @Column(nullable = false, length = 3)
     private String currency;
 

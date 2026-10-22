@@ -222,6 +222,32 @@ class BillingIntegrationTest {
                 .andExpect(jsonPath("$.currency").value("EUR"));
     }
 
+    @Test
+    void clientsValidateGstinsAndInvoicesCanBeSearchedByNumberOrClient() throws Exception {
+        json(post("/api/finance/clients"), "a", """
+                {"displayName":"Mastek","country":"IN","taxId":"not-a-gstin","currency":"INR"}""")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("GSTIN must be 15 characters, for example 27AAACM9908Q2ZP"));
+        json(post("/api/finance/clients"), "a", """
+                {"displayName":"Mastek","country":"in","taxId":"27aaacm9908q2zp","region":"Maharashtra","currency":"INR"}""")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.country").value("IN"))
+                .andExpect(jsonPath("$.taxId").value("27AAACM9908Q2ZP"));
+        json(post("/api/finance/clients"), "a", """
+                {"displayName":"Acme Inc","country":"US","taxId":"12-3456789","currency":"USD"}""")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.taxId").value("12-3456789"));
+        json(post("/api/finance/invoices"), "a", "{\"clientKey\":\"acme-inc\",\"lines\":[{\"description\":\"Work\",\"quantity\":1,\"unitPrice\":10}]}")
+                .andExpect(jsonPath("$.placeOfSupply").value("United States"))
+                .andExpect(jsonPath("$.billTo.country").value("US"));
+        json(post("/api/finance/invoices"), "a", "{\"clientKey\":\"mastek\",\"lines\":[{\"description\":\"Work\",\"quantity\":1,\"unitPrice\":10}]}");
+        request(post("/api/finance/invoices/REF-00002/issue"), "a", "admin").andExpect(jsonPath("$.invoiceNumber").value("INV-00001"));
+        request(get("/api/finance/invoices?search=acme"), "a", "admin")
+                .andExpect(jsonPath("$.totalElements").value(1)).andExpect(jsonPath("$.content[0].reference").value("REF-00001"));
+        request(get("/api/finance/invoices?search=inv-0000"), "a", "admin")
+                .andExpect(jsonPath("$.totalElements").value(1)).andExpect(jsonPath("$.content[0].clientName").value("Mastek"));
+        request(get("/api/finance/invoices?search=100%25"), "a", "admin").andExpect(jsonPath("$.totalElements").value(0));
+    }
+
     private static String payment(String amount, String date) {
         return "{\"amount\":" + amount + ",\"paymentDate\":\"" + date + "\",\"method\":\"BANK_TRANSFER\",\"reference\":\"UTR-1\"}";
     }

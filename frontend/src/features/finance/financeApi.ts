@@ -15,6 +15,8 @@ export interface BillingClient {
   billingAddress: string | null;
   taxId: string | null;
   region: string | null;
+  /** ISO 3166-1 alpha-2, for example IN. */
+  country: string | null;
   currency: string;
   paymentTermsDays: number;
   status: ClientStatus;
@@ -28,6 +30,7 @@ export interface ClientInput {
   displayName: string;
   contactName?: string;
   region?: string;
+  country?: string;
   email?: string;
   phone?: string;
   billingAddress?: string;
@@ -63,7 +66,7 @@ export interface InvoiceSummary {
   balanceDue: number;
   updatedAt: string;
 }
-export interface BillTo { name: string; contactName: string | null; address: string | null; email: string | null; phone: string | null; taxId: string | null; region: string | null }
+export interface BillTo { name: string; contactName: string | null; address: string | null; email: string | null; phone: string | null; taxId: string | null; region: string | null; country?: string | null }
 export interface TaxLine { label: string; amount: number }
 export interface Invoice extends InvoiceSummary {
   billTo: BillTo;
@@ -124,12 +127,13 @@ export interface BillingSummary {
   activeClients: number;
   totals: CurrencyTotals[];
 }
-export interface InvoiceFilter { status?: InvoiceStatus; clientKey?: string; overdue?: boolean; page?: number; size?: number }
+export interface InvoiceFilter { status?: InvoiceStatus; clientKey?: string; search?: string; overdue?: boolean; page?: number; size?: number }
 
 const invoicePath = (number: string) => `/api/finance/invoices/${encodeURIComponent(number)}`;
 
 export const getBillingSummary = () => apiRequest<BillingSummary>("/api/finance/summary");
 export const getClients = () => apiRequest<BillingClient[]>("/api/finance/clients");
+export const getClient = (clientKey: string) => apiRequest<BillingClient>(`/api/finance/clients/${encodeURIComponent(clientKey)}`);
 export const createClient = (body: ClientInput) => apiRequest<BillingClient>("/api/finance/clients", { method: "POST", body });
 export const updateClient = (clientKey: string, body: Partial<ClientInput> & { status?: ClientStatus }) =>
   apiRequest<BillingClient>(`/api/finance/clients/${encodeURIComponent(clientKey)}`, { method: "PATCH", body });
@@ -137,6 +141,7 @@ export function getInvoices(filter: InvoiceFilter = {}) {
   const query = new URLSearchParams({ page: String(filter.page ?? 0), size: String(filter.size ?? 20) });
   if (filter.status) query.set("status", filter.status);
   if (filter.clientKey) query.set("clientKey", filter.clientKey);
+  if (filter.search) query.set("search", filter.search);
   if (filter.overdue) query.set("overdue", "true");
   return apiRequest<Page<InvoiceSummary>>(`/api/finance/invoices?${query}`);
 }

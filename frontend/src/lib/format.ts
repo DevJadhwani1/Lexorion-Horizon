@@ -42,7 +42,7 @@ type Tone = "success" | "warning" | "danger" | "neutral";
 const tones: Record<string, Tone> = {
   ACTIVE: "success", FINALIZED: "success", ELIGIBLE: "success", SUBMITTED: "success", ACCEPTED: "success",
   CALCULATED: "warning", PROCESSING: "warning", DRAFT: "neutral", ON_LEAVE: "warning", PENDING: "warning",
-  ISSUED: "warning", PARTIALLY_PAID: "warning", PAID: "success", VOID: "neutral", ARCHIVED: "neutral",
+  ISSUED: "warning", PARTIALLY_PAID: "warning", PAID: "success", VOID: "neutral", ARCHIVED: "neutral", OVERDUE: "danger",
   FAILED: "danger", SUSPENDED: "danger", TERMINATED: "danger", RESIGNED: "neutral", INACTIVE: "neutral", REVOKED: "neutral", EXPIRED: "neutral",
 };
 export function statusTone(status: string): Tone { return tones[status] ?? "neutral"; }

@@ -67,14 +67,14 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public PageResponse<InvoiceSummary> list(int page, int size, String sort, String direction, InvoiceStatus status,
-            String clientKey, boolean overdueOnly) {
+            String clientKey, String search, boolean overdueOnly) {
         if (page < 0 || size < 1 || size > 100) throw new FinanceException(400, "Page must be zero or more and size between 1 and 100");
         String property = SORTS.get(sort);
         if (property == null) throw new FinanceException(400, "Unsupported sort");
         Sort.Direction order = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         LocalDate today = today();
         Page<Invoice> result = invoices.search(scope.context().workspaceId(), status,
-                clientKey == null || clientKey.isBlank() ? null : clientKey.trim(), overdueOnly, today,
+                clientKey == null || clientKey.isBlank() ? null : clientKey.trim(), searchPattern(search), overdueOnly, today,
                 PageRequest.of(page, size, Sort.by(order, property).and(Sort.by(Sort.Direction.DESC, "reference"))));
         return new PageResponse<>(result.getContent().stream().map(i -> InvoiceSummary.from(i, today)).toList(),
                 page, size, result.getTotalElements(), result.getTotalPages(), sort, order.name().toLowerCase(Locale.ROOT));
@@ -186,7 +186,7 @@ public class InvoiceService {
         TemplateConfig config = templates.render(template).config();
         invoice.setTemplate(template);
         invoice.setCustomFields(writeCustomFields(config, request.customFields()));
-        invoice.setPlaceOfSupply(blankToNull(request.placeOfSupply()) != null ? request.placeOfSupply().trim() : client.getRegion());
+        invoice.setPlaceOfSupply(blankToNull(request.placeOfSupply()) != null ? request.placeOfSupply().trim() : defaultPlaceOfSupply(client));
         LocalDate issueDate = request.issueDate() == null ? today() : request.issueDate();
         LocalDate dueDate = request.dueDate() == null ? issueDate.plusDays(client.getPaymentTermsDays()) : request.dueDate();
         if (dueDate.isBefore(issueDate)) throw new FinanceException(400, "Due date cannot be before the invoice date");
@@ -273,6 +273,20 @@ public class InvoiceService {
             return List.of(new TaxLine("CGST", central), new TaxLine("SGST", tax.subtract(central)));
         }
         return List.of(new TaxLine("IGST", tax));
+    }
+
+    /** The client's state, or for a client abroad its country, for example "United States". */
+    static String defaultPlaceOfSupply(BillingClient client) {
+        if (client.getRegion() != null) return client.getRegion();
+        if (client.getCountry() == null || "IN".equals(client.getCountry())) return null;
+        return Locale.of("", client.getCountry()).getDisplayCountry(Locale.ENGLISH);
+    }
+
+    /** Case-insensitive "contains" pattern for invoice number, reference or client name, with LIKE wildcards escaped. */
+    private static String searchPattern(String search) {
+        if (search == null || search.isBlank()) return null;
+        String text = search.trim().toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + text + "%";
     }
 
     private Invoice find(String reference) {

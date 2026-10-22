@@ -31,6 +31,7 @@ public final class BillingDtos {
 
     private static final String KEY = "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$";
     private static final String CURRENCY = "^[A-Za-z]{3}$";
+    private static final String COUNTRY = "^[A-Za-z]{2}$";
 
     public record CreateClient(
             @Pattern(regexp = KEY, message = "must use lowercase letters, numbers and hyphens") String clientKey,
@@ -41,6 +42,7 @@ public final class BillingDtos {
             @Size(max = 500) String billingAddress,
             @Size(max = 32) String taxId,
             @Size(max = 64) String region,
+            @Pattern(regexp = COUNTRY, message = "must be a two-letter ISO country code") String country,
             @NotBlank @Pattern(regexp = CURRENCY, message = "must be a three-letter ISO code") String currency,
             @Min(0) @Max(365) Integer paymentTermsDays) { }
 
@@ -52,16 +54,17 @@ public final class BillingDtos {
             @Size(max = 500) String billingAddress,
             @Size(max = 32) String taxId,
             @Size(max = 64) String region,
+            @Pattern(regexp = COUNTRY, message = "must be a two-letter ISO country code") String country,
             @Pattern(regexp = CURRENCY, message = "must be a three-letter ISO code") String currency,
             @Min(0) @Max(365) Integer paymentTermsDays,
             ClientStatus status) { }
 
     public record ClientResponse(String clientKey, String displayName, String contactName, String email, String phone,
-            String billingAddress, String taxId, String region, String currency, int paymentTermsDays, ClientStatus status,
+            String billingAddress, String taxId, String region, String country, String currency, int paymentTermsDays, ClientStatus status,
             BigDecimal outstandingAmount, long openInvoices, Instant createdAt, Instant updatedAt) {
         public static ClientResponse from(BillingClient c, BigDecimal outstanding, long open) {
             return new ClientResponse(c.getClientKey(), c.getDisplayName(), c.getContactName(), c.getEmail(), c.getPhone(),
-                    c.getBillingAddress(), c.getTaxId(), c.getRegion(), c.getCurrency(), c.getPaymentTermsDays(), c.getStatus(),
+                    c.getBillingAddress(), c.getTaxId(), c.getRegion(), c.getCountry(), c.getCurrency(), c.getPaymentTermsDays(), c.getStatus(),
                     outstanding, open, c.getCreatedAt(), c.getUpdatedAt());
         }
     }
@@ -108,9 +111,9 @@ public final class BillingDtos {
     }
 
     /** The buyer as printed on the bill. Frozen with the template when the invoice is issued. */
-    public record BillTo(String name, String contactName, String address, String email, String phone, String taxId, String region) {
+    public record BillTo(String name, String contactName, String address, String email, String phone, String taxId, String region, String country) {
         public static BillTo from(BillingClient c) {
-            return new BillTo(c.getDisplayName(), c.getContactName(), c.getBillingAddress(), c.getEmail(), c.getPhone(), c.getTaxId(), c.getRegion());
+            return new BillTo(c.getDisplayName(), c.getContactName(), c.getBillingAddress(), c.getEmail(), c.getPhone(), c.getTaxId(), c.getRegion(), c.getCountry());
         }
     }
 

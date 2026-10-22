@@ -16,6 +16,8 @@ import { EmployeeSetupWizard } from "../pages/workforce/EmployeeSetupWizard";
 import { PayrollPage } from "../pages/payroll/PayrollPage";
 import { FinancePage } from "../pages/finance/FinancePage";
 import { TemplatesPage } from "../pages/finance/TemplatesPage";
+import { ClientPages } from "../pages/finance/ClientPages";
+import { InvoiceWizardPage } from "../pages/finance/InvoiceWizard";
 import { PlatformHomePage } from "../pages/platform/PlatformHomePage";
 import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pages/platform/PlatformOrganizationsPage";
 import { PlatformResourcesPage } from "../pages/platform/PlatformResourcesPage";
@@ -129,9 +131,12 @@ function financeRoutes(): RouteObject[] { return [
   { path: "finance", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/finance/overview`} replace /> },
   { path: "finance/overview", element: <FinancePage sectionKey="overview" /> },
   { path: "finance/invoices", element: <FinancePage sectionKey="invoices" /> },
-  { path: "finance/invoices/new", element: <FinancePage sectionKey="new-invoice" /> },
+  { path: "finance/invoices/new", element: <InvoiceWizardPage mode="new" /> },
   { path: "finance/invoices/:reference", element: <FinancePage sectionKey="invoice" /> },
-  { path: "finance/clients", element: <FinancePage sectionKey="clients" /> },
+  { path: "finance/invoices/:reference/edit", element: <InvoiceWizardPage mode="edit" /> },
+  { path: "finance/clients", element: <ClientPages section="list" /> },
+  { path: "finance/clients/new", element: <ClientPages section="new" /> },
+  { path: "finance/clients/:clientKey", element: <ClientPages section="profile" /> },
   { path: "finance/payments", element: <FinancePage sectionKey="payments" /> },
   { path: "finance/templates", element: <TemplatesPage section="list" /> },
   { path: "finance/templates/new", element: <TemplatesPage section="new" /> },

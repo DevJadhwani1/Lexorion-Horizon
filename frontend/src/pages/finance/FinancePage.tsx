@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, type Page as ResultPage } from "../../api/types";
 import { appPath } from "../../app/hostRouting";
@@ -8,17 +8,20 @@ import { Button } from "../../components/ui/Button";
 import { Dropdown } from "../../components/ui/Dropdown";
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import {
-  createClient, createInvoice, getBillingSummary, getClients, getInvoice, getInvoicePayments, getInvoices, getNextNumber, getPayments, getTemplates,
-  issueInvoice, lineAmounts, paymentMethods, recordPayment, updateClient, updateInvoice, voidInvoice,
-  type BillingClient, type BillingSummary, type Invoice, type InvoiceStatus, type InvoiceSummary, type InvoiceTemplate, type Payment, type PaymentMethod,
+  getBillingSummary, getClients, getInvoice, getInvoicePayments, getInvoices, getNextNumber, getPayments, getTemplates,
+  issueInvoice, paymentMethods, recordPayment, voidInvoice,
+  type BillingSummary, type Invoice, type InvoiceStatus, type InvoiceSummary, type InvoiceTemplate, type Payment, type PaymentMethod,
 } from "../../features/finance/financeApi";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
-import { formatDate, formatMoney, humanize } from "../../lib/format";
+import { formatDate, humanize } from "../../lib/format";
+import { formatBillingMoney } from "../../features/finance/billingData";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { Table } from "../admin/AdminPage";
+import { Pagination } from "../workforce/WorkforcePage";
 import { InvoiceDocument } from "./InvoiceDocument";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
 
+const PAGE_SIZE = 20;
 const financePath = (path = "") => appPath(`/app/finance${path}`);
 const invoicePath = (invoice: { reference: string }) => financePath(`/invoices/${encodeURIComponent(invoice.reference)}`);
 const message = (reason: unknown, fallback: string) => reason instanceof ApiError || reason instanceof Error ? reason.message : fallback;
@@ -34,14 +37,12 @@ export function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
-export function FinancePage({ sectionKey }: { sectionKey: "overview" | "invoices" | "new-invoice" | "invoice" | "clients" | "payments" }) {
+export function FinancePage({ sectionKey }: { sectionKey: "overview" | "invoices" | "invoice" | "payments" }) {
   const { workspace } = useWorkspace();
   if (!workspace?.products.some((product) => product.key === "finance"))
     return <Page title="Finance"><Notice tone="info">Select a workspace with Finance enabled to manage billing.</Notice></Page>;
   if (sectionKey === "invoices") return <Invoices key={workspace.key} />;
-  if (sectionKey === "new-invoice") return <NewInvoice key={workspace.key} />;
   if (sectionKey === "invoice") return <InvoiceDetail key={workspace.key} />;
-  if (sectionKey === "clients") return <Clients key={workspace.key} />;
   if (sectionKey === "payments") return <Payments key={workspace.key} />;
   return <Overview key={workspace.key} />;
 }
@@ -65,9 +66,9 @@ function InvoiceStatusBadges({ invoice }: { invoice: Pick<InvoiceSummary, "statu
   return <span className="finance-badges"><StatusBadge status={invoice.status} />{invoice.overdue && <Badge label="Overdue" variant="danger" />}</span>;
 }
 
-/** The invoice's number once issued; drafts show their reference. */
-function InvoiceLabel({ invoice }: { invoice: Pick<InvoiceSummary, "invoiceNumber" | "reference"> }) {
-  return invoice.invoiceNumber ? <strong>{invoice.invoiceNumber}</strong> : <span>Draft <small className="cell-note">{invoice.reference}</small></span>;
+/** Invoice cell: the number links to the invoice once issued; a draft links as "Draft" with its reference underneath. */
+function InvoiceLink({ invoice }: { invoice: Pick<InvoiceSummary, "invoiceNumber" | "reference"> }) {
+  return <><Link to={invoicePath(invoice)}>{invoice.invoiceNumber ?? "Draft"}</Link>{!invoice.invoiceNumber && <small className="cell-note">{invoice.reference}</small>}</>;
 }
 
 function Overview() {
@@ -77,15 +78,15 @@ function Overview() {
   if (error) return <Page title="Finance"><Notice>{error}</Notice></Page>;
   if (!data) return <Page title="Finance"><p>Loading billing overview…</p></Page>;
   const [summary, overdue, drafts, templates] = data as [BillingSummary, ResultPage<InvoiceSummary>, ResultPage<InvoiceSummary>, InvoiceTemplate[]];
-  const money = (value: number, currency: string) => formatMoney(value, currency, defaults.locale);
+  const money = (value: number, currency: string) => formatBillingMoney(value, currency, defaults.locale);
   const totals = summary.totals.length ? summary.totals : [{ currency: defaults.currency || "INR", outstanding: 0, overdue: 0, invoicedThisMonth: 0, collectedThisMonth: 0, aging: { current: 0, days1To30: 0, days31To60: 0, days61To90: 0, over90: 0 } }];
   const actions = <div className="toolbar">
     <Link className="button primary" to={financePath("/invoices/new")}>New invoice</Link>
-    <Link className="button secondary" to={financePath("/clients?new=1")}>New client</Link>
+    <Link className="button secondary" to={financePath("/clients/new")}>New client</Link>
   </div>;
   return <Page title="Finance" description={`Billing and collections for ${workspace?.displayName ?? "this workspace"}, as of ${formatDate(summary.asOf, defaults.locale)}.`} actions={actions}>
     {templates.length === 0 && <Notice tone="info">Your invoices use the standard format. <Link to={appPath("/app/finance/templates/new")}>Design your own invoice template</Link> with your logo, bank details, numbering and industry fields.</Notice>}
-    {summary.activeClients === 0 && <Notice tone="info">Start by <Link to={financePath("/clients?new=1")}>adding a client</Link>. You can then raise an invoice, issue it and record payments as they arrive.</Notice>}
+    {summary.activeClients === 0 && <Notice tone="info">Start by <Link to={financePath("/clients/new")}>adding a client</Link>. You can then raise an invoice, issue it and record payments as they arrive.</Notice>}
     {totals.map((total) => <section key={total.currency} aria-label={`${total.currency} receivables`}>
       {totals.length > 1 && <h2 className="section-heading">{total.currency}</h2>}
       <div className="organization-metrics">
@@ -112,7 +113,7 @@ function Overview() {
     {overdue.content.length === 0 && drafts.content.length === 0 ? <Empty>Nothing needs attention. Overdue invoices and unissued drafts appear here.</Empty> :
       <Table headers={["Invoice", "Client", "Due", "Balance", "Status", ""]}>
         {[...overdue.content, ...drafts.content].map((invoice) => <tr key={invoice.reference}>
-          <td><Link to={invoicePath(invoice)}><InvoiceLabel invoice={invoice} /></Link></td>
+          <td><InvoiceLink invoice={invoice} /></td>
           <td>{invoice.clientName}</td>
           <td>{formatDate(invoice.dueDate, defaults.locale)}</td>
           <td>{money(invoice.status === "DRAFT" ? invoice.total : invoice.balanceDue, invoice.currency)}</td>
@@ -133,162 +134,53 @@ function Invoices() {
   const defaults = useOrganizationDefaults();
   const [params, setParams] = useSearchParams();
   const filter = invoiceFilters.find((item) => item.key === params.get("filter")) ?? invoiceFilters[0];
-  const clientKey = params.get("client") ?? "";
+  const clientKey = params.get("client") ?? "", search = params.get("q") ?? "";
   const page = Math.max(0, Number(params.get("page") ?? 0) || 0);
+  const [draft, setDraft] = useState(search);
   const clients = useLoad(getClients);
-  const { data, error } = useLoad(() => getInvoices({ status: filter.status, overdue: filter.overdue, clientKey: clientKey || undefined, page }), [filter.key, clientKey, page]);
-  const update = (next: Record<string, string>) => {
-    const values = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(next)) { if (value) values.set(key, value); else values.delete(key); }
-    if (!("page" in next)) values.delete("page");
-    setParams(values);
-  };
+  const { data, error } = useLoad(() => getInvoices({ status: filter.status, overdue: filter.overdue, clientKey: clientKey || undefined, search: search || undefined, page, size: PAGE_SIZE }), [filter.key, clientKey, search, page]);
+  const update = (changes: Record<string, string>) => setParams((previous) => {
+    const next = new URLSearchParams(previous);
+    for (const [key, value] of Object.entries(changes)) if (value) next.set(key, value); else next.delete(key);
+    if (!("page" in changes)) next.delete("page");
+    return next;
+  }, { replace: true });
+  useEffect(() => { setDraft(search); }, [search]);
+  useEffect(() => {
+    if (draft === search) return;
+    const timer = window.setTimeout(() => update({ q: draft.trim() }), 300);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
+  const filtered = filter.key !== "all" || Boolean(clientKey || search);
+  const clear = () => { setDraft(""); setParams(new URLSearchParams(), { replace: true }); };
   return <Page title="Invoices" description="Draft, issue and track invoices. Issued invoices are locked; record payments against them as they arrive."
     actions={<Link className="button primary" to={financePath(`/invoices/new${clientKey ? `?client=${encodeURIComponent(clientKey)}` : ""}`)}>New invoice</Link>}>
-    <div className="finance-filters">
-      <nav className="finance-tabs" aria-label="Invoice status">
-        {invoiceFilters.map((item) => <button key={item.key} type="button" className={item.key === filter.key ? "active" : undefined} aria-pressed={item.key === filter.key}
-          onClick={() => update({ filter: item.key === "all" ? "" : item.key })}>{item.label}</button>)}
-      </nav>
-      <Dropdown label="Client" value={clientKey} onChange={(value) => update({ client: value })}
+    <form className="toolbar filter-bar directory-filters" role="search" onSubmit={(event) => { event.preventDefault(); update({ q: draft.trim() }); }}>
+      <label>Search invoices<input type="search" placeholder="Invoice number, reference or client" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
+      <Dropdown label="Status" value={filter.key} onChange={(next) => update({ filter: next === "all" ? "" : next })}
+        options={invoiceFilters.map((item) => ({ value: item.key, label: item.key === "all" ? "All statuses" : item.label }))} />
+      <Dropdown label="Client" value={clientKey} searchable onChange={(next) => update({ client: next })}
         options={[{ value: "", label: "All clients" }, ...(clients.data ?? []).map((client) => ({ value: client.clientKey, label: client.displayName }))]} />
-    </div>
+      {filtered && <Button type="button" onClick={clear}>Clear filters</Button>}
+    </form>
     {error && <Notice>{error}</Notice>}
-    {!data && !error && <p>Loading invoices…</p>}
-    {data && (data.content.length === 0 ? <Empty>{filter.key === "all" && !clientKey ? <>No invoices yet. <Link to={financePath("/invoices/new")}>Create your first invoice</Link>.</> : "No invoices match these filters."}</Empty> :
+    {!data && !error ? <p role="status">Loading invoices…</p> : data && (data.content.length ? <>
       <Table headers={["Invoice", "Client", "Invoice date", "Due", "Total", "Balance due", "Status"]}>
         {data.content.map((invoice) => <tr key={invoice.reference}>
-          <td><Link to={invoicePath(invoice)}><InvoiceLabel invoice={invoice} /></Link></td>
-          <td>{invoice.clientName}</td>
+          <td><InvoiceLink invoice={invoice} /></td>
+          <td><Link to={appPath(`/app/finance/clients/${encodeURIComponent(invoice.clientKey)}`)}>{invoice.clientName}</Link></td>
           <td>{formatDate(invoice.issueDate, defaults.locale)}</td>
           <td>{formatDate(invoice.dueDate, defaults.locale)}</td>
-          <td>{formatMoney(invoice.total, invoice.currency, defaults.locale)}</td>
-          <td>{invoice.status === "VOID" || invoice.status === "DRAFT" ? "—" : formatMoney(invoice.balanceDue, invoice.currency, defaults.locale)}</td>
+          <td>{formatBillingMoney(invoice.total, invoice.currency, defaults.locale)}</td>
+          <td>{invoice.status === "VOID" || invoice.status === "DRAFT" ? "—" : formatBillingMoney(invoice.balanceDue, invoice.currency, defaults.locale)}</td>
           <td><InvoiceStatusBadges invoice={invoice} /></td>
         </tr>)}
-      </Table>)}
-    {data && data.totalPages > 1 && <Pager page={data.page} totalPages={data.totalPages} onPage={(next) => update({ page: next ? String(next) : "" })} />}
+      </Table>
+      <Pagination page={data.page} totalPages={data.totalPages} total={data.totalElements} size={PAGE_SIZE} onPage={(next) => update({ page: next ? String(next) : "" })} />
+    </> : filtered
+      ? <Empty>No invoices match these filters. <button type="button" className="link-button" onClick={clear}>Clear filters</button></Empty>
+      : <Empty><strong>No invoices yet.</strong><br />Raise your first invoice for a client. <Link to={financePath("/invoices/new")}>Create invoice</Link></Empty>)}
   </Page>;
-}
-
-function Pager({ page, totalPages, onPage }: { page: number; totalPages: number; onPage(page: number): void }) {
-  return <div className="pagination">
-    <span>Page {page + 1} of {totalPages}</span>
-    <Button disabled={page === 0} onClick={() => onPage(page - 1)}>Previous</Button>
-    <Button disabled={page + 1 >= totalPages} onClick={() => onPage(page + 1)}>Next</Button>
-  </div>;
-}
-
-function NewInvoice() {
-  const [params] = useSearchParams();
-  return <Page title="New invoice" description="Saved as a draft. Review it in your template, then issue it to assign the invoice number.">
-    <InvoiceEditor initialClient={params.get("client") ?? ""} />
-  </Page>;
-}
-
-interface LineDraft { itemCode: string; description: string; quantity: string; unitPrice: string; taxRate: string }
-const emptyLine = (): LineDraft => ({ itemCode: "", description: "", quantity: "1", unitPrice: "", taxRate: "" });
-
-function InvoiceEditor({ invoice, initialClient = "", onSaved, onCancel }: { invoice?: Invoice; initialClient?: string; onSaved?(invoice: Invoice): void; onCancel?(): void }) {
-  const navigate = useNavigate();
-  const defaults = useOrganizationDefaults();
-  const sources = useLoad(() => Promise.all([getClients(), getTemplates()]));
-  const [clientKey, setClientKey] = useState(invoice?.clientKey ?? initialClient);
-  const [templateKey, setTemplateKey] = useState<string | null>(invoice ? invoice.template.templateKey ?? "" : null);
-  const [issueDate, setIssueDate] = useState(invoice?.issueDate ?? localToday());
-  const [dueDate, setDueDate] = useState(invoice?.dueDate ?? "");
-  const [placeOfSupply, setPlaceOfSupply] = useState(invoice?.placeOfSupply ?? "");
-  const [notes, setNotes] = useState<string | null>(invoice ? invoice.notes ?? "" : null);
-  const [fields, setFields] = useState<Record<string, string>>(invoice?.customFields ?? {});
-  const [lines, setLines] = useState<LineDraft[]>(invoice?.lines.map((line) => ({ itemCode: line.itemCode ?? "", description: line.description, quantity: String(line.quantity), unitPrice: String(line.unitPrice), taxRate: line.taxRate ? String(line.taxRate) : "" })) ?? [emptyLine()]);
-  const [error, setError] = useState(""), [busy, setBusy] = useState(false);
-  const [clientList, templateList] = sources.data ?? [[], []] as [BillingClient[], InvoiceTemplate[]];
-  const active = clientList.filter((client) => client.status === "ACTIVE" || client.clientKey === invoice?.clientKey);
-  const templates = templateList.filter((template) => template.status === "ACTIVE" || template.templateKey === invoice?.template.templateKey);
-  // New invoices start on the workspace's default template once the list has loaded.
-  const selectedKey = templateKey ?? templates.find((template) => template.isDefault)?.templateKey ?? "";
-  const template = templates.find((item) => item.templateKey === selectedKey);
-  const config = template?.config ?? invoice?.template.config;
-  const client = active.find((item) => item.clientKey === clientKey);
-  const currency = client?.currency ?? invoice?.currency ?? defaults.currency;
-  const amounts = lines.map((line) => lineAmounts({ quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), taxRate: Number(line.taxRate) }));
-  const subtotal = amounts.reduce((sum, value) => sum + value.subtotal, 0), tax = amounts.reduce((sum, value) => sum + value.tax, 0);
-  const money = (value: number) => currency ? formatMoney(value, currency, currency === "INR" ? "en-IN" : defaults.locale) : value.toFixed(2);
-  const setLine = (index: number, change: Partial<LineDraft>) => setLines((current) => current.map((line, position) => position === index ? { ...line, ...change } : line));
-  const showCodes = Boolean(config?.columns.showItemCode);
-  const gst = config?.tax.mode === "GST";
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true); setError("");
-    const customFields = Object.fromEntries((config?.customFields ?? []).map((field) => [field.key, (fields[field.key] ?? "").trim()]).filter(([, value]) => value));
-    const body = {
-      clientKey, templateKey: selectedKey || undefined, issueDate: issueDate || undefined, dueDate: dueDate || undefined,
-      placeOfSupply: placeOfSupply.trim() || undefined, notes: notes === null ? undefined : notes.trim(), customFields,
-      lines: lines.map((line) => ({ itemCode: showCodes ? line.itemCode.trim() || undefined : undefined, description: line.description.trim(),
-        quantity: Number(line.quantity), unitPrice: Number(line.unitPrice), taxRate: line.taxRate ? Number(line.taxRate) : 0 })),
-    };
-    void (invoice ? updateInvoice(invoice.reference, body) : createInvoice(body))
-      .then((saved) => { if (onSaved) onSaved(saved); else navigate(invoicePath(saved)); })
-      .catch((reason) => setError(message(reason, "Unable to save the invoice")))
-      .finally(() => setBusy(false));
-  };
-  if (sources.error) return <Notice>{sources.error}</Notice>;
-  if (!sources.data) return <p>Loading clients and templates…</p>;
-  if (active.length === 0) return <Notice tone="info">Add a client before creating an invoice. <Link to={financePath("/clients?new=1")}>Add client</Link></Notice>;
-  return <form className="card finance-editor" onSubmit={submit} aria-label={invoice ? `Edit draft ${invoice.reference}` : "New invoice"}>
-    {error && <Notice>{error}</Notice>}
-    <div className="form-grid">
-      <Dropdown label="Client" required value={clientKey} placeholder="Choose a client" onChange={setClientKey}
-        options={active.map((item) => ({ value: item.clientKey, label: item.displayName, subLabel: item.currency }))} />
-      <Dropdown label="Invoice template" value={selectedKey} onChange={setTemplateKey}
-        options={[...templates.map((item) => ({ value: item.templateKey, label: item.name, subLabel: item.isDefault ? "Default" : undefined })), { value: "", label: "Standard format" }]} />
-      <label>Invoice date<input type="date" required value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></label>
-      <label>Due date<input type="date" value={dueDate} min={issueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
-      {(gst || placeOfSupply) && <label>Place of supply<input maxLength={64} value={placeOfSupply} placeholder={client?.region ?? "State"} onChange={(event) => setPlaceOfSupply(event.target.value)} /></label>}
-    </div>
-    {client && !dueDate && issueDate && <p className="snapshot-note">Due {formatDate(addDays(issueDate, client.paymentTermsDays), defaults.locale)} from {client.displayName}'s {client.paymentTermsDays}-day payment terms.</p>}
-    {gst && client && !placeOfSupply && <p className="snapshot-note">Place of supply defaults to {client.region || "the client's state (not set on the client)"}.</p>}
-    {config && config.customFields.length > 0 && <>
-      <h3 className="section-heading">{config.document.detailsTitle}</h3>
-      <div className="form-grid">
-        {config.customFields.map((field) => <label key={field.key}>{field.label}{field.required ? " *" : ""}
-          <input type={field.type === "DATE" ? "date" : field.type === "NUMBER" ? "number" : "text"} step={field.type === "NUMBER" ? "any" : undefined} maxLength={200}
-            value={fields[field.key] ?? ""} onChange={(event) => setFields((current) => ({ ...current, [field.key]: event.target.value }))} />
-        </label>)}
-      </div>
-      {config.customFields.some((field) => field.required) && <p className="snapshot-note">Fields marked * are needed before the invoice can be issued.</p>}
-    </>}
-    <h3 className="section-heading">Line items</h3>
-    <div className="table-wrap">
-      <table className="finance-lines">
-        <thead><tr>{showCodes && <th>{config?.columns.itemCodeLabel}</th>}<th>Description</th><th>Qty</th><th>Unit price</th><th>Tax %</th><th>Amount</th><th><span className="overview-sr-only">Remove</span></th></tr></thead>
-        <tbody>
-          {lines.map((line, index) => <tr key={index}>
-            {showCodes && <td><input aria-label={`Line ${index + 1} ${config?.columns.itemCodeLabel}`} maxLength={32} value={line.itemCode} onChange={(event) => setLine(index, { itemCode: event.target.value })} /></td>}
-            <td><input aria-label={`Line ${index + 1} description`} required maxLength={300} value={line.description} onChange={(event) => setLine(index, { description: event.target.value })} placeholder="Service or item" /></td>
-            <td><input aria-label={`Line ${index + 1} quantity`} required type="number" min="0.0001" step="any" value={line.quantity} onChange={(event) => setLine(index, { quantity: event.target.value })} /></td>
-            <td><input aria-label={`Line ${index + 1} unit price`} required type="number" min="0" step="0.01" value={line.unitPrice} onChange={(event) => setLine(index, { unitPrice: event.target.value })} /></td>
-            <td><input aria-label={`Line ${index + 1} tax rate`} type="number" min="0" max="100" step="any" value={line.taxRate} onChange={(event) => setLine(index, { taxRate: event.target.value })} placeholder="0" /></td>
-            <td className="finance-amount">{money(amounts[index].total)}</td>
-            <td><Button type="button" size="sm" disabled={lines.length === 1} aria-label={`Remove line ${index + 1}`} onClick={() => setLines((current) => current.filter((_, position) => position !== index))}>Remove</Button></td>
-          </tr>)}
-        </tbody>
-      </table>
-    </div>
-    <Button type="button" size="sm" disabled={lines.length >= 100} onClick={() => setLines((current) => [...current, emptyLine()])}>Add line</Button>
-    <dl className="pay-estimate" aria-label="Invoice totals">
-      <div><dt>Subtotal</dt><dd>{money(subtotal)}</dd></div>
-      <div><dt>Tax</dt><dd>{money(tax)}</dd></div>
-      <div className="net"><dt>Total</dt><dd>{money(subtotal + tax)}</dd></div>
-    </dl>
-    <label className="finance-notes">Notes for the client
-      <textarea maxLength={2000} rows={3} value={notes ?? config?.defaultNotes ?? ""} onChange={(event) => setNotes(event.target.value)} placeholder="Payment instructions, PO number…" />
-    </label>
-    <div className="form-actions">
-      <Button variant="primary" disabled={busy || !clientKey}>{busy ? "Saving…" : invoice ? "Save draft" : "Save as draft"}</Button>
-      {onCancel ? <Button type="button" onClick={onCancel}>Cancel</Button> : <Link className="button secondary" to={financePath("/invoices")}>Cancel</Link>}
-    </div>
-  </form>;
 }
 
 function InvoiceDetail() {
@@ -297,7 +189,8 @@ function InvoiceDetail() {
   const organizationName = useAuth().organization?.organizationName;
   const [ask, confirmDialog] = useConfirm();
   const { data, error, reload } = useLoad(() => Promise.all([getInvoice(reference), getInvoicePayments(reference)]), [reference]);
-  const [mode, setMode] = useState<"view" | "edit" | "pay" | "void">("view");
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"view" | "pay" | "void">("view");
   const [nextNumber, setNextNumber] = useState("");
   const [actionError, setActionError] = useState(""), [busy, setBusy] = useState(false);
   const invoice = data?.[0];
@@ -310,7 +203,7 @@ function InvoiceDetail() {
   if (error) return <Page title="Invoice"><Notice>{error}</Notice><Link to={financePath("/invoices")}>Back to invoices</Link></Page>;
   if (!data || !invoice) return <Page title="Invoice"><p>Loading invoice…</p></Page>;
   const payments = data[1] as Payment[];
-  const money = (value: number) => formatMoney(value, invoice.currency, invoice.currency === "INR" ? "en-IN" : defaults.locale);
+  const money = (value: number) => formatBillingMoney(value, invoice.currency, invoice.currency === "INR" ? "en-IN" : defaults.locale);
   const act = (action: () => Promise<unknown>, fallback: string) => {
     setBusy(true); setActionError("");
     void action().then(() => { setMode("view"); reload(); }).catch((reason) => setActionError(message(reason, fallback))).finally(() => setBusy(false));
@@ -320,11 +213,11 @@ function InvoiceDetail() {
   const actions = <div className="toolbar">
     {invoice.status === "DRAFT" && mode === "view" && <>
       <Button variant="primary" disabled={busy || invoice.total <= 0} onClick={async () => await ask({ title: `Issue this invoice for ${money(invoice.total)}?`, body: `${nextNumber ? `It will be numbered ${nextNumber}. ` : ""}Issued invoices can no longer be edited.`, confirmLabel: "Issue invoice" }) && act(() => issueInvoice(invoice.reference), "Unable to issue the invoice")}>Issue invoice</Button>
-      <Button disabled={busy} onClick={() => setMode("edit")}>Edit</Button>
+      <Button disabled={busy} onClick={() => navigate(financePath(`/invoices/${encodeURIComponent(invoice.reference)}/edit`))}>Edit</Button>
     </>}
     {open && mode === "view" && <Button variant="primary" disabled={busy} onClick={() => setMode("pay")}>Record payment</Button>}
     {(invoice.status === "DRAFT" || (invoice.status === "ISSUED" && invoice.amountPaid === 0)) && mode === "view" && <Button variant="destructive" disabled={busy} onClick={() => setMode("void")}>Void</Button>}
-    {mode !== "edit" && <Button onClick={() => window.print()}>Print / PDF</Button>}
+    <Button onClick={() => window.print()}>Print / PDF</Button>
   </div>;
   return <Page title={title} description={`${invoice.clientName} · ${humanize(invoice.status)}${invoice.overdue ? " · overdue" : ""} · ${invoice.template.name} template`} actions={actions}>
     {confirmDialog}
@@ -334,11 +227,10 @@ function InvoiceDetail() {
       This is a draft{nextNumber ? <>. It will be numbered <strong>{nextNumber}</strong> when issued</> : ""}. Issuing locks the amounts and keeps this exact layout, even if the template changes later.
     </Notice>}
     {invoice.status === "VOID" && <Notice tone="info">Voided {formatDate(invoice.voidedAt, defaults.locale)}: {invoice.voidReason}</Notice>}
-    {mode === "edit" && <InvoiceEditor invoice={invoice} onSaved={() => { setMode("view"); reload(); }} onCancel={() => setMode("view")} />}
     {mode === "pay" && <PaymentForm invoice={invoice} busy={busy} onCancel={() => setMode("view")}
       onSubmit={(body) => act(() => recordPayment(invoice.reference, body), "Unable to record the payment")} />}
     {mode === "void" && <VoidForm busy={busy} onCancel={() => setMode("view")} onSubmit={(reason) => act(() => voidInvoice(invoice.reference, reason), "Unable to void the invoice")} />}
-    {mode !== "edit" && <div className="invoice-doc-scroll invoice-print-area">
+    {<div className="invoice-doc-scroll invoice-print-area">
       <InvoiceDocument template={invoice.template} fallbackSellerName={organizationName} locale={defaults.locale}
         data={{ ...invoice, number: invoice.invoiceNumber, lines: invoice.lines }} />
     </div>}
@@ -393,84 +285,10 @@ function VoidForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit(reason
   </form>;
 }
 
-function Clients() {
-  const defaults = useOrganizationDefaults();
-  const [params, setParams] = useSearchParams();
-  const { data, error, reload } = useLoad(getClients);
-  const [editing, setEditing] = useState<BillingClient | null>(null);
-  const [actionError, setActionError] = useState("");
-  const creating = params.get("new") === "1";
-  const closeForm = () => { setEditing(null); if (creating) setParams({}); };
-  const toggleArchive = (client: BillingClient) => {
-    setActionError("");
-    void updateClient(client.clientKey, { status: client.status === "ACTIVE" ? "ARCHIVED" : "ACTIVE" }).then(reload)
-      .catch((reason) => setActionError(message(reason, "Unable to update the client")));
-  };
-  return <Page title="Clients" description="The companies and people you bill. Each client has a billing currency and default payment terms."
-    actions={!creating && !editing ? <Button variant="primary" onClick={() => setParams({ new: "1" })}>New client</Button> : undefined}>
-    {(creating || editing) && <ClientForm key={editing?.clientKey ?? "new"} client={editing ?? undefined} defaultCurrency={defaults.currency}
-      onCancel={closeForm} onSaved={() => { closeForm(); reload(); }} />}
-    {(error || actionError) && <Notice>{error || actionError}</Notice>}
-    {!data && !error && <p>Loading clients…</p>}
-    {data && (data.length === 0 ? (!creating && <Empty>No clients yet. Add a client to start invoicing.</Empty>) :
-      <Table headers={["Client", "Contact", "Currency", "Terms", "Outstanding", "Status", ""]}>
-        {data.map((client) => <tr key={client.clientKey} className={editing?.clientKey === client.clientKey ? "selected-row" : undefined}>
-          <td><strong>{client.displayName}</strong><small className="cell-note">{[client.clientKey, client.region].filter(Boolean).join(" · ")}</small></td>
-          <td>{client.contactName || client.email || client.phone || "—"}{client.contactName && client.email && <small className="cell-note">{client.email}</small>}</td>
-          <td>{client.currency}</td>
-          <td>{client.paymentTermsDays === 0 ? "Due on receipt" : `${client.paymentTermsDays} days`}</td>
-          <td>{client.openInvoices ? <Link to={financePath(`/invoices?client=${encodeURIComponent(client.clientKey)}`)}>{formatMoney(client.outstandingAmount, client.currency, defaults.locale)} · {client.openInvoices} open</Link> : "—"}</td>
-          <td><StatusBadge status={client.status} /></td>
-          <td className="row-actions">
-            {client.status === "ACTIVE" && <Link to={financePath(`/invoices/new?client=${encodeURIComponent(client.clientKey)}`)}>New invoice</Link>}
-            <button type="button" className="link-button" onClick={() => { setParams({}); setEditing(client); }}>Edit</button>
-            <button type="button" className="link-button" onClick={() => toggleArchive(client)}>{client.status === "ACTIVE" ? "Archive" : "Restore"}</button>
-          </td>
-        </tr>)}
-      </Table>)}
-  </Page>;
-}
-
-function ClientForm({ client, defaultCurrency, onSaved, onCancel }: { client?: BillingClient; defaultCurrency: string; onSaved(): void; onCancel(): void }) {
-  const [error, setError] = useState(""), [busy, setBusy] = useState(false);
-  const field = (label: ReactNode, input: ReactNode, wide = false) => <label className={wide ? "form-wide" : undefined}>{label}{input}</label>;
-  return <form className="card" aria-label={client ? `Edit ${client.displayName}` : "New client"} onSubmit={(event) => {
-    event.preventDefault();
-    const values = Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>;
-    const body = {
-      displayName: values.displayName.trim(), contactName: values.contactName.trim(), email: values.email.trim(), phone: values.phone.trim(),
-      billingAddress: values.billingAddress.trim(), taxId: values.taxId.trim(), region: values.region.trim(),
-      currency: values.currency.trim().toUpperCase(), paymentTermsDays: Number(values.paymentTermsDays),
-    };
-    setBusy(true); setError("");
-    void (client ? updateClient(client.clientKey, body) : createClient({ ...body, email: body.email || undefined }))
-      .then(onSaved).catch((reason) => setError(message(reason, "Unable to save the client"))).finally(() => setBusy(false));
-  }}>
-    <h3>{client ? `Edit ${client.displayName}` : "New client"}</h3>
-    {error && <Notice>{error}</Notice>}
-    <div className="form-grid">
-      {field("Client name", <input name="displayName" required maxLength={160} defaultValue={client?.displayName} />)}
-      {field("Attention (contact person)", <input name="contactName" maxLength={120} defaultValue={client?.contactName ?? ""} placeholder="Name · Accounts Payable" />)}
-      {field("Billing email", <input name="email" type="email" maxLength={254} defaultValue={client?.email ?? ""} />)}
-      {field("Phone", <input name="phone" maxLength={32} defaultValue={client?.phone ?? ""} />)}
-      {field("Tax ID (GSTIN / VAT)", <input name="taxId" maxLength={32} defaultValue={client?.taxId ?? ""} />)}
-      {field("State / region", <input name="region" maxLength={64} defaultValue={client?.region ?? ""} placeholder="Used as place of supply" />)}
-      {field("Billing currency", <input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={client?.currency ?? defaultCurrency} placeholder="e.g. INR" />)}
-      {field("Payment terms (days)", <input name="paymentTermsDays" type="number" required min={0} max={365} defaultValue={client?.paymentTermsDays ?? 30} />)}
-      {field("Billing address", <textarea name="billingAddress" rows={3} maxLength={500} defaultValue={client?.billingAddress ?? ""} />, true)}
-    </div>
-    {client && <p className="snapshot-note">Changes apply to drafts and new invoices. Issued invoices keep the details they were issued with.</p>}
-    <div className="form-actions">
-      <Button variant="primary" disabled={busy}>{busy ? "Saving…" : client ? "Save client" : "Add client"}</Button>
-      <Button type="button" onClick={onCancel}>Cancel</Button>
-    </div>
-  </form>;
-}
-
 function Payments() {
   const defaults = useOrganizationDefaults();
   const [page, setPage] = useState(0);
-  const { data, error } = useLoad(() => getPayments(page), [page]);
+  const { data, error } = useLoad(() => getPayments(page, PAGE_SIZE), [page]);
   return <Page title="Payments" description="Every payment received against your invoices, newest first. Record new payments from an issued invoice.">
     {error && <Notice>{error}</Notice>}
     {!data && !error && <p>Loading payments…</p>}
@@ -483,9 +301,9 @@ function Payments() {
           <td><Link to={financePath(`/invoices/${encodeURIComponent(payment.invoiceReference)}`)}>{payment.invoiceNumber ?? payment.invoiceReference}</Link></td>
           <td>{humanize(payment.method)}</td>
           <td>{payment.reference || "—"}</td>
-          <td className="finance-amount">{formatMoney(payment.amount, payment.currency, defaults.locale)}</td>
+          <td className="finance-amount">{formatBillingMoney(payment.amount, payment.currency, defaults.locale)}</td>
         </tr>)}
       </Table>)}
-    {data && data.totalPages > 1 && <Pager page={data.page} totalPages={data.totalPages} onPage={setPage} />}
+    {data && <Pagination page={data.page} totalPages={data.totalPages} total={data.totalElements} size={PAGE_SIZE} onPage={setPage} />}
   </Page>;
 }

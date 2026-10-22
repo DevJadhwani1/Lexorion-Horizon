@@ -33,8 +33,9 @@ public class InvoiceController {
     public PageResponse<InvoiceSummary> list(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "createdAt") String sort,
             @RequestParam(defaultValue = "desc") String direction, @RequestParam(required = false) InvoiceStatus status,
-            @RequestParam(required = false) String clientKey, @RequestParam(defaultValue = "false") boolean overdue) {
-        return service.list(page, size, sort, direction, status, clientKey, overdue);
+            @RequestParam(required = false) String clientKey, @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "false") boolean overdue) {
+        return service.list(page, size, sort, direction, status, clientKey, search, overdue);
     }
 
     @PostMapping
