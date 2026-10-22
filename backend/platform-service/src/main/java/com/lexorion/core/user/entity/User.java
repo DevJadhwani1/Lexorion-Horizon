@@ -53,6 +53,10 @@ public class User extends Auditable {
       length = 20
    )
    private UserStatus status;
+   @Column(
+      name = "last_organization_id"
+   )
+   private UUID lastOrganizationId;
 
    @Generated
    public UUID getId() {
@@ -85,6 +89,11 @@ public class User extends Auditable {
    }
 
    @Generated
+   public UUID getLastOrganizationId() {
+      return this.lastOrganizationId;
+   }
+
+   @Generated
    public void setId(final UUID id) {
       this.id = id;
    }
@@ -112,6 +121,11 @@ public class User extends Auditable {
    @Generated
    public void setStatus(final UserStatus status) {
       this.status = status;
+   }
+
+   @Generated
+   public void setLastOrganizationId(final UUID lastOrganizationId) {
+      this.lastOrganizationId = lastOrganizationId;
    }
 
    @Generated

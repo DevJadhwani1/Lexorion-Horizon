@@ -70,6 +70,11 @@ public class OrganizationMembership extends Auditable {
       nullable = false
    )
    private Instant joinedAt;
+   @Column(
+      name = "last_workspace_key",
+      length = 63
+   )
+   private String lastWorkspaceKey;
 
    @Generated
    public UUID getId() {
@@ -102,6 +107,11 @@ public class OrganizationMembership extends Auditable {
    }
 
    @Generated
+   public String getLastWorkspaceKey() {
+      return this.lastWorkspaceKey;
+   }
+
+   @Generated
    public void setId(final UUID id) {
       this.id = id;
    }
@@ -129,6 +139,11 @@ public class OrganizationMembership extends Auditable {
    @Generated
    public void setJoinedAt(final Instant joinedAt) {
       this.joinedAt = joinedAt;
+   }
+
+   @Generated
+   public void setLastWorkspaceKey(final String lastWorkspaceKey) {
+      this.lastWorkspaceKey = lastWorkspaceKey;
    }
 
    @Generated

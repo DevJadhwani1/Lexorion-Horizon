@@ -13,7 +13,7 @@ export function PlatformWorkspacesPage() {
   const auth = useAuth(), application = useApplicationContext(), navigate = useNavigate();
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]), [loading, setLoading] = useState(true), [error, setError] = useState("");
   useEffect(() => { getPlatformOrganizations().then(setOrganizations).catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to load organizations.")).finally(() => setLoading(false)); }, []);
-  const enter = (organization: PlatformOrganization) => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client", { organization: organization.slug })); else { auth.selectOrganization(organization.slug); application.enterClient(); navigate("/app/admin/workspaces"); } };
+  const enter = (organization: PlatformOrganization) => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client", { organization: organization.slug })); else { auth.selectOrganization(organization.slug); application.enterClient(); navigate(appPath("/organization/workspaces")); } };
   return <Page title="Workspaces" description="Workspace management remains scoped to an explicit client organization context.">
     <Notice tone="info">Horizon does not expose tenant workspace records globally. Enter an organization where you have active membership to view products, status, and capacity from the authoritative tenant APIs.</Notice>
     {loading ? <Notice tone="info">Loading organizations…</Notice> : error ? <Notice>{error}</Notice> : organizations.length === 0 ? <Empty>No organizations are available.</Empty>

@@ -11,6 +11,9 @@ import com.lexorion.horizon.tenantaccess.context.TenantAccessContext;
 import com.lexorion.horizon.tenantaccess.context.TenantAccessContextHolder;
 import com.lexorion.horizon.workspace.entity.OrganizationWorkspace;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,10 +113,24 @@ public class EntitlementService {
         if (requestedCount > limit) throw new EntitlementDeniedException("Workspace limit exceeded");
     }
 
+    @Transactional(readOnly = true)
+    public Set<String> enabledProductKeysForOrganization(java.util.UUID organizationId) {
+        OrganizationPlanAssignment assignment = assignments.findForOrganization(organizationId)
+                .filter(this::isEffective)
+                .orElseThrow(() -> new EntitlementDeniedException("An active organization plan is required"));
+        return values.findForPlan(assignment.getPlan().getId()).stream()
+                .filter(value -> activeDefinition(value, EntitlementValueType.BOOLEAN))
+                .filter(value -> Boolean.TRUE.equals(value.getBooleanValue()) && value.getIntegerValue() == null)
+                .map(value -> value.getDefinition().getKey())
+                .filter(key -> key.endsWith(".enabled"))
+                .map(key -> key.substring(0, key.indexOf('.')))
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
     private boolean isEffective(OrganizationPlanAssignment assignment) {
         return assignment.getStatus() == AssignmentStatus.ACTIVE && assignment.getPlan().getProduct() == null
                 && assignment.getPlan().getStatus() == CatalogStatus.ACTIVE
-                && ("starter".equals(assignment.getPlan().getKey()) || "business".equals(assignment.getPlan().getKey()));
+                && ("starter".equals(assignment.getPlan().getKey()) || "business".equals(assignment.getPlan().getKey()) || "enterprise".equals(assignment.getPlan().getKey()));
     }
 
     private boolean booleanValue(Plan plan, String key) {
@@ -137,6 +154,11 @@ public class EntitlementService {
     private boolean activeDefinition(PlanEntitlement value, String key, EntitlementValueType type) {
         return value.getDefinition().getStatus() == CatalogStatus.ACTIVE && value.getDefinition().getValueType() == type
                 && value.getDefinition().getKey().equals(key);
+    }
+
+    private boolean activeDefinition(PlanEntitlement value, EntitlementValueType type) {
+        return value.getDefinition().getStatus() == CatalogStatus.ACTIVE
+                && value.getDefinition().getValueType() == type;
     }
 
     private EffectiveEntitlementResponse response(OrganizationPlanAssignment assignment) {

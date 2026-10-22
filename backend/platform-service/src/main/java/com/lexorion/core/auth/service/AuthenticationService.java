@@ -12,6 +12,7 @@ import com.lexorion.core.user.entity.User;
 import com.lexorion.core.user.entity.UserStatus;
 import com.lexorion.core.user.repository.UserRepository;
 import com.lexorion.core.audit.AuditRecorder;
+import com.lexorion.core.integration.AxonEventPublisher;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,9 +40,10 @@ public class AuthenticationService {
    private final Clock clock;
    private final AuditRecorder audit;
    private final MeterRegistry metrics;
+   private final AxonEventPublisher axon;
    private final SecureRandom secureRandom = new SecureRandom();
 
-   public AuthenticationService(UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, PasswordEncoder passwordEncoder, JwtService jwtService, SecurityProperties properties, Clock clock, AuditRecorder audit, MeterRegistry metrics) {
+   public AuthenticationService(UserRepository userRepository, RefreshTokenRepository refreshTokenRepository, PasswordEncoder passwordEncoder, JwtService jwtService, SecurityProperties properties, Clock clock, AuditRecorder audit, MeterRegistry metrics, AxonEventPublisher axon) {
       this.userRepository = userRepository;
       this.refreshTokenRepository = refreshTokenRepository;
       this.passwordEncoder = passwordEncoder;
@@ -50,6 +52,7 @@ public class AuthenticationService {
       this.clock = clock;
       this.audit = audit;
       this.metrics = metrics;
+      this.axon = axon;
    }
 
    public TokenResponse login(LoginRequest request) {
@@ -63,11 +66,13 @@ public class AuthenticationService {
 
          UUID sessionId = UUID.randomUUID();
          TokenResponse response=this.issueTokenPair(user, sessionId, UUID.randomUUID());
-         this.audit.record(user.getId(),"AUTH_LOGIN","SESSION",sessionId.toString(),"SUCCESS");
+         var event=this.audit.record(user.getId(),"AUTH_LOGIN","SESSION",sessionId.toString(),"SUCCESS");
+         this.axon.publishLogin(event.getId(), event.getOccurredAt(), true, user.getEmail(), user.getId());
          return response;
       } else {
          this.metrics.counter("lexorion.authentication.failures").increment();
-         this.audit.record(user==null?null:user.getId(),"AUTH_LOGIN","USER",null,"FAILURE");
+         var event=this.audit.record(user==null?null:user.getId(),"AUTH_LOGIN","USER",null,"FAILURE");
+         this.axon.publishLogin(event.getId(), event.getOccurredAt(), false, request.email().trim().toLowerCase(Locale.ROOT), user==null?null:user.getId());
          throw new InvalidCredentialsException();
       }
    }

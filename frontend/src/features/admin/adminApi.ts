@@ -1,6 +1,36 @@
 import{apiRequest}from"../../api/httpClient";
-export interface Organization{[key:string]:unknown;name:string;legalName:string|null;organizationCode:string;slug:string;primaryEmail:string;primaryPhone:string|null;status:string;description:string|null;industry:string|null;companySize:string|null;website:string|null;settings:Settings}
-export interface Settings{timeZone:string;locale:string;country:string;currency:string;workingDays:string[];brandingDisplayName:string|null;primaryColor:string|null;secondaryColor:string|null}
+export interface Organization {
+  [key: string]: unknown;
+  name: string;
+  legalName: string | null;
+  organizationCode: string;
+  slug: string;
+  primaryEmail: string;
+  primaryPhone: string | null;
+  status: string;
+  description: string | null;
+  industry: string | null;
+  companySize: string | null;
+  website: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  addressCountry?: string | null;
+  stateProvince?: string | null;
+  city?: string | null;
+  postalCode?: string | null;
+  settings: Settings;
+}
+export interface Settings {
+  timeZone: string;
+  locale: string;
+  country: string;
+  currency: string;
+  dateFormat?: string;
+  workingDays: string[];
+  brandingDisplayName: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+}
 export interface Member{membershipId:string;email:string;fullName:string;role:string;status:string;joinedAt:string}
 export interface Invitation{invitationId:string;email:string;role:string;status:string;expiresAt:string;invitedByEmail:string;createdAt:string;deliveryStatus:string;deliveryError:string|null}
 export const getOrganization=()=>apiRequest<Organization>("/api/tenant/organization");

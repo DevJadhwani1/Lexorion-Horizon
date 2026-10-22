@@ -5,11 +5,6 @@
     .layer-back { fill: #2563EB; }
     .layer-middle { fill: #3B82F6; }
     .layer-front { fill: #0B0F17; }
-    @media (prefers-color-scheme: dark) {
-      .layer-back { fill: #1A3A7A; }
-      .layer-middle { fill: #1F6CFF; }
-      .layer-front { fill: #F7FAFC; }
-    }
   </style>
   <g id="horizon-mark" transform="translate(10, 10)">
     <polygon class="layer-back" points="44,0 86.286,20 44,40 1.714,20" />

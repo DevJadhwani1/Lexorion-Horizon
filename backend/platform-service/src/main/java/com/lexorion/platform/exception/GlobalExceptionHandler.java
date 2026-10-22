@@ -9,6 +9,7 @@ import com.lexorion.platform.domain.exception.InvalidHostnameException;
 import com.lexorion.platform.domain.exception.TenantHostnameUnavailableException;
 import com.lexorion.horizon.entitlement.exception.InvalidEntitlementValueException;
 import com.lexorion.horizon.entitlement.exception.InvalidPlanAssignmentException;
+import com.lexorion.horizon.entitlement.exception.EntitlementDeniedException;
 import com.lexorion.horizon.invitation.exception.InvalidInvitationException;
 import com.lexorion.horizon.invitation.exception.InvitationConflictException;
 import com.lexorion.core.organization.exception.InvalidLifecycleTransitionException;
@@ -42,6 +43,11 @@ public class GlobalExceptionHandler {
    @ExceptionHandler({InvalidPlanAssignmentException.class})
    public ResponseEntity<ApiError> handleInvalidPlanAssignment(InvalidPlanAssignmentException ex, HttpServletRequest request) {
       return this.build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+   }
+
+   @ExceptionHandler({EntitlementDeniedException.class})
+   public ResponseEntity<ApiError> handleEntitlementDenied(EntitlementDeniedException ex, HttpServletRequest request) {
+      return this.build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
    }
 
    @ExceptionHandler({InvalidWorkspaceException.class})

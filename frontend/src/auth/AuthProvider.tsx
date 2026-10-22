@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { getCurrentUser, getOrganizations, loginRequest, logoutRequest, restoreSession, type CurrentUser, type OrganizationMembership } from "./authApi";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { getCurrentUser, getOrganizations, loginRequest, logoutRequest, restoreSession, saveLastUsedContext, type CurrentUser, type OrganizationMembership } from "./authApi";
 import { session } from "../api/session";
 
 interface AuthValue {
@@ -10,10 +10,17 @@ interface AuthValue {
   login(email: string, password: string): Promise<void>;
   logout(): Promise<void>;
   selectOrganization(slug: string): void;
+  rememberWorkspace(organizationSlug: string, workspaceKey: string): void;
   reloadOrganizations(): Promise<void>;
+  /** Re-reads memberships (names, roles, statuses) without touching the session. Resolves false when the refresh failed. */
+  refreshOrganizations(): Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+// Last-used context is a convenience; a failed save must never interrupt the selection itself.
+const isActiveMembership = (item: OrganizationMembership) =>
+  item.membershipStatus === "ACTIVE" && (item.organizationStatus === "ACTIVE" || item.organizationStatus === "TRIAL");
+const persistContext = (organizationSlug: string, workspaceKey: string | null = null) => { void saveLastUsedContext(organizationSlug, workspaceKey).catch(() => undefined); };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [requestedWorkspace, setRequestedWorkspace] = useState<string | null>(() => new URLSearchParams(window.location.search).get("workspace"));
@@ -22,6 +29,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [organizations, setOrganizations] = useState<OrganizationMembership[]>([]);
   const [slug, setSlug] = useState(session.organization());
+  // Server-remembered workspace per organization slug, kept in a ref so updates do not re-trigger workspace loading.
+  const rememberedWorkspaces = useRef<Record<string, string | null>>({});
 
   useEffect(() => {
     const parameters = new URLSearchParams(window.location.search);
@@ -45,21 +54,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const [currentUser, memberships] = await Promise.all([getCurrentUser(), getOrganizations()]);
-      const active = memberships.filter((item) => item.membershipStatus === "ACTIVE" && item.organizationStatus === "ACTIVE");
+      const active = memberships.filter(isActiveMembership);
       const storedSlug = session.organization();
-      const requested = requestedSlug && active.some((item) => item.slug === requestedSlug) ? requestedSlug : null;
-      const selectedSlug = requested ?? (storedSlug && active.some((item) => item.slug === storedSlug)
+      const accessible = (candidate: string | null | undefined) => Boolean(candidate && active.some((item) => item.slug === candidate));
+      const requested = accessible(requestedSlug) ? requestedSlug : null;
+      // Precedence: explicit link, this tab's current selection, the server-remembered organization, then the sole membership.
+      const remembered = accessible(currentUser.lastOrganizationSlug) ? currentUser.lastOrganizationSlug! : null;
+      const selectedSlug = requested ?? (accessible(storedSlug)
         ? storedSlug
-        : active.length === 1 ? active[0].slug : null);
+        : remembered ?? (active.length === 1 ? active[0].slug : null));
+      rememberedWorkspaces.current = Object.fromEntries(active.map((item) => [item.slug, item.lastWorkspaceKey ?? null]));
 
       setUser(currentUser);
       setOrganizations(active);
       setSlug(selectedSlug);
       session.setOrganization(selectedSlug);
-      if (selectedSlug !== storedSlug) session.setWorkspace(null);
+      if (selectedSlug !== storedSlug) session.setWorkspace(selectedSlug ? rememberedWorkspaces.current[selectedSlug] ?? null : null);
       // WorkspaceProvider verifies this key against the selected organization’s accessible workspaces.
       if (requested && requestedWorkspace) session.setWorkspace(requestedWorkspace);
       setRequestedWorkspace(null);
+      // A tab refresh keeps its own selection without overwriting a newer choice made elsewhere.
+      if (selectedSlug && selectedSlug !== storedSlug && selectedSlug !== currentUser.lastOrganizationSlug) persistContext(selectedSlug);
       if (requestedSlug) {
         const parameters = new URLSearchParams(window.location.search);
         parameters.delete("organization");
@@ -107,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session.setMode(null);
       session.setOrganization(null);
       session.setWorkspace(null);
+      rememberedWorkspaces.current = {};
       setUser(null);
       setOrganizations([]);
       setSlug(null);
@@ -115,8 +131,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const selectOrganization = (next: string) => {
     const selected = next || null;
     session.setOrganization(selected);
-    session.setWorkspace(null);
+    // WorkspaceProvider verifies the remembered workspace against the organization's accessible workspaces.
+    session.setWorkspace(selected ? rememberedWorkspaces.current[selected] ?? null : null);
     setSlug(selected);
+    if (selected) persistContext(selected);
+  };
+  // Unlike reloadOrganizations, a failure here keeps the signed-in state; callers only lose a fresher display name.
+  const refreshOrganizations = useCallback(async () => {
+    try {
+      setOrganizations((await getOrganizations()).filter(isActiveMembership));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+  const rememberWorkspace = (organizationSlug: string, workspaceKey: string) => {
+    rememberedWorkspaces.current[organizationSlug] = workspaceKey;
+    persistContext(organizationSlug, workspaceKey);
   };
   const value = useMemo(() => ({
     loading,
@@ -126,8 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     selectOrganization,
+    rememberWorkspace,
     reloadOrganizations: load,
-  }), [loading, user, organizations, slug, load]);
+    refreshOrganizations,
+  }), [loading, user, organizations, slug, load, refreshOrganizations]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -136,4 +169,8 @@ export function useAuth() {
   const value = useContext(AuthContext);
   if (!value) throw new Error("AuthProvider is required");
   return value;
+}
+
+export function useOptionalAuth() {
+  return useContext(AuthContext);
 }

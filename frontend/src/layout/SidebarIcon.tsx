@@ -1,6 +1,12 @@
-export type IconName = "sidebar" | "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels" | "grid" | "chevronDown" | "chevronRight" | "check" | "plus" | "user" | "help" | "layers" | "checkCircle";
+export type IconName = "sidebar" | "home" | "admin" | "workforce" | "payroll" | "profile" | "collapse" | "logout" | "menu" | "close" | "expand" | "search" | "building" | "shield" | "package" | "card" | "badge" | "settings" | "panels" | "grid" | "chevronDown" | "chevronRight" | "check" | "plus" | "user" | "help" | "layers" | "checkCircle" | "lock" | "bell" | "arrowRight" | "edit" | "document" | "info";
 
-export function Icon({ name }: { name: IconName }) {
+export interface IconProps {
+  name: IconName;
+  className?: string;
+  size?: number | string;
+}
+
+export function Icon({ name, className, size = 18 }: IconProps) {
   const paths = {
     sidebar: <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M9 4v16" /></>,
     home: <><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></>,
@@ -30,7 +36,28 @@ export function Icon({ name }: { name: IconName }) {
     help: <><circle cx="12" cy="12" r="9" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
     layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></>,
     checkCircle: <><circle cx="12" cy="12" r="9" /><path d="m9 12 2 2 4-4" /></>,
+    lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
+    bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></>,
+    arrowRight: <path d="M5 12h14M12 5l7 7-7 7" />,
+    edit: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></>,
+    document: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></>,
+    info: <><circle cx="12" cy="12" r="9" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></>,
   };
-  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"
-    strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ? `horizon-icon ${className}` : "horizon-icon"}
+      width={size}
+      height={size}
+      style={{ flexShrink: 0 }}
+    >
+      {paths[name]}
+    </svg>
+  );
 }

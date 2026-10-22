@@ -203,7 +203,7 @@ class EntitlementSecurityIntegrationTest {
     @Test void removingPayrollProductRevokesExistingServiceAuthority() throws Exception {
         assign(owner, "starter", "alpha").andExpect(status().isOk());
         tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON)
-            .content("{\"key\":\"shared\",\"displayName\":\"Shared\",\"productKeys\":[\"workforce\",\"payroll\"]}"), owner, "alpha", HOST).andExpect(status().isCreated());
+            .content("{\"key\":\"shared\",\"displayName\":\"Shared\",\"productKey\":\"workforce\",\"productKeys\":[\"workforce\",\"payroll\"]}"), owner, "alpha", HOST).andExpect(status().isCreated());
         String bearer=token(owner);
         for (boolean attached : java.util.List.of(true, false, true)) {
             tenant(patch("/api/tenant/workspaces/shared").contentType(MediaType.APPLICATION_JSON)

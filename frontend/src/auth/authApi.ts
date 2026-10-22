@@ -15,6 +15,7 @@ export interface CurrentUser {
   lastName: string;
   active: boolean;
   platformAccess: { active: boolean; role: string } | null;
+  lastOrganizationSlug?: string | null;
 }
 export interface OrganizationMembership {
   organizationId: string;
@@ -23,6 +24,7 @@ export interface OrganizationMembership {
   membershipRole: "ADMIN" | "MANAGER" | "EMPLOYEE";
   membershipStatus: string;
   organizationStatus: string;
+  lastWorkspaceKey?: string | null;
 }
 export const loginRequest = (email: string, password: string) =>
   apiRequest<TokenResponse>("/api/core/auth/login", {
@@ -67,6 +69,14 @@ export const getCurrentUser = () =>
   });
 export const getOrganizations = () =>
   apiRequest<OrganizationMembership[]>("/api/platform/me/organizations", {
+    organizationScoped: false,
+    workspaceScoped: false,
+  });
+// Server-side last-used context; a null workspace key keeps the organization's remembered workspace.
+export const saveLastUsedContext = (organizationSlug: string, workspaceKey: string | null = null) =>
+  apiRequest<void>("/api/platform/me/context", {
+    method: "PUT",
+    body: workspaceKey ? { organizationSlug, workspaceKey } : { organizationSlug },
     organizationScoped: false,
     workspaceScoped: false,
   });
