@@ -2,7 +2,7 @@
 
 Evaluation date: 2026-10-22. Scope: current `frontend/` and `backend/` on this branch, rendered locally with Vite against mocked API responses (organization `Acme Industries`, workspace `main`, five employees, one draft and one finalized pay run). Benchmark: the Zoho People / Zoho Payroll admin experience, plus this repository's own target wireframes in `design/wireframes/` (Application Shell, People Workspace), which already describe a Zoho-like product.
 
-This is an evaluation and plan. No application code is changed by this document.
+This document began as an evaluation and plan. Section 8 records what was then implemented, and the product decisions that shaped it.
 
 ## 1. Verdict
 
@@ -45,7 +45,7 @@ What is already good and should be kept: context-safe HTTP client (no cross-work
 
 | # | Sev | Finding | Recommendation |
 |---|---|---|---|
-| B1 | H | **Payroll has no employee identity beyond `employeeCode`.** `PayrollEmployee`, `PayRunEmployee`, preparation rows, ledger and payslips carry no name, department or designation, so the UI cannot show people without one Workforce call per row. | Add a denormalized display snapshot (name, department, designation) to `payroll_employees`, refreshed when Payroll verifies the employee through the existing `WorkforceEmployeeClient`. Or add a read-only composition endpoint at the gateway/BFF level. The snapshot is simpler and fits the existing verification call. |
+| B1 | H | **Payroll stores only `employeeCode` (by design).** `PayrollEmployee`, `PayRunEmployee`, preparation rows, ledger and payslips carry no name. *Corrected after audit:* the backend cannot resolve names itself — Payroll's only Workforce call (`/internal/workforce/employees/{code}/verification`) intentionally returns just code, existence and status. But every Payroll screen is ADMIN-only, and `GET /api/workforce/employees` is ADMIN-scoped to the same organization and workspace. | **No data-model change.** Join in the frontend: load the workspace's Workforce employees (one request under current plan limits) and map codes to names. Implemented as `useWorkforceDirectory`; screens fall back to codes when the workspace has no Workforce product. |
 | B2 | H | **No pay schedule.** Each pay run asks the client for key, period, calculation date and currency. | Add `pay_schedule` on the Payroll workspace (frequency, pay day, first period start, currency from org settings). Add `POST /api/payroll/pay-runs/next`, which derives key (`2026-10`), period and dates using the existing `PayrollPeriod` rules. Keep the current create endpoint for off-cycle runs. |
 | B3 | H | **Enrollment is a separate manual step.** | Add a single "hire" command that creates the Workforce employee, enrolls in Payroll and creates the first compensation profile. Implement it as a frontend orchestration over the existing three APIs first (no new service coupling), with clear partial-failure handling. Consider a Payroll-side auto-enroll on Workforce create later. |
 | B4 | M | **Payslips are per employee only.** No run-level listing, no PDF, no email. | `GET /api/payroll/pay-runs/{key}/payslips`; server-rendered PDF; reuse the Platform SMTP delivery pattern (with Mailpit locally) for "Send payslips". |
@@ -109,3 +109,46 @@ Sequencing rationale: Phases 0–1 are frontend-only and remove most of the fric
 3. **Hire orchestration.** Do it in the frontend first (proposed), or as a backend command from day one?
 4. **Statutory/India payroll.** Out of scope for this redesign, or the next product slice after Phase 4?
 5. **Wireframes as source of truth.** Should `design/wireframes/` (Application Shell, People Workspace, Design System) be treated as the target for visual design?
+
+## 8. Decisions and implementation — 2026-10-22
+
+### Product decisions
+
+1. **Pay-run states.** `Calculated` and `Finalized` stay as the domain states. Only user-facing labels and descriptions changed. No `Paid` state until payment tracking, reconciliation and transition rules are defined; approval, if required, will be a separate transition.
+2. **Workspaces.** Management stays under Organization → Workspaces. A sole accessible workspace is auto-selected (only a server-returned key), and the organization/workspace switchers are hidden when each has exactly one *selected* option. Server authorization is unchanged.
+3. **Add employee.** A frontend wizard over existing APIs; no orchestration endpoint was needed (see audit below).
+4. **Statutory payroll.** Out of scope. Organization currency and locale are respected. The salary estimate says statutory deductions are not calculated by Horizon, and nothing is presented as compliant Indian payroll.
+
+### API audit that drove the design
+
+- **Names:** see corrected B1. Frontend join; no Payroll schema change.
+- **Hire flow:** `POST /api/workforce/employees` → `POST /api/payroll/employees` (verifies the Workforce record and returns 409 `Payroll employee already exists` on repeat) → `POST /api/payroll/employees/{code}/compensation` (multi-component, 409 on duplicate key or overlap). Each step is idempotent enough to resume safely, so a backend command was not required.
+- **Pay periods:** `PayrollPeriod` defines monthly periods as calendar months, so a pay month fully determines the period, and its last day is a valid calculation date. Weekly and biweekly periods are anchored to employee start dates, so they keep a custom-period form.
+
+### Shipped (frontend only; no backend, schema or migration changes)
+
+| Priority | Change |
+|---|---|
+| 1 | Human labels on all touched forms; hints moved out of `<label>` so they are descriptions, not part of the accessible name. |
+| 1 | Department, designation and manager pickers; reference "short codes" derived from the name. |
+| 1 | Employee directory uses server-side `search`, `status`, `departmentKey`, `designationKey`, `sort`, `direction` and `page` (state kept in the URL). |
+| 1 | Organization currency replaces every hardcoded `USD` default (enrollment, salary templates, pay runs). |
+| 1 | Navigation: People / Payroll / Organization groups; duplicate Workforce and Payroll "Dashboard" entries removed (old URLs redirect); admin self-service moved to the account menu. |
+| 1 | Names, formatted money and dates, and readable status pills across Workforce and Payroll; better empty states. |
+| 1 | `expectedStatuses` option in the HTTP client, so an expected 404 ("not enrolled yet") no longer raises the global error banner. |
+| 2 | `/app/workforce/employees/new` wizard: details → payroll settings → salary → summary. Each step saves immediately; `?employee=CODE` resumes at the first unfinished step after reloading server state, so no record is created twice. Skip options state what remains. The employee profile shows payroll status and links into the wizard. |
+| 2 | Shared compensation form: pick components with amounts, auto-generated non-colliding profile key, and a live estimate that follows the calculator's order (percentage earnings on fixed earnings, percentage deductions on gross). |
+| 3 | New pay run from a **pay month**: key `PAY-YYYY-MM`, calendar-month period, pay date and currency (the employees' most common, else the organization's) are derived. Custom periods are still available. |
+| 3 | Run view: progress stepper, status description, totals, employee names and amounts, "Select all eligible", and an explicit finalize confirmation with net total and headcount. Process, finalize, reset and recover behavior and endpoints are unchanged. |
+
+### Verification
+
+- Frontend: 75 tests across 19 files pass (baseline was 58). New coverage: wizard create, resume, duplicate code, existing-enrollment 409 and skip; directory query parameters; derived pay-run request body; switcher visibility; workspace auto-select; expected-status reporting; formatting and estimate helpers. `tsc`, `oxlint` and the production build pass.
+- Browser (Chromium, Vite dev server, stateful fake API recording every write): directory search → wizard (3 writes, one per record) → payroll list → compensation → monthly pay run → select all eligible → process → finalize. No page errors or unexpected console errors, and no horizontal overflow at 390 px.
+- **Not verified here:** the real backend stack (PostgreSQL, Eureka, gateway) was not running in this environment. The flows above should be re-run against the local Docker stack before release.
+
+### Still open
+
+- The review screen shows the first blocking reason per employee, as the preparation API provides it.
+- Payslip PDF/email, in-run adjustments and a `PAID` state remain backlog items (B4–B6). They need the product decisions listed above.
+- The Overview page still uses the earlier layout; only its names, links and formatting were updated.

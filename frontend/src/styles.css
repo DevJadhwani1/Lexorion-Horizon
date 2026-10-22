@@ -308,7 +308,6 @@ label {
   flex-direction: column;
   gap: 6px;
   color: #475467;
-  text-transform: capitalize;
 }
 .form-grid {
   display: grid;
@@ -1163,3 +1162,65 @@ td a {
 .horizon-context-banner small{overflow-wrap:anywhere}
 @media(max-width:800px){.horizon-context-banner{grid-template-columns:repeat(2,minmax(0,1fr))}.horizon-context-banner>div:first-child{grid-column:1/-1}}
 @media(max-width:520px){.horizon-context-banner{grid-template-columns:1fr}.horizon-context-banner>div:first-child{grid-column:auto}}
+
+/* Guided flows: fields, wizard steps, directory and pay-run review. */
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field-hint{color:#667085;font-size:12px;line-height:1.4}
+.form-grid .field-hint{margin-top:-2px}
+.form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:16px}
+.form-wide{grid-column:1/-1}
+.contents{display:contents}
+.cell-note{display:block;margin-top:2px;color:#667085;font-size:12px;font-weight:400}
+td strong{color:#1d2939;font-weight:600}
+.row-actions{white-space:nowrap}
+.row-actions>*+*{margin-left:12px}
+.selected-row td{background:#f5f8ff}
+.section-heading{margin:28px 0 10px;font-size:16px;color:#101828}
+.section-tabs{gap:4px;border-bottom:1px solid #eaecf0;padding-bottom:0}
+.section-tabs a{padding:8px 12px;color:#475467;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.section-tabs a:hover{color:#101828}
+.section-tabs a.active,.section-tabs a[aria-current=page]{color:#175cd3;border-bottom-color:#175cd3;font-weight:500}
+.directory-filters{display:grid;grid-template-columns:minmax(220px,2fr) repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.directory-filters>button{align-self:end}
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:12px 0;color:#475467;font-size:14px}
+.pagination>span:first-child{margin-right:auto}
+.link-button{border:0;background:none;padding:0;color:#175cd3;text-decoration:underline;cursor:pointer}
+.employee-picker label{min-width:min(360px,100%)}
+.detail-list{display:grid;gap:10px;margin:0}
+.detail-list div{display:grid;grid-template-columns:140px 1fr;gap:12px}
+.detail-list dt{color:#667085}
+.detail-list dd{margin:0;color:#101828}
+.stepper{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:8px 0 18px;padding:0;counter-reset:none}
+.stepper li{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border:1px solid #e4e7ec;border-radius:999px;background:#fff;color:#667085;font-size:14px}
+.stepper li span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#f2f4f7;color:#475467;font-size:12px;font-weight:600}
+.stepper li.current{border-color:#84adff;color:#101828;font-weight:500}
+.stepper li.current span{background:#175cd3;color:#fff}
+.stepper li.done span{background:#ecfdf3;color:#067647}
+.stepper.compact{margin:12px 0}
+.wizard-step h2{margin:0 0 6px;font-size:18px;color:#101828}
+.wizard-step .form-grid{margin-top:14px}
+.setup-summary{list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
+.setup-summary li{padding:10px 12px;border-radius:8px;background:#f9fafb}
+.setup-summary li.done::before{content:"✓ ";color:#067647;font-weight:700}
+.setup-summary li.todo{background:#fffaeb;color:#93370d}
+.setup-summary li.todo::before{content:"! ";font-weight:700}
+.pending-list{list-style:none;margin:8px 0 0;padding:0}
+.pending-list li{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #eaecf0}
+.pending-list small{color:#667085}
+.pay-estimate{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#f9fafb}
+.pay-estimate div{display:grid;gap:2px}
+.pay-estimate dt{color:#667085;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.pay-estimate dd{margin:0;font-size:20px;font-weight:600;color:#101828}
+.pay-estimate .net dd{color:#175cd3}
+.pay-estimate p{grid-column:1/-1;margin:0}
+.run-summary{margin:10px 0;color:#344054}
+.blocked-reason{color:#b42318;white-space:normal}
+.component-choice label{font-weight:500;color:#101828}
+.context-current{align-self:center;color:#344054;font-weight:500}
+@media(max-width:700px){.directory-filters{grid-template-columns:1fr}.detail-list div{grid-template-columns:1fr;gap:2px}}
+a.button{display:inline-flex;align-items:center;text-decoration:none}
+a.button.primary{color:#fff}
+/* Fields with help text align by their top edge so inputs line up. */
+.wizard-step .form-grid,.salary-form .form-grid,.form-grid:has(.field){align-items:start}
+.form-grid:has(.field)>.button{align-self:end}
+.new-pay-run .form-grid{max-width:320px}

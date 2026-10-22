@@ -11,6 +11,7 @@ import { HomePage } from "../pages/HomePage";
 import { AdminPage } from "../pages/admin/AdminPage";
 import { AdminWorkspaces } from "../pages/admin/AdminWorkspaces";
 import { WorkforcePage } from "../pages/workforce/WorkforcePage";
+import { EmployeeSetupWizard } from "../pages/workforce/EmployeeSetupWizard";
 import { PayrollPage } from "../pages/payroll/PayrollPage";
 import { PlatformHomePage } from "../pages/platform/PlatformHomePage";
 import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pages/platform/PlatformOrganizationsPage";
@@ -91,17 +92,18 @@ function clientRoutes(local: boolean): RouteObject[] {
 function workforceRoutes(): RouteObject[] { return [
   { path: "workforce", element: <WorkforceLanding /> },
   { element: <WorkforceRoleRequired roles={["ADMIN"]} />, children: [
-    { path: "workforce/dashboard", element: <WorkforcePage sectionKey="dashboard" /> }, { path: "workforce/employees", element: <WorkforcePage sectionKey="employees" /> },
+    { path: "workforce/dashboard", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/workforce/employees`} replace /> }, { path: "workforce/employees", element: <WorkforcePage sectionKey="employees" /> },
+    { path: "workforce/employees/new", element: <EmployeeSetupWizard /> },
     { path: "workforce/departments", element: <WorkforcePage sectionKey="departments" /> }, { path: "workforce/designations", element: <WorkforcePage sectionKey="designations" /> }, { path: "workforce/structure", element: <WorkforcePage sectionKey="structure" /> },
   ] },
   { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER"]} />, children: [{ path: "workforce/team", element: <WorkforcePage sectionKey="team" /> }, { path: "workforce/employees/:employeeCode", element: <WorkforcePage /> }] },
   { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER", "EMPLOYEE"]} />, children: [{ path: "workforce/me", element: <WorkforcePage sectionKey="me" /> }] },
 ]; }
-function WorkforceLanding() { const role = useAuth().organization?.membershipRole; const destination = role === "ADMIN" ? "dashboard" : "me"; return <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/workforce/${destination}`} replace />; }
+function WorkforceLanding() { const role = useAuth().organization?.membershipRole; const destination = role === "ADMIN" ? "employees" : "me"; return <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/workforce/${destination}`} replace />; }
 
 function payrollRoutes(): RouteObject[] { return [
-  { path: "payroll", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/payroll/dashboard`} replace /> },
-  ...["dashboard", "employees", "components", "compensation", "salary-templates", "calculations", "pay-runs", "ledger", "payslips"].map((section) => ({ path: `payroll/${section}`, element: <PayrollPage sectionKey={section} /> })),
+  ...["payroll", "payroll/dashboard"].map((path) => ({ path, element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/payroll/pay-runs`} replace /> })),
+  ...["employees", "components", "compensation", "salary-templates", "calculations", "pay-runs", "ledger", "payslips"].map((section) => ({ path: `payroll/${section}`, element: <PayrollPage sectionKey={section} /> })),
 ]; }
 
 const host = consoleHost();

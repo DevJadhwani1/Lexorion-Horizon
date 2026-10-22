@@ -5,12 +5,12 @@ import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./AppShell";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
-const workspaceState = vi.hoisted(() => ({ workspace: { key: "main", products: [] } as { key: string; products: never[] } | null }));
-vi.mock("../auth/AuthProvider", () => ({ useAuth: () => ({ user: { id: "user" }, organization: { organizationId: "org", slug: "org", membershipRole: "ADMIN" }, organizations: [] }) }));
-vi.mock("../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: workspaceState.workspace, workspaces: [], loading: false }) }));
+const workspaceState = vi.hoisted(() => ({ workspace: { key: "main", products: [] } as { key: string; products: never[] } | null, workspaces: [] as { key: string; displayName: string; products: never[] }[], organizations: [] as { slug: string; organizationName: string }[] }));
+vi.mock("../auth/AuthProvider", () => ({ useAuth: () => ({ user: { id: "user" }, organization: { organizationId: "org", slug: "org", organizationName: "Acme", membershipRole: "ADMIN" }, organizations: workspaceState.organizations }) }));
+vi.mock("../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: workspaceState.workspace, workspaces: workspaceState.workspaces, loading: false }) }));
 vi.mock("../context/ApplicationContext", () => ({ useApplicationContext: () => ({ mode: "client", hasPlatformAccess: false }) }));
 vi.mock("./Sidebar", () => ({ Sidebar: () => null }));
-afterEach(() => { workspaceState.workspace = { key: "main", products: [] }; cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => { workspaceState.workspace = { key: "main", products: [] }; workspaceState.workspaces = []; workspaceState.organizations = []; cleanup(); vi.unstubAllGlobals(); });
 
 it("resets a screen's loaded state when navigating to another domain screen", () => {
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
@@ -36,4 +36,23 @@ it("preserves organization administration forms during a workspace refresh", () 
   expect((screen.getByLabelText("Unsaved edit") as HTMLInputElement).value).toBe("workforce");
   workspaceState.workspace = { key: "main", products: [] }; view.rerender(tree());
   expect((screen.getByLabelText("Unsaved edit") as HTMLInputElement).value).toBe("workforce");
+});
+
+it("hides organization and workspace switchers only when each has a single selected option", () => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
+  const main = { key: "main", displayName: "Main", products: [] as never[] };
+  workspaceState.organizations = [{ slug: "org", organizationName: "Acme" }];
+  workspaceState.workspaces = [main];
+  const tree = () => <ThemeProvider><MemoryRouter><Routes><Route path="*" element={<AppShell />} /></Routes></MemoryRouter></ThemeProvider>;
+  const view = render(tree());
+  expect(screen.queryByLabelText("Organization")).toBeNull();
+  expect(screen.queryByLabelText("Workspace")).toBeNull();
+  expect(screen.getByText("Acme")).toBeTruthy();
+  workspaceState.workspaces = [main, { key: "second", displayName: "Second", products: [] }];
+  view.rerender(tree());
+  expect(screen.getByLabelText("Workspace")).toBeTruthy();
+  expect(screen.queryByLabelText("Organization")).toBeNull();
+  workspaceState.workspaces = [main]; workspaceState.workspace = null;
+  view.rerender(tree());
+  expect(screen.getByLabelText("Workspace")).toBeTruthy();
 });

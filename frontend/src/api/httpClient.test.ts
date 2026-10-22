@@ -57,3 +57,15 @@ it("does not restore the previous session when refresh completes after sign-out"
   session.clearTokens(); finish(json({ accessToken: "late", refreshToken: "late-refresh" }));
   await rejected; expect(session.access()).toBeNull(); expect(session.refresh()).toBeNull();
 });
+
+it("throws an expected status without showing it as a global error", async () => {
+  const reported = vi.fn();
+  window.addEventListener("lexorion:api-error", reported);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "Payroll employee not found" }), { status: 404 })));
+  await expect(apiRequest("/api/payroll/employees/EMP-9", { expectedStatuses: [404] })).rejects.toMatchObject({ status: 404 });
+  expect(reported).not.toHaveBeenCalled();
+  await expect(apiRequest("/api/payroll/employees/EMP-9")).rejects.toMatchObject({ status: 404 });
+  expect(reported).toHaveBeenCalledOnce();
+  window.removeEventListener("lexorion:api-error", reported);
+  vi.unstubAllGlobals();
+});

@@ -30,7 +30,7 @@ it("rejects a delayed workspace response from the previous organization", async 
   await waitFor(() => expect(getAccessibleWorkspaces).toHaveBeenCalledTimes(1));
   state.organization = { organizationId: "b" };
   view.rerender(<WorkspaceProvider><View /></WorkspaceProvider>);
-  await screen.findByText("new");
+  await waitFor(() => expect(screen.getByRole("status").textContent).toBe("new"));
   await act(async () => finishOld([workspace("old")]));
   expect(screen.queryByText("old")).toBeNull();
   expect(screen.getByRole("status").textContent).toBe("new");
@@ -38,11 +38,21 @@ it("rejects a delayed workspace response from the previous organization", async 
 
 it("clears a stale stored workspace and refuses an inaccessible selection", async () => {
   session.setWorkspace("foreign");
-  vi.mocked(getAccessibleWorkspaces).mockResolvedValue([workspace("allowed")]);
+  vi.mocked(getAccessibleWorkspaces).mockResolvedValue([workspace("allowed"), workspace("other")]);
   render(<WorkspaceProvider><View /></WorkspaceProvider>);
-  await screen.findByText("allowed");
+  await screen.findByText("allowed,other");
   expect(session.workspace()).toBeNull();
   fireEvent.click(screen.getByText("Select foreign"));
   expect(session.workspace()).toBeNull();
   expect(screen.getByText("no selection")).toBeTruthy();
+});
+
+it("selects the only accessible workspace and replaces a stale stored key", async () => {
+  session.setWorkspace("foreign");
+  vi.mocked(getAccessibleWorkspaces).mockResolvedValue([workspace("only")]);
+  render(<WorkspaceProvider><View /></WorkspaceProvider>);
+  await waitFor(() => expect(screen.getByText("only", { selector: "span" })).toBeTruthy());
+  expect(session.workspace()).toBe("only");
+  fireEvent.click(screen.getByText("Select foreign"));
+  expect(session.workspace()).toBeNull();
 });

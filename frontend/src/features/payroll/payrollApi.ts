@@ -177,9 +177,11 @@ export const updatePayrollEmployee = (code: string, body: unknown) =>
     `/api/payroll/employees/${encodeURIComponent(code)}`,
     { method: "PATCH", body },
   );
-export const getPayrollEmployee = (code: string) =>
+/** Pass `expectMissing` when a 404 only means "not enrolled yet" and the caller handles it. */
+export const getPayrollEmployee = (code: string, options: { expectMissing?: boolean } = {}) =>
   apiRequest<PayrollEmployee>(
     `/api/payroll/employees/${encodeURIComponent(code)}`,
+    options.expectMissing ? { expectedStatuses: [404] } : {},
   );
 export const getComponents = () =>
   apiRequest<Component[]>("/api/payroll/components");

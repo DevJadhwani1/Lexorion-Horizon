@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { PayrollPage } from "./PayrollPage";
 import * as payrollApi from "../../features/payroll/payrollApi";
 
+vi.mock("../../auth/AuthProvider", () => ({ useAuth: () => ({ organization: { organizationId: "org", membershipRole: "ADMIN" } }) }));
+vi.mock("../../features/admin/adminApi", async (load) => ({ ...(await load<typeof import("../../features/admin/adminApi")>()), getOrganization: vi.fn(async () => ({ settings: { currency: "INR", locale: "en-IN" } })) }));
 vi.mock("../../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: { key: "shared", products: [{ key: "payroll" }] } }) }));
 vi.mock("../../features/payroll/payrollApi", async (load) => {
   const actual = await load<typeof import("../../features/payroll/payrollApi")>();
@@ -18,20 +20,20 @@ function CurrentLocation() { const location = useLocation(); return <output>{loc
 
 describe("Payroll employee handoff", () => {
   it("loads the employee supplied in the compensation query string", async () => {
-    render(<MemoryRouter initialEntries={["/payroll/compensation?employee=EMP-001"]}><Routes><Route path="/payroll/compensation" element={<PayrollPage sectionKey="compensation" />} /></Routes></MemoryRouter>);
-    await screen.findByText("EMP-001");
+    const view = render(<MemoryRouter initialEntries={["/payroll/compensation?employee=EMP-001"]}><Routes><Route path="/payroll/compensation" element={<PayrollPage sectionKey="compensation" />} /></Routes></MemoryRouter>);
+    await waitFor(() => expect(view.container.querySelector(".employee-context")?.textContent).toContain("EMP-001"));
     expect(payrollApi.getProfiles).toHaveBeenCalledWith("EMP-001");
     expect(payrollApi.getPayrollEmployee).toHaveBeenCalledWith("EMP-001");
   });
 
-  it("opens compensation after configuring the selected workforce employee", async () => {
+  it("opens compensation after configuring the selected workforce employee, defaulting to the organization currency", async () => {
     render(<MemoryRouter initialEntries={["/payroll/employees?employee=EMP-001"]}><CurrentLocation /><Routes><Route path="/payroll/employees" element={<PayrollPage sectionKey="employees" />} /><Route path="/payroll/compensation" element={<PayrollPage sectionKey="compensation" />} /></Routes></MemoryRouter>);
-    fireEvent.click(await screen.findByText("Configure employee"));
-    fireEvent.change(screen.getByLabelText("Employee code"), { target: { value: "EMP-001" } });
-    fireEvent.change(screen.getByLabelText("Effective from"), { target: { value: "2026-01-01" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    expect((await screen.findByLabelText("Employee code") as HTMLInputElement).value).toBe("EMP-001");
+    await waitFor(() => expect((screen.getByLabelText("Currency") as HTMLInputElement).value).toBe("INR"));
+    fireEvent.change(screen.getByLabelText("Payroll start date"), { target: { value: "2026-01-01" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save payroll settings" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("/payroll/compensation?employee=EMP-001"));
-    expect(payrollApi.createPayrollEmployee).toHaveBeenCalledWith(expect.objectContaining({ employeeCode: "EMP-001", status: "ACTIVE" }));
+    expect(payrollApi.createPayrollEmployee).toHaveBeenCalledWith(expect.objectContaining({ employeeCode: "EMP-001", status: "ACTIVE", currency: "INR", payFrequency: "MONTHLY" }));
   });
 });
 
@@ -67,14 +69,20 @@ it("shows the failed-run reason and recovers to draft before retry", async () =>
   expect(payrollApi.recoverPayRun).toHaveBeenCalledWith("FAILED-1");
 });
 
-it("clears the loaded employee before a different code can be used for calculation", async () => {
-  vi.spyOn(payrollApi, "getCalculations").mockResolvedValue([]);
-  render(<MemoryRouter initialEntries={["/payroll/calculations?employee=EMP-001"]}><PayrollPage sectionKey="calculations" /></MemoryRouter>);
-  await screen.findByText("EMP-001");
+it("clears the loaded employee before a different employee can be used for calculation", async () => {
+  const getCalculations = vi.spyOn(payrollApi, "getCalculations").mockResolvedValue([]);
+  const enrolled = (employeeCode: string) => ({ employeeCode, currency: "USD", payFrequency: "MONTHLY" as const, effectiveFrom: "2026-01-01", status: "ACTIVE" as const });
+  vi.mocked(payrollApi.getPayrollEmployees).mockResolvedValue([enrolled("EMP-001"), enrolled("EMP-OTHER")]);
+  const view = render(<MemoryRouter initialEntries={["/payroll/calculations?employee=EMP-001"]}><PayrollPage sectionKey="calculations" /></MemoryRouter>);
+  const banner = () => view.container.querySelector(".employee-context")?.textContent ?? null;
+  await waitFor(() => expect(banner()).toContain("EMP-001"));
+  await screen.findByRole("option", { name: "EMP-OTHER" });
   expect(screen.getByRole("button", { name: "Calculate" }).hasAttribute("disabled")).toBe(false);
-  fireEvent.change(screen.getByPlaceholderText("Employee code"), { target: { value: "EMP-OTHER" } });
-  expect(screen.queryByText("EMP-001")).toBeNull();
+  fireEvent.change(screen.getByLabelText("Employee"), { target: { value: "EMP-OTHER" } });
+  expect(banner()).toBeNull();
   expect(screen.getByRole("button", { name: "Calculate" }).hasAttribute("disabled")).toBe(true);
+  await waitFor(() => expect(banner()).toContain("EMP-OTHER"));
+  expect(getCalculations).toHaveBeenLastCalledWith("EMP-OTHER");
 });
 
 it("links pay-run compensation setup back to the selected run", async () => {
@@ -87,4 +95,21 @@ it("links pay-run compensation setup back to the selected run", async () => {
   const params = new URL(link.getAttribute("href")!, "http://localhost").searchParams;
   expect(params.get("employee")).toBe("EMP-001");
   expect(params.get("returnTo")).toBe("/app/payroll/pay-runs?run=RETURN-1");
+});
+
+it("creates a monthly pay run from the next month with derived dates and the employees' currency", async () => {
+  const finalized = { payRunKey: "PAY-2026-09", periodStart: "2026-09-01", periodEnd: "2026-09-30", calculationDate: "2026-09-30", currency: "INR", status: "FINALIZED", grossTotal: 1000, deductionTotal: 0, netTotal: 1000, employeeCount: 1, createdAt: "2026-09-30", finalizedAt: "2026-09-30" };
+  vi.mocked(payrollApi.getPayRuns).mockResolvedValue({ content: [finalized], page: 0, totalPages: 1, size: 20, totalElements: 1, sort: "createdAt", direction: "desc" });
+  vi.mocked(payrollApi.getPayrollEmployees).mockResolvedValue([{ employeeCode: "EMP-001", currency: "INR", payFrequency: "MONTHLY", effectiveFrom: "2026-01-01", status: "ACTIVE" }]);
+  const created = { ...finalized, payRunKey: "PAY-2026-10", periodStart: "2026-10-01", periodEnd: "2026-10-31", calculationDate: "2026-10-31", status: "DRAFT", employeeCount: 0 };
+  const createPayRun = vi.spyOn(payrollApi, "createPayRun").mockResolvedValue(created);
+  render(<MemoryRouter><PayrollPage sectionKey="pay-runs" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "New pay run" }));
+  expect((screen.getByLabelText("Pay month") as HTMLInputElement).value).toBe("2026-10");
+  const create = await screen.findByRole("button", { name: "Create October 2026 draft" });
+  await waitFor(() => expect(screen.getByText(/1 monthly employee/)).toBeTruthy());
+  fireEvent.click(create);
+  await waitFor(() => expect(createPayRun).toHaveBeenCalledWith({ payRunKey: "PAY-2026-10", periodStart: "2026-10-01", periodEnd: "2026-10-31", calculationDate: "2026-10-31", currency: "INR" }));
+  expect(await screen.findByRole("article", { name: "Pay run PAY-2026-10" })).toBeTruthy();
+  vi.restoreAllMocks();
 });

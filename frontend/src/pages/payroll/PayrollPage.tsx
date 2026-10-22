@@ -9,7 +9,6 @@ import {
   createComponent,
   createPayRun,
   createPayrollEmployee,
-  createProfile,
   createSalaryTemplate,
   createSalaryTemplateVersion,
   deactivateComponent,
@@ -46,7 +45,12 @@ import {
   type SalaryTemplateVersion,
 } from "../../features/payroll/payrollApi";
 import { workflowLink, workflowReturn } from "../../components/HorizonWorkflowNav";
-import { Badge } from "../../components/ui/Badge";
+import { Badge, StatusBadge } from "../../components/ui/Badge";
+import { PersonCell } from "../../components/ui/PersonCell";
+import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
+import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
+import { formatDate, formatMoney, formatPeriod, humanize, payRunStatusDescription, personName } from "../../lib/format";
+import { CompensationForm } from "./CompensationForm";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import { Table } from "../admin/AdminPage";
@@ -124,56 +128,49 @@ export function PayrollPage({ sectionKey }: { sectionKey?: string }) {
     return (
       <PayRuns page={data as { content: PayRun[]; page: number; totalPages: number }} reload={load} />
     );
-  const employees = data as PayrollEmployee[];
-  if (section === "dashboard")
-    return <PayrollDashboard employeeCount={employees.length} />;
+  return <PayrollEmployees employees={data as PayrollEmployee[]} reload={load} />;
+}
+
+/** Payroll enrollment list, joined to Workforce records for names, plus everyone who still needs payroll setup. */
+function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[]; reload(): Promise<void> }) {
+  const directory = useWorkforceDirectory();
+  const [searchParams] = useSearchParams();
+  const [error, setError] = useState("");
+  const enrolled = new Set(employees.map((employee) => employee.employeeCode.toUpperCase()));
+  const pending = directory.employees.filter((employee) => !enrolled.has(employee.employeeCode.toUpperCase()) && (employee.status === "ACTIVE" || employee.status === "ON_LEAVE"));
+  const requested = searchParams.get("employee");
   return (
-    <Page
-      title="Payroll employees"
-      description="Employees configured for payroll in the selected workspace."
-    >
-      <EmployeeForm reload={load} />
+    <Page title="Payroll employees" description="People who are set up to be paid in this workspace.">
+      {error && <Notice>{error}</Notice>}
+      {(requested || !directory.available || directory.error) && <EmployeeForm reload={reload} />}
+      {pending.length > 0 && <section className="card" aria-labelledby="payroll-pending-heading">
+        <h3 id="payroll-pending-heading">Not set up for payroll ({pending.length})</h3>
+        <p className="snapshot-note">These employees exist in Horizon but cannot be paid until their payroll settings and salary are added.</p>
+        <ul className="pending-list">
+          {pending.slice(0, 10).map((employee) => <li key={employee.employeeCode}>
+            <span><strong>{personName(employee)}</strong> <small>{employee.employeeCode}</small></span>
+            <Link to={`${appPath("/app/workforce/employees/new")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Set up payroll →</Link>
+          </li>)}
+        </ul>
+        {pending.length > 10 && <p className="snapshot-note">And {pending.length - 10} more. Open each employee’s profile to continue.</p>}
+      </section>}
       {employees.length ? (
-        <Table
-          headers={[
-            "Employee",
-            "Status",
-            "Currency",
-            "Frequency",
-            "Effective",
-            "History",
-            "Action",
-          ]}
-        >
+        <Table headers={["Employee", "Pay frequency", "Currency", "Payroll start", "Status", ""]}>
           {employees.map((e) => (
             <tr key={e.employeeCode}>
-              <td>{e.employeeCode}</td>
-              <td>
-                <Badge label={e.status} />
-              </td>
+              <td><PersonCell name={directory.nameOf(e.employeeCode)} code={e.employeeCode} /></td>
+              <td>{humanize(e.payFrequency)}</td>
               <td>{e.currency}</td>
-              <td>{label(e.payFrequency)}</td>
-              <td>{e.effectiveFrom}</td>
-              <td>
-                <Link
-                  to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`}
-                >
-                  Compensation
-                </Link>
-              </td>
-              <td>
-                <Button
-                  onClick={() =>
-                    confirm(
-                      `${e.status === "ACTIVE" ? "Deactivate" : "Activate"} ${e.employeeCode}?`,
-                    ) &&
-                    void updatePayrollEmployee(e.employeeCode, {
-                      status: e.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                    })
-                      .then(load)
-                      .catch((x) => setError((x as Error).message))
-                  }
-                >
+              <td>{formatDate(e.effectiveFrom)}</td>
+              <td><StatusBadge status={e.status} /></td>
+              <td className="row-actions">
+                <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`}>Salary</Link>
+                <Link to={`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`}>Payslips</Link>
+                <Button size="sm" onClick={() =>
+                  confirm(`${e.status === "ACTIVE" ? "Stop paying" : "Resume paying"} ${directory.nameOf(e.employeeCode)}?`) &&
+                  void updatePayrollEmployee(e.employeeCode, { status: e.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })
+                    .then(reload)
+                    .catch((x) => setError(x instanceof ApiError ? x.message : "Unable to update payroll employee"))}>
                   {e.status === "ACTIVE" ? "Deactivate" : "Activate"}
                 </Button>
               </td>
@@ -181,70 +178,20 @@ export function PayrollPage({ sectionKey }: { sectionKey?: string }) {
           ))}
         </Table>
       ) : (
-        <Empty>No payroll employees. Configure an employee to begin.</Empty>
+        <Empty><strong>Nobody is set up for payroll yet.</strong><br />{pending.length ? "Choose someone above to add their payroll settings and salary." : <>Add an employee first. <Link to={appPath("/app/workforce/employees/new")}>Add employee</Link></>}</Empty>
       )}
     </Page>
   );
 }
-function PayrollDashboard({ employeeCount }: { employeeCount: number }) {
-  const steps = [
-    [
-      "Optional",
-      "Salary templates",
-      "Reuse configurations across employees, or create compensation directly.",
-      "salary-templates",
-    ],
-    [
-      "2",
-      "Compensation",
-      "Review immutable employee compensation snapshots.",
-      "compensation",
-    ],
-    [
-      "3",
-      "Calculations",
-      "Preview payroll results using active compensation.",
-      "calculations",
-    ],
-    [
-      "4",
-      "Pay runs",
-      "Include employees, process, and finalize payroll.",
-      "pay-runs",
-    ],
-    ["5", "Ledger", "Review finalized signed payroll history.", "ledger"],
-    ["6", "Payslips", "View finalized employee payroll documents.", "payslips"],
-  ];
-  return (
-    <Page
-      title="Payroll dashboard"
-      description={`${employeeCount} payroll employee${employeeCount === 1 ? "" : "s"} configured. Follow the workflow from configuration to finalized history.`}
-    >
-      <div className="workflow">
-        {steps.map(([number, title, description, path]) => (
-          <Link
-            className="workflow-step"
-            key={path}
-            to={appPath(`/app/payroll/${path}`)}
-          >
-            <span>{number}</span>
-            <div>
-              <h3>{title}</h3>
-              <p>{description}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </Page>
-  );
-}
+/** Direct enrollment form, used when arriving from a setup link or when Workforce names are unavailable. */
 function EmployeeForm({ reload }: { reload(): Promise<void> }) {
   const [searchParams] = useSearchParams(), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+  const defaults = useOrganizationDefaults();
   const initialCode = searchParams.get("employee") ?? "";
   return (
-    <details className="card">
-      <summary>Configure employee</summary>
+    <section className="card" aria-labelledby="payroll-enroll-heading">
+      <h3 id="payroll-enroll-heading">Set up payroll for an employee</h3>
       <form
         className="form-grid"
         onSubmit={(e: FormEvent) => {
@@ -253,29 +200,29 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
           const b = Object.fromEntries(
             new FormData(e.currentTarget as HTMLFormElement),
           );
-          void createPayrollEmployee({ ...b, status: "ACTIVE" }).then(async () => {
+          void createPayrollEmployee({ ...b, currency: String(b.currency).toUpperCase(), status: "ACTIVE" }).then(async () => {
             await reload();
             const next = `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`;
             const back = workflowReturn(searchParams.toString());
             navigate(back ? workflowLink(next, back) : next);
-          }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to configure Payroll employee")).finally(() => setBusy(false));
+          }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to set up payroll")).finally(() => setBusy(false));
         }}
       >
         {error && <Notice>{error}</Notice>}
-        {input("employeeCode", initialCode, "text", { required: true })}
-        {input("currency", "USD")}
+        <label>Employee code<input name="employeeCode" required defaultValue={initialCode} /></label>
+        <label key={defaults.currency}>Currency<input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={defaults.currency} placeholder="e.g. INR" /></label>
         <label>
-          Frequency
-          <select name="payFrequency">
-            <option>MONTHLY</option>
-            <option>BIWEEKLY</option>
-            <option>WEEKLY</option>
+          Pay frequency
+          <select name="payFrequency" defaultValue="MONTHLY">
+            <option value="MONTHLY">Monthly</option>
+            <option value="BIWEEKLY">Every two weeks</option>
+            <option value="WEEKLY">Weekly</option>
           </select>
         </label>
-        {input("effectiveFrom", "", "date")}
-        <Button variant="primary" disabled={busy}>{busy ? "Creating…" : "Create"}</Button>
+        <label>Payroll start date<input name="effectiveFrom" type="date" required /></label>
+        <Button variant="primary" disabled={busy}>{busy ? "Saving…" : "Save payroll settings"}</Button>
       </form>
-    </details>
+    </section>
   );
 }
 function Components({
@@ -303,7 +250,7 @@ function Components({
     }
   };
   return (
-    <Page title="Components">
+    <Page title="Salary components" description="The earnings and deductions you can use in salaries and templates.">
       {error && <Notice>{error}</Notice>}
       <details className="card">
         <summary>Create component</summary>
@@ -351,11 +298,11 @@ function Components({
           <tr key={c.componentKey}>
             <td>{c.componentKey}</td>
             <td>{c.displayName}</td>
-            <td>{c.category}</td>
-            <td>{c.amountType}</td>
-            <td>{c.occurrenceType}</td>
+            <td>{humanize(c.category)}</td>
+            <td>{humanize(c.amountType)}</td>
+            <td>{humanize(c.occurrenceType)}</td>
             <td>
-              <Badge label={c.status} />
+              <StatusBadge status={c.status} />
             </td>
             <td>
               {editingKey === c.componentKey ? (
@@ -441,6 +388,7 @@ function SalaryTemplates({
     [busy, setBusy] = useState(false),
     [versions, setVersions] = useState<Record<string, SalaryTemplateVersion[]>>({}),
     [selectedVersions, setSelectedVersions] = useState<Record<string, number>>({});
+  const defaults = useOrganizationDefaults();
   const activeComponents = components.filter((c) => c.status === "ACTIVE");
   const loadVersions = async () => {
     const entries = await Promise.all(
@@ -509,7 +457,7 @@ function SalaryTemplates({
             {input("templateKey")}
             {input("displayName")}
             {input("description")}
-            {input("currency", "USD")}
+            <span key={defaults.currency} className="contents">{input("currency", defaults.currency, "text", { pattern: "[A-Z]{3}", maxLength: 3 })}</span>
             {select("payFrequency", ["MONTHLY", "BIWEEKLY", "WEEKLY"])}
             {input("effectiveFrom", "", "date")}
           </div>
@@ -816,6 +764,10 @@ function EmployeeDetail({ section }: { section: string }) {
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false);
   const loadVersion = useRef(0);
+  const directory = useWorkforceDirectory();
+  const defaults = useOrganizationDefaults();
+  const [roster, setRoster] = useState<PayrollEmployee[]>([]);
+  useEffect(() => { getPayrollEmployees().then(setRoster).catch(() => setRoster([])); }, []);
   const load = async (employeeCode = code, filters: Record<string, string> = {}) => {
     const normalizedCode = employeeCode.trim().toUpperCase();
     if (!normalizedCode) return;
@@ -857,46 +809,43 @@ function EmployeeDetail({ section }: { section: string }) {
     section === "compensation"
       ? "Compensation"
       : section === "calculations"
-        ? "Calculations"
+        ? "Pay preview"
         : section === "ledger"
-          ? "Payroll Ledger"
+          ? "Payroll ledger"
           : "Payslips";
+  const description = section === "compensation" ? "Each employee’s salary history. A new salary applies from its start date; earlier ones stay as history."
+    : section === "calculations" ? "Check what an employee would be paid for a period before running payroll. Previews never pay anyone."
+      : section === "ledger" ? "Locked payroll entries created when pay runs are finalized."
+        : "Payslips from finalized pay runs.";
+  const choose = (next: string) => {
+    loadVersion.current++;
+    setCode(next); setEmployee(null); setData(null); setLoading(false); setError("");
+    setSearchParams(previous => { const params = new URLSearchParams(previous); if (next) params.set("employee", next); else params.delete("employee"); return params; });
+  };
   return (
-    <Page
-      title={title}
-      description="Choose an employee in this workspace to configure pay and review payroll results."
-    >
-      <form
-        className="toolbar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSearchParams(previous => { const next = new URLSearchParams(previous); if (code) next.set("employee", code); else next.delete("employee"); return next; });
-          void load(code);
-        }}
-      >
-        <input
-          required
-          placeholder="Employee code"
-          value={code}
-          onChange={(e) => { loadVersion.current++; setCode(e.target.value.toUpperCase()); setEmployee(null); setData(null); setLoading(false); }}
-        />
-        <Button variant="primary" disabled={loading}>
-          {loading ? "Loading…" : "Load employee"}
-        </Button>
-      </form>
+    <Page title={title} description={description}>
+      <div className="toolbar employee-picker">
+        <label>Employee
+          <select value={roster.some((item) => item.employeeCode === code) ? code : code ? "__other" : ""} onChange={(event) => choose(event.target.value === "__other" ? code : event.target.value)}>
+            <option value="">Choose an employee…</option>
+            {code && !roster.some((item) => item.employeeCode === code) && <option value="__other">{code}</option>}
+            {roster.map((item) => <option key={item.employeeCode} value={item.employeeCode}>{directory.nameOf(item.employeeCode)}{directory.find(item.employeeCode) ? ` (${item.employeeCode})` : ""}{item.status === "ACTIVE" ? "" : " · inactive"}</option>)}
+          </select>
+        </label>
+        {loading && <span role="status">Loading…</span>}
+      </div>
       {error && <Notice>{error}<p><Link to={workflowLink(`${appPath("/app/payroll/employees")}?employee=${encodeURIComponent(code)}`, `${appPath(`/app/payroll/${section}`)}?employee=${encodeURIComponent(code)}`)}>Review payroll employee configuration</Link></p></Notice>}
-      {!code && <Notice tone="info">Choose an employee from <Link to={appPath("/app/payroll/employees")}>Payroll employees</Link> to continue. Payroll enrollment and compensation are required before calculation.</Notice>}
-      {loading && <Notice tone="info">Loading employee history…</Notice>}
+      {!code && <Notice tone="info">{roster.length ? "Choose an employee to continue." : <>Nobody is set up for payroll yet. <Link to={appPath("/app/payroll/employees")}>Set up payroll employees</Link></>}</Notice>}
       {employee && (
         <div className="employee-context">
-          <strong>{employee.employeeCode}</strong>
-          <span>{employee.currency}</span>
-          <span>{label(employee.payFrequency)}</span>
-          <Badge label={employee.status} />
+          <strong>{directory.nameOf(employee.employeeCode)}</strong>
+          {directory.find(employee.employeeCode) && <span>{employee.employeeCode}</span>}
+          <span>{humanize(employee.payFrequency)} · {employee.currency}</span>
+          <StatusBadge status={employee.status} />
         </div>
       )}
-      {section === "compensation" && <ProfileForm code={employee?.employeeCode ?? ""} reload={load} employee={employee} />}{" "}
-      {section === "calculations" && <Notice tone="info">Calculations preview the full pay period containing the selected date. Recalculation creates a new snapshot and does not pay or consume compensation. Finalize a Pay Run to create ledger entries.</Notice>}
+      {section === "compensation" && employee && data && <ProfileForm employee={employee} profiles={data as Profile[]} locale={defaults.locale} reload={load} />}
+      {section === "calculations" && employee && <p className="snapshot-note">Choose any date inside the pay period you want to check. The preview uses the salary in effect for that whole period.</p>}
       {section === "calculations" && (
         <form
           className="toolbar"
@@ -910,8 +859,8 @@ function EmployeeDetail({ section }: { section: string }) {
               .catch((x) => setError((x as Error).message));
           }}
         >
-          <input type="date" name="date" required />
-          <Button disabled={!employee || loading}>Calculate</Button>
+          <label>Date in pay period<input type="date" name="date" required /></label>
+          <Button variant="primary" disabled={!employee || loading}>Calculate</Button>
         </form>
       )}
       {section === "ledger" && data && (
@@ -957,19 +906,21 @@ function EmployeeDetail({ section }: { section: string }) {
           <Button>Apply filters</Button>
         </form>
       )}
-      {data && data.length === 0 && <Empty>{section === "compensation" ? "No compensation profiles yet. Create a profile with the employee’s eligible dates and pay components." : section === "calculations" ? "No calculation previews yet. Configure compensation, then choose a date in the intended pay period." : "No finalized results yet. Process and finalize a pay run to create ledger entries and payslips."}</Empty>}
-      {employee && <nav className="toolbar" aria-label="Employee payroll workflow">
-        <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Compensation</Link>
-        <Link to={`${appPath("/app/payroll/calculations")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Preview calculation</Link>
-        <Link to={appPath("/app/payroll/pay-runs")}>Pay runs</Link>
+      {data && data.length === 0 && section !== "compensation" && <Empty>{section === "calculations" ? "No previews yet. Choose a date above to see what this employee would be paid." : "Nothing here yet. Results appear after a pay run including this employee is finalized."}</Empty>}
+      {employee && <nav className="toolbar section-tabs" aria-label="Employee payroll workflow">
+        <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Salary</Link>
+        <Link to={`${appPath("/app/payroll/calculations")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Pay preview</Link>
+        <Link to={`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Payslips</Link>
+        <Link to={`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Ledger</Link>
+        {directory.find(employee.employeeCode) && <Link to={appPath(`/app/workforce/employees/${employee.employeeCode}`)}>Employee profile</Link>}
       </nav>}
-      {section === "compensation" && employee && <p>Compensation uses configured earning or deduction components. <Link to={workflowLink(appPath("/app/payroll/components"), `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Configure pay components</Link> and return here to create the profile. Salary templates are optional.</p>}
+      {section === "compensation" && employee && <p className="snapshot-note">Need another pay component? <Link to={workflowLink(appPath("/app/payroll/components"), `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Manage salary components</Link>, then return here.</p>}
       {data &&
         section === "compensation" &&
         (data as Profile[]).map((p) => (
           <article className="card" key={p.profileKey}>
             <h3>
-              {p.profileKey} <Badge label={p.status} />
+              Salary from {formatDate(p.effectiveFrom)} <StatusBadge status={p.status} />
             </h3>
             <p>
               {p.sourceTemplateKey ? (
@@ -981,11 +932,10 @@ function EmployeeDetail({ section }: { section: string }) {
               ) : (
                 <>Created directly · </>
               )}
-              {p.currency} · {p.effectiveFrom} to {p.effectiveTo ?? "ongoing"}
+              {p.currency} · {formatDate(p.effectiveFrom)} to {p.effectiveTo ? formatDate(p.effectiveTo) : "ongoing"} · <small>{p.profileKey}</small>
             </p>
             <p className="snapshot-note">
-              This profile is a historical compensation snapshot and is not
-              edited from this view.
+              Saved salaries are kept as history and are not edited. To change pay, add a new salary with a later start date.
             </p>
             <Table
               headers={["Component", "Category", "Method", "Configured value"]}
@@ -999,7 +949,7 @@ function EmployeeDetail({ section }: { section: string }) {
                   </td>
                   <td>{label(c.category)}</td>
                   <td>{label(c.amountType)}</td>
-                  <td>{money(c.value, p.currency)}</td>
+                  <td>{c.amountType === "PERCENTAGE" ? `${c.value}%` : money(c.value, p.currency)}</td>
                 </tr>
               ))}
             </Table>
@@ -1012,18 +962,17 @@ function EmployeeDetail({ section }: { section: string }) {
             className="card"
             key={`${c.calculationDate}-${calculationIndex}`}
           >
-            <h3>{c.calculationDate}</h3>
-            <p>{c.periodStart && c.periodEnd ? `Period: ${c.periodStart} – ${c.periodEnd}` : "Historical snapshot: period was not recorded"}</p>
+            <h3>{c.periodStart && c.periodEnd ? formatPeriod(c.periodStart, c.periodEnd) : formatDate(c.calculationDate)}</h3>
+            <p className="snapshot-note">{c.periodStart && c.periodEnd ? `Previewed for ${formatDate(c.calculationDate)}` : "Older preview: the pay period was not recorded"}</p>
             <p>
-              Gross {c.grossAmount} · Deductions {c.deductionAmount} · Net{" "}
-              {c.netAmount} {c.currency}
+              Gross <strong>{money(c.grossAmount, c.currency)}</strong> · Deductions <strong>{money(c.deductionAmount, c.currency)}</strong> · Net <strong>{money(c.netAmount, c.currency)}</strong>
             </p>
             <div className="payslip-columns">
               <section>
                 <h4>Earnings</h4>
                 {c.lines.filter((line) => line.category === "EARNING").map((l) => (
                   <p key={l.componentKey}>
-                    {l.displayName}: {l.calculatedAmount}{l.percentageBasis ? ` (${label(l.percentageBasis)})` : ""}
+                    {l.displayName}: {money(l.calculatedAmount, c.currency)}{l.percentageBasis ? ` (${label(l.percentageBasis)})` : ""}
                   </p>
                 ))}
               </section>
@@ -1031,7 +980,7 @@ function EmployeeDetail({ section }: { section: string }) {
                 <h4>Deductions</h4>
                 {c.lines.filter((line) => line.category === "DEDUCTION").map((l) => (
                   <p key={l.componentKey}>
-                    {l.displayName}: {l.calculatedAmount}{l.percentageBasis ? ` (${label(l.percentageBasis)})` : ""}
+                    {l.displayName}: {money(l.calculatedAmount, c.currency)}{l.percentageBasis ? ` (${label(l.percentageBasis)})` : ""}
                   </p>
                 ))}
               </section>
@@ -1053,10 +1002,8 @@ function EmployeeDetail({ section }: { section: string }) {
         >
           {(data as LedgerEntry[]).map((e) => (
             <tr key={e.sourceReference}>
-              <td>{e.entryDate}</td>
-              <td>
-                {e.periodStart} – {e.periodEnd}
-              </td>
+              <td>{formatDate(e.entryDate)}</td>
+              <td>{formatPeriod(e.periodStart, e.periodEnd)}</td>
               <td>{e.payRunKey}</td>
               <td>{label(e.type)}</td>
               <td>{e.componentName ?? "Net pay"}</td>
@@ -1083,22 +1030,20 @@ function EmployeeDetail({ section }: { section: string }) {
           <article className="card payslip" key={p.payRunKey}>
             <header>
               <div>
-                <small>FINALIZED PAYSLIP</small>
-                <h3>{p.employeeCode}</h3>
-                <p>Pay run {p.payRunKey}</p>
+                <small>PAYSLIP · {formatPeriod(p.periodStart, p.periodEnd).toUpperCase()}</small>
+                <h3>{directory.nameOf(p.employeeCode)}</h3>
+                <p>{p.employeeCode} · Pay run {p.payRunKey}</p>
               </div>
-              <Badge label="FINALIZED" />
+              <StatusBadge status="FINALIZED" />
             </header>
             <dl>
               <div>
                 <dt>Pay period</dt>
-                <dd>
-                  {p.periodStart} – {p.periodEnd}
-                </dd>
+                <dd>{formatPeriod(p.periodStart, p.periodEnd)}</dd>
               </div>
               <div>
-                <dt>Calculation date</dt>
-                <dd>{p.calculationDate}</dd>
+                <dt>Pay date</dt>
+                <dd>{formatDate(p.calculationDate)}</dd>
               </div>
               <div>
                 <dt>Finalized</dt>
@@ -1152,53 +1097,15 @@ function EmployeeDetail({ section }: { section: string }) {
     </Page>
   );
 }
-function ProfileForm({
-  code,
-  reload,
-  employee,
-}: {
-  code: string;
-  reload(): Promise<void>;
-  employee: PayrollEmployee | null;
-}) {
-  const [error, setError] = useState(""), [success, setSuccess] = useState(""), [busy, setBusy] = useState(false);
+function ProfileForm({ employee, profiles, locale, reload }: { employee: PayrollEmployee; profiles: Profile[]; locale?: string; reload(): Promise<void> }) {
+  const [success, setSuccess] = useState("");
+  const hasSalary = profiles.some((profile) => profile.status === "ACTIVE" && profile.components.length > 0);
   return (
-    <details className="card">
-      <summary>Create compensation profile</summary>
-      <form
-        className="form-grid"
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault();
-          setError(""); setSuccess(""); setBusy(true);
-          const f = new FormData(e.currentTarget as HTMLFormElement);
-          const body = {
-            profileKey: f.get("profileKey"),
-            currency: f.get("currency"),
-            effectiveFrom: f.get("effectiveFrom"),
-            effectiveTo: f.get("effectiveTo") || null,
-            status: "ACTIVE",
-            components: [
-              {
-                componentKey: f.get("componentKey"),
-                value: Number(f.get("value")),
-              },
-            ],
-          };
-          void createProfile(code, body).then(async () => { await reload(); setSuccess("Compensation profile saved to the employee history."); }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to save compensation profile")).finally(() => setBusy(false));
-        }}
-      >
-        {error && <Notice>{error}</Notice>}
-        {success && <Notice tone="success">{success}</Notice>}
-        {input("profileKey")}
-        {input("currency", "USD")}
-        {input("effectiveFrom", "", "date")}
-        {input("effectiveTo", "", "date")}
-        {input("componentKey")}
-        {input("value", "0", "number")}
-        <Button variant="primary" disabled={!code || busy || !employee}>
-          {busy ? "Saving…" : "Create"}
-        </Button>
-      </form>
+    <details className="card" open={!hasSalary}>
+      <summary>{hasSalary ? "Add a new salary" : "Set salary"}</summary>
+      {success && <Notice tone="success">{success}</Notice>}
+      <CompensationForm employee={employee} profiles={profiles} locale={locale}
+        onSaved={async () => { setSuccess("Salary saved."); await reload(); }} />
     </details>
   );
 }
@@ -1212,7 +1119,9 @@ function PayRuns({
   const [selected, setSelected] = useState<PayRun | null>(null),
     [employees, setEmployees] = useState<PayRunEmployee[]>([]),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [creating, setCreating] = useState(false);
+  const directory = useWorkforceDirectory();
   const [view, setView] = useState(page);
   useEffect(() => setView(page), [page]);
   const runs = view.content;
@@ -1224,12 +1133,13 @@ function PayRuns({
     setSelected(null); setEmployees([]); setError(""); setBusy(true);
     void Promise.all([getPayRun(requestedRun), getPayRunEmployees(requestedRun)])
       .then(([run, included]) => { if (active) { setSelected(run); setEmployees(included); } })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to open Pay Run"); })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Unable to open pay run"); })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
   }, [requestedRun]);
   const open = async (r: PayRun) => {
     setSelected(r);
+    setCreating(false);
     try {
       setEmployees(await getPayRunEmployees(r.payRunKey));
     } catch (x) {
@@ -1245,7 +1155,7 @@ function PayRuns({
       await open(updated);
       await reload();
     } catch (x) {
-      setError((x instanceof ApiError ? x.message : "Unable to update Pay Run") + (selected?.status === "CALCULATED" ? " Refresh the run. If it is still Calculated, retry Finalize; if Finalized, review its ledger." : ""));
+      setError((x instanceof ApiError ? x.message : "Unable to update pay run") + (selected?.status === "CALCULATED" ? " Refresh the run. If it is still Calculated, retry Finalize; if Finalized, review its ledger." : ""));
       if (selected) {
         try { await open(await getPayRun(selected.payRunKey)); }
         catch { /* Keep the actionable original error if the service is unavailable. */ }
@@ -1258,140 +1168,33 @@ function PayRuns({
   const goToPage = async (next: number) => {
     setBusy(true);
     try { setView(await getPayRuns(next)); }
-    catch (x) { setError(x instanceof ApiError ? x.message : "Unable to load Pay Runs"); }
+    catch (x) { setError(x instanceof ApiError ? x.message : "Unable to load pay runs"); }
     finally { setBusy(false); }
   };
+  const showCreate = creating || (!runs.length && !selected);
   return (
-    <Page title="Pay Runs" description="Use a full calendar month or an aligned 7/14-day period. Compensation must cover the whole period. One-time components apply only in the profile’s first period; proration is not supported.">
-      <details className="card">
-        <summary>Create pay run</summary>
-        <form
-          className="form-grid"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault();
-            setBusy(true);
-            void createPayRun(
-              Object.fromEntries(
-                new FormData(e.currentTarget as HTMLFormElement),
-              ),
-            ).then(async (run) => { await open(run); await reload(); }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to create Pay Run")).finally(() => setBusy(false));
-          }}
-        >
-          {input("payRunKey")}
-          {input("periodStart", "", "date")}
-          {input("periodEnd", "", "date")}
-          {input("calculationDate", "", "date")}
-          {input("currency", "USD")}
-          <Button variant="primary" disabled={busy}>{busy ? "Creating…" : "Create"}</Button>
-        </form>
-      </details>
+    <Page title="Pay runs" description="Pick a pay period, choose who to pay, then calculate, review and finalize."
+      actions={!showCreate ? <Button variant="primary" onClick={() => { setCreating(true); setSelected(null); }}>New pay run</Button> : undefined}>
+      {showCreate && <NewPayRun runs={runs} onCancel={runs.length ? () => setCreating(false) : undefined}
+        onCreated={async (run) => { await open(run); await reload(); }} />}
       {error && <Notice>{error}</Notice>}
-      {!runs.length ? (
-        <Empty>No pay runs. Create a draft pay run to begin processing.</Empty>
-      ) : (
-        <Table
-          headers={[
-            "Run",
-            "Period",
-            "Status",
-            "Employees",
-            "Gross",
-            "Net",
-            "Action",
-          ]}
-        >
+      {selected && <PayRunDetail run={selected} employees={employees} busy={busy} nameOf={directory.nameOf} mutate={mutate}
+        onPrepared={async () => { await open(await getPayRun(selected.payRunKey)); await reload(); }} onClose={() => setSelected(null)} />}
+      {runs.length > 0 && <section aria-labelledby="pay-run-history-heading">
+        <h2 id="pay-run-history-heading" className="section-heading">All pay runs</h2>
+        <Table headers={["Pay run", "Period", "Status", "Employees", "Net pay", ""]}>
           {runs.map((r) => (
-            <tr key={r.payRunKey}>
-              <td>{r.payRunKey}</td>
-              <td>
-                {r.periodStart} – {r.periodEnd}
-              </td>
-              <td>
-                <Badge label={r.status} />
-              </td>
+            <tr key={r.payRunKey} className={selected?.payRunKey === r.payRunKey ? "selected-row" : undefined}>
+              <td><strong>{r.payRunKey}</strong></td>
+              <td>{formatPeriod(r.periodStart, r.periodEnd)}</td>
+              <td><StatusBadge status={r.status} /></td>
               <td>{r.employeeCount}</td>
-              <td>
-                {r.grossTotal} {r.currency}
-              </td>
-              <td>{r.netTotal}</td>
-              <td>
-                <Button onClick={() => void open(r)}>Open</Button>
-              </td>
+              <td>{r.status === "DRAFT" || r.status === "FAILED" ? "—" : money(r.netTotal, r.currency)}</td>
+              <td><Button size="sm" onClick={() => void open(r)}>Open</Button></td>
             </tr>
           ))}
         </Table>
-      )}
-      {selected && (
-        <article className="card">
-          <div className="card-heading">
-            <div>
-              <h3>
-                {selected.payRunKey} <Badge label={selected.status} />
-              </h3>
-              <p className="snapshot-note">{payRunGuidance(selected.status)}</p>
-            </div>
-          </div>
-          {selected.status === "DRAFT" && <PayRunPreparation key={selected.payRunKey} run={selected} busy={busy}
-            onSaved={async () => { await open(await getPayRun(selected.payRunKey)); await reload(); }}
-            onProcess={() => { if (confirm("Process this pay run?")) void mutate(() => processPayRun(selected.payRunKey)); }} />}
-          {selected.status !== "DRAFT" && <>
-          {employees.length ? (
-            <Table
-              headers={[
-                "Employee",
-                "Gross",
-                "Deductions",
-                "Net",
-                "Calculation date",
-              ]}
-            >
-              {employees.map((e) => (
-                <tr key={e.employeeCode}>
-                  <td><strong>{e.employeeCode}</strong><br />{selected.status === "FINALIZED" ? <>
-                    <Link to={workflowLink(`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Ledger</Link>{" · "}
-                    <Link to={workflowLink(`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Payslip</Link>
-                  </> : <Link to={workflowLink(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`, `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(selected.payRunKey)}`)}>Review compensation</Link>}</td>
-                  <td>{money(e.grossAmount, e.currency)}</td>
-                  <td>{money(e.deductionAmount, e.currency)}</td>
-                  <td>{money(e.netAmount, e.currency)}</td>
-                  <td>{e.calculationDate}</td>
-                </tr>
-              ))}
-            </Table>
-          ) : (
-            <Empty>No employees have been included in this pay run.</Empty>
-          )}
-          </>}
-          <div className="toolbar">
-            {selected.status === "CALCULATED" && (
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={() =>
-                  confirm("Finalize this pay run?") &&
-                  void mutate(() => finalizePayRun(selected.payRunKey))
-                }
-              >
-                Finalize
-              </Button>
-            )}
-            {selected.status === "CALCULATED" && <Button disabled={busy} onClick={() => confirm("Return this run to Draft? Previous calculation snapshots remain in history; process again before finalizing.") && void mutate(() => recoverPayRun(selected.payRunKey))}>Reset for recalculation</Button>}
-            {selected.status === "FINALIZED" && (
-              <Notice tone="success">
-                Finalized payroll is immutable. Use Employee Ledger or Payslips
-                to review the resulting history.
-              </Notice>
-            )}
-            {selected.status === "PROCESSING" && (
-              <Button disabled={busy} onClick={() => void mutate(() => getPayRun(selected.payRunKey))}>Refresh processing state</Button>
-            )}
-            {(selected.status === "FAILED" || selected.status === "PROCESSING") && <>
-              <Notice>{selected.failureMessage || (selected.status === "FAILED" ? "Processing failed. Correct compensation or service availability, recover to draft, then process again. For incorrect immutable period dates, create a new run." : "Refresh before recovery. Abandoned processing can be recovered after five minutes; an active transaction must finish first.")}</Notice>
-              <Button disabled={busy} onClick={() => void mutate(() => recoverPayRun(selected.payRunKey))}>Recover to draft</Button>
-            </>}
-          </div>
-        </article>
-      )}
+      </section>}
       {view.totalPages > 1 && (
         <div className="toolbar">
           <Button disabled={busy || view.page === 0} onClick={() => void goToPage(view.page - 1)}>Previous</Button>
@@ -1400,6 +1203,172 @@ function PayRuns({
         </div>
       )}
     </Page>
+  );
+}
+
+function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClose }: {
+  run: PayRun; employees: PayRunEmployee[]; busy: boolean; nameOf(code: string): string;
+  mutate(action: () => Promise<PayRun>): Promise<void>; onPrepared(): Promise<void>; onClose(): void;
+}) {
+  const returnTo = `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(run.payRunKey)}`;
+  const steps = ["Choose employees", "Calculate", "Review & finalize"];
+  const position = run.status === "DRAFT" || run.status === "FAILED" ? 0 : run.status === "PROCESSING" ? 1 : run.status === "CALCULATED" ? 2 : 3;
+  return (
+    <article className="card pay-run-detail" aria-label={`Pay run ${run.payRunKey}`}>
+      <div className="card-heading">
+        <div>
+          <h3>{run.payRunKey} <StatusBadge status={run.status} /></h3>
+          <p>{formatPeriod(run.periodStart, run.periodEnd)} · pay date {formatDate(run.calculationDate)} · {run.currency}</p>
+          <p className="snapshot-note">{payRunStatusDescription[run.status] ?? ""}</p>
+        </div>
+        <Button size="sm" onClick={onClose}>Close</Button>
+      </div>
+      <ol className="stepper compact" aria-label="Pay run progress">
+        {steps.map((title, index) => <li key={title} className={index < position ? "done" : index === position ? "current" : ""} aria-current={index === position ? "step" : undefined}>
+          <span>{index < position ? "✓" : index + 1}</span>{title}
+        </li>)}
+      </ol>
+      {run.status === "DRAFT" && <PayRunPreparation key={run.payRunKey} run={run} busy={busy} nameOf={nameOf}
+        onSaved={onPrepared}
+        onProcess={() => { if (confirm("Calculate pay for the selected employees?")) void mutate(() => processPayRun(run.payRunKey)); }} />}
+      {run.status !== "DRAFT" && <>
+        {(run.status === "CALCULATED" || run.status === "FINALIZED") && <dl className="pay-estimate run-totals" aria-label="Pay run totals">
+          <div><dt>Employees</dt><dd>{run.employeeCount}</dd></div>
+          <div><dt>Gross pay</dt><dd>{money(run.grossTotal, run.currency)}</dd></div>
+          <div><dt>Deductions</dt><dd>{money(run.deductionTotal, run.currency)}</dd></div>
+          <div className="net"><dt>Net pay</dt><dd>{money(run.netTotal, run.currency)}</dd></div>
+        </dl>}
+        {employees.length ? (
+          <Table headers={["Employee", "Gross", "Deductions", "Net pay", ""]}>
+            {employees.map((e) => (
+              <tr key={e.employeeCode}>
+                <td><PersonCell name={nameOf(e.employeeCode)} code={e.employeeCode} /></td>
+                <td>{money(e.grossAmount, e.currency)}</td>
+                <td>{money(e.deductionAmount, e.currency)}</td>
+                <td><strong>{money(e.netAmount, e.currency)}</strong></td>
+                <td className="row-actions">{run.status === "FINALIZED" ? <>
+                  <Link to={workflowLink(`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Payslip</Link>
+                  <Link to={workflowLink(`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Ledger</Link>
+                </> : <Link to={workflowLink(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Review compensation</Link>}</td>
+              </tr>
+            ))}
+          </Table>
+        ) : (
+          <Empty>No employees have been included in this pay run.</Empty>
+        )}
+      </>}
+      <div className="toolbar">
+        {run.status === "CALCULATED" && (
+          <Button variant="primary" disabled={busy}
+            onClick={() => confirm(`Finalize ${run.payRunKey}? Net pay of ${money(run.netTotal, run.currency)} for ${run.employeeCount} employee${run.employeeCount === 1 ? "" : "s"} will be locked and payslips issued. This cannot be undone.`) && void mutate(() => finalizePayRun(run.payRunKey))}>
+            Finalize
+          </Button>
+        )}
+        {run.status === "CALCULATED" && <Button disabled={busy} onClick={() => confirm("Return this run to Draft? Previous calculation snapshots remain in history; process again before finalizing.") && void mutate(() => recoverPayRun(run.payRunKey))}>Reset for recalculation</Button>}
+        {run.status === "FINALIZED" && (
+          <Notice tone="success">
+            Finalized payroll is immutable. Open each employee’s payslip or ledger above to review the results.
+          </Notice>
+        )}
+        {run.status === "PROCESSING" && (
+          <Button disabled={busy} onClick={() => void mutate(() => getPayRun(run.payRunKey))}>Refresh processing state</Button>
+        )}
+        {(run.status === "FAILED" || run.status === "PROCESSING") && <>
+          <Notice>{run.failureMessage || (run.status === "FAILED" ? "Processing failed. Correct compensation or service availability, recover to draft, then process again. For incorrect immutable period dates, create a new run." : "Refresh before recovery. Abandoned processing can be recovered after five minutes; an active transaction must finish first.")}</Notice>
+          <Button disabled={busy} onClick={() => void mutate(() => recoverPayRun(run.payRunKey))}>Recover to draft</Button>
+        </>}
+      </div>
+    </article>
+  );
+}
+
+/** First and last day of a `YYYY-MM` month as ISO dates. */
+export function monthPeriod(month: string): { start: string; end: string } {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const last = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  return { start: `${month}-01`, end: `${month}-${String(last).padStart(2, "0")}` };
+}
+
+/** The month after the latest known run, or the current month when there are no runs. */
+export function suggestedPayMonth(runs: PayRun[], today = new Date()): string {
+  const latest = runs.map((run) => run.periodEnd).sort().at(-1);
+  if (!latest) return today.toISOString().slice(0, 7);
+  const next = new Date(`${latest}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 7);
+}
+
+/**
+ * Creates a draft run from a pay month: key, period, pay date and currency are derived from existing settings.
+ * Weekly and biweekly employees need an aligned custom period, which remains available.
+ */
+function NewPayRun({ runs, onCreated, onCancel }: { runs: PayRun[]; onCreated(run: PayRun): Promise<void>; onCancel?(): void }) {
+  const defaults = useOrganizationDefaults();
+  const [roster, setRoster] = useState<PayrollEmployee[] | null>(null);
+  useEffect(() => { getPayrollEmployees().then(setRoster).catch(() => setRoster([])); }, []);
+  const [month, setMonth] = useState(() => suggestedPayMonth(runs));
+  const [custom, setCustom] = useState(false);
+  const [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const active = (roster ?? []).filter((employee) => employee.status === "ACTIVE");
+  const counts = new Map<string, number>();
+  for (const employee of active) counts.set(employee.currency, (counts.get(employee.currency) ?? 0) + 1);
+  const rosterCurrency = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const currency = rosterCurrency ?? defaults.currency;
+  const otherFrequencies = active.filter((employee) => employee.payFrequency !== "MONTHLY").length;
+  const monthly = active.length - otherFrequencies;
+  const period = month ? monthPeriod(month) : { start: "", end: "" };
+  const taken = new Set(runs.map((run) => run.payRunKey));
+  let key = month ? `PAY-${month}` : "", suffix = 2;
+  while (taken.has(key)) key = `PAY-${month}-${suffix++}`;
+  const monthName = month ? new Intl.DateTimeFormat(defaults.locale ?? "en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${month}-01T00:00:00Z`)) : "";
+  const submit = (body: Record<string, unknown>) => {
+    setBusy(true); setError("");
+    void createPayRun(body).then(onCreated)
+      .catch((x) => setError(x instanceof ApiError && x.status === 409 ? `${x.message}. Open the existing run below, or choose another period.` : x instanceof ApiError ? x.message : "Unable to create pay run"))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <section className="card new-pay-run" aria-labelledby="new-pay-run-heading">
+      <div className="card-heading">
+        <h3 id="new-pay-run-heading">New pay run</h3>
+        {onCancel && <Button size="sm" type="button" onClick={onCancel}>Cancel</Button>}
+      </div>
+      {error && <Notice>{error}</Notice>}
+      {roster !== null && active.length === 0 && <Notice tone="info">Nobody is set up for payroll yet. <Link to={appPath("/app/payroll/employees")}>Set up payroll employees</Link> first — you can still create a draft now.</Notice>}
+      {!custom ? <form onSubmit={(event: FormEvent) => {
+        event.preventDefault();
+        submit({ payRunKey: key, periodStart: period.start, periodEnd: period.end, calculationDate: period.end, currency });
+      }}>
+        <div className="form-grid">
+          <label>Pay month<input type="month" required value={month} onChange={(event) => setMonth(event.target.value)} /></label>
+        </div>
+        {month && <p className="run-summary">
+          <strong>{monthName}</strong> · {formatPeriod(period.start, period.end)} · pay date {formatDate(period.end)} · {currency || "currency not set"}
+          {roster !== null && active.length > 0 && <> · {monthly} monthly employee{monthly === 1 ? "" : "s"}</>}
+        </p>}
+        {otherFrequencies > 0 && <p className="snapshot-note">{otherFrequencies} employee{otherFrequencies === 1 ? " is" : "s are"} paid weekly or every two weeks and will show as blocked in a monthly run. Use a custom period for them.</p>}
+        {!currency && defaults.loaded && <Notice>Set your organization’s currency in <Link to={appPath("/app/admin/settings")}>Settings</Link> before creating a pay run.</Notice>}
+        <div className="form-actions">
+          <Button variant="primary" disabled={busy || !month || !currency}>{busy ? "Creating…" : `Create ${monthName || "pay run"} draft`}</Button>
+          <Button type="button" onClick={() => setCustom(true)}>Use a custom period</Button>
+        </div>
+      </form> : <form className="form-grid" onSubmit={(event: FormEvent) => {
+        event.preventDefault();
+        const values = Object.fromEntries(new FormData(event.currentTarget as HTMLFormElement));
+        submit({ ...values, payRunKey: String(values.payRunKey).toUpperCase(), currency: String(values.currency).toUpperCase() });
+      }}>
+        <label>Pay run name<input name="payRunKey" required defaultValue={key} pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" title="Letters, numbers, dots, hyphens or underscores" /></label>
+        <label>Period start<input name="periodStart" type="date" required defaultValue={period.start} /></label>
+        <label>Period end<input name="periodEnd" type="date" required defaultValue={period.end} /></label>
+        <label>Pay date<input name="calculationDate" type="date" required defaultValue={period.end} /></label>
+        <label key={currency}>Currency<input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={currency} /></label>
+        <p className="snapshot-note form-wide">Use a full calendar month, or a 7- or 14-day period aligned to the employees’ payroll start dates. Partial periods are not pro-rated.</p>
+        <div className="form-actions form-wide">
+          <Button variant="primary" disabled={busy}>{busy ? "Creating…" : "Create draft"}</Button>
+          <Button type="button" onClick={() => setCustom(false)}>Back to monthly</Button>
+        </div>
+      </form>}
+    </section>
   );
 }
 const input = (
@@ -1435,17 +1404,4 @@ const label = (value: string) =>
     .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
     .toLowerCase()
     .replace(/^./, (c) => c.toUpperCase());
-const money = (value: number, currency: string) =>
-  new Intl.NumberFormat(undefined, { style: "currency", currency }).format(
-    value,
-  );
-const payRunGuidance = (status: string) =>
-  status === "DRAFT"
-    ? "Review eligibility for this period, save your employee selection, then process to calculate."
-    : status === "PROCESSING"
-      ? "Payroll calculations are currently being processed."
-      : status === "CALCULATED"
-        ? "Calculations are complete. Review employee totals before finalizing."
-        : status === "FINALIZED"
-          ? "Finalization is complete and ledger/payslip snapshots are immutable."
-          : "Processing failed. Review the reported error before trying again.";
+const money = (value: number, currency: string) => formatMoney(value, currency);

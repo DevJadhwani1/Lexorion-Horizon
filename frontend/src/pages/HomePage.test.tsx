@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { HomePage } from "./HomePage";
 import * as payroll from "../features/payroll/payrollApi";
+import * as workforce from "../features/workforce/workforceApi";
 const state = vi.hoisted(() => ({ workspace: { key: "main", displayName: "Main", products: [{ key: "workforce", displayName: "Workforce" }, { key: "payroll", displayName: "Payroll" }] }, role: "ADMIN" }));
 vi.mock("../auth/AuthProvider", () => ({ useAuth: () => ({ user: { firstName: "Admin", email: "admin@qa.test" }, organizations: [{}], organization: { slug: "alpha", organizationName: "Alpha", membershipRole: state.role, organizationStatus: "ACTIVE" } }) }));
 vi.mock("../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: state.workspace, workspaces: [state.workspace], loading: false }) }));
@@ -12,7 +13,7 @@ vi.mock("../features/entitlements/entitlementApi", () => ({ getEffectiveEntitlem
 vi.mock("../features/workforce/workforceApi", () => ({ getEmployees: vi.fn(async () => ({ content: [], totalElements: 0, totalPages: 1 })), getDepartments: vi.fn(async () => []), getDesignations: vi.fn(async () => []), getMe: vi.fn(async () => ({ employeeCode: "ME", status: "ACTIVE" })), getTeam: vi.fn() }));
 vi.mock("../features/payroll/payrollApi", () => ({ getPayrollEmployees: vi.fn(async () => []), getPayrollReadiness: vi.fn(), getPayRuns: vi.fn() }));
 const renderHome = () => render(<MemoryRouter><HomePage /></MemoryRouter>);
-beforeEach(() => { state.role = "ADMIN"; state.workspace.key = "main"; state.workspace.displayName = "Main"; vi.mocked(payroll.getPayrollReadiness).mockResolvedValue({ activeEmployees: 0, employeesWithCompensation: 0, nextEmployeeCode: null }); vi.mocked(payroll.getPayRuns).mockResolvedValue({ content: [] } as never); });
+beforeEach(() => { vi.mocked(workforce.getEmployees).mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 } as never); state.role = "ADMIN"; state.workspace.key = "main"; state.workspace.displayName = "Main"; vi.mocked(payroll.getPayrollReadiness).mockResolvedValue({ activeEmployees: 0, employeesWithCompensation: 0, nextEmployeeCode: null }); vi.mocked(payroll.getPayRuns).mockResolvedValue({ content: [] } as never); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 it("shows useful empty setup without making optional organization details mandatory", async () => {
   renderHome(); await screen.findByRole("heading", { name: "Workspace setup" });
@@ -22,8 +23,9 @@ it("shows useful empty setup without making optional organization details mandat
 });
 it("identifies missing compensation without claiming a period is ready", async () => {
   vi.mocked(payroll.getPayrollReadiness).mockResolvedValue({ activeEmployees: 2, employeesWithCompensation: 1, nextEmployeeCode: "EMP-2" });
-  renderHome(); await screen.findByRole("heading", { name: "Add compensation for EMP-2" });
-  expect(screen.getByRole("link", { name: "Set up compensation" }).getAttribute("href")).toContain("employee=EMP-2");
+  vi.mocked(workforce.getEmployees).mockResolvedValue({ content: [{ employeeCode: "EMP-2", firstName: "Grace", lastName: "Hopper", status: "ACTIVE" }], totalElements: 1, totalPages: 1 } as never);
+  renderHome(); await screen.findByRole("heading", { name: "Add a salary for Grace Hopper" });
+  expect(screen.getByRole("link", { name: "Set up compensation" }).getAttribute("href")).toBe("/app/workforce/employees/new?employee=EMP-2");
   expect(screen.getByText(/Configuration counts are not a pay-period approval/)).toBeTruthy();
 });
 it("resumes a failed run and links to the latest finalized result", async () => {

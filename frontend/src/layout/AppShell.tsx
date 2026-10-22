@@ -14,21 +14,21 @@ import { Sidebar, type SidebarGroup } from "./Sidebar";
 
 type NavEntry = readonly [path: string, label: string, icon: IconName];
 const administration: readonly NavEntry[] = [
-  ["organization", "Organization", "building"], ["members", "Members", "profile"],
-  ["invitations", "Invitations", "admin"], ["settings", "Settings", "settings"],
-  ["entitlements", "Entitlements", "badge"],
+  ["organization", "Organization profile", "building"], ["members", "Members", "profile"],
+  ["invitations", "Invitations", "admin"], ["workspaces", "Workspaces", "panels"],
+  ["entitlements", "Plan & usage", "badge"], ["settings", "Settings", "settings"],
 ];
-const organizationWorkspaces: readonly NavEntry[] = [["workspaces", "Workspaces", "panels"]];
+// Administrators manage people here; their own profile is in the account menu.
 const workforceAdmin: readonly NavEntry[] = [
-  ["dashboard", "Dashboard", "workforce"], ["employees", "Employees", "profile"],
-  ["departments", "Departments", "workforce"], ["designations", "Designations", "workforce"],
-  ["structure", "Structure", "workforce"], ["me", "My profile", "profile"], ["team", "My team", "profile"],
+  ["employees", "Employees", "profile"], ["departments", "Departments", "workforce"],
+  ["designations", "Designations", "workforce"], ["structure", "Reporting structure", "workforce"],
 ];
+const workforceSelf: readonly NavEntry[] = [["me", "My profile", "profile"], ["team", "My team", "workforce"]];
 const payroll: readonly NavEntry[] = [
-  ["dashboard", "Dashboard", "payroll"], ["employees", "Employees", "profile"],
-  ["components", "Components", "payroll"], ["compensation", "Compensation", "payroll"],
-  ["salary-templates", "Salary templates", "payroll"], ["calculations", "Calculations", "payroll"],
-  ["pay-runs", "Pay runs", "payroll"], ["ledger", "Ledger", "payroll"], ["payslips", "Payslips", "payroll"],
+  ["pay-runs", "Pay runs", "payroll"], ["employees", "Payroll employees", "profile"],
+  ["compensation", "Compensation", "payroll"], ["components", "Salary components", "payroll"],
+  ["salary-templates", "Salary templates", "payroll"], ["payslips", "Payslips", "payroll"],
+  ["ledger", "Payroll ledger", "payroll"], ["calculations", "Pay preview", "payroll"],
 ];
 const platformPrimary: readonly NavEntry[] = [["", "Overview", "home"], ["organizations", "Organizations", "building"], ["users", "Users", "workforce"], ["access", "Platform Access", "shield"]];
 const platformCatalog: readonly NavEntry[] = [["products", "Products", "package"], ["plans", "Plans", "card"], ["entitlements", "Entitlements", "badge"]];
@@ -62,9 +62,8 @@ export function AppShell() {
   }, [drawerOpen]);
 
   const role = auth.organization?.membershipRole, adminRole = role === "ADMIN";
-  const workforce = adminRole ? workforceAdmin : role === "MANAGER"
-    ? workforceAdmin.filter(([key]) => key === "me" || key === "team")
-    : workforceAdmin.filter(([key]) => key === "me");
+  const workforceProduct = Boolean(workspace.workspace?.products.some(product => product.key === "workforce"));
+  const workforce = adminRole ? workforceAdmin : role === "MANAGER" ? workforceSelf : workforceSelf.filter(([key]) => key === "me");
   const initials = `${auth.user?.firstName?.[0] ?? ""}${auth.user?.lastName?.[0] ?? ""}` || "L";
   const groups: SidebarGroup[] = [];
   const addGroup = (label: string, base: string, entries: readonly NavEntry[]) => groups.push({ label, items: entries.map(([path, text, icon]) => ({ to: appPath(`/app/${base}/${path}`.replace(/\/$/, "")), label: text, icon })) });
@@ -76,11 +75,14 @@ export function AppShell() {
   }
   if (application.mode === "client") {
     groups.push({ label: "", items: [{ to: appPath("/app"), label: "Overview", icon: "home" }] });
-    if (adminRole) addGroup("Organization", "admin", administration);
-    if (adminRole) addGroup("Workspaces", "admin", organizationWorkspaces);
-    if (role && workspace.workspace?.products.some(product => product.key === "workforce")) addGroup("Workforce", "workforce", workforce);
+    if (role && workforceProduct) addGroup(adminRole ? "People" : "Workforce", "workforce", workforce);
     if (adminRole && workspace.workspace?.products.some(product => product.key === "payroll")) addGroup("Payroll", "payroll", payroll);
+    if (adminRole) addGroup("Organization", "admin", administration);
   }
+  const accountLinks = application.mode === "client" && adminRole && workforceProduct ? [{ to: appPath("/app/workforce/me"), label: "My profile" }] : [];
+  // Single choices are selected automatically, so their switchers add nothing. They reappear when a second option exists.
+  const showOrganizationSwitcher = auth.organizations.length !== 1 || !auth.organization;
+  const showWorkspaceSwitcher = workspace.workspaces.length !== 1 || !workspace.workspace;
   const toggleSidebar = () => setCollapsed((value) => {
     try { sessionStorage.setItem("lexorion.sidebar-collapsed", String(!value)); } catch { /* Storage may be unavailable. */ }
     return !value;
@@ -105,26 +107,27 @@ export function AppShell() {
         onToggle={toggleSidebar} onClose={() => setDrawerOpen(false)} initials={initials.toUpperCase()}
         userName={`${auth.user?.firstName ?? ""} ${auth.user?.lastName ?? ""}`.trim()}
         accountInfo={application.mode === "platform" ? "Platform Access" : auth.organization?.organizationName ?? auth.user?.email ?? "Account"}
-        onLogout={() => void auth.logout()} />
+        accountLinks={accountLinks} onLogout={() => void auth.logout()} />
       <div className="stage" inert={drawerOpen}>
         <header className="topbar">
           <button className="sidebar-trigger" type="button" aria-label="Open navigation" aria-controls="application-sidebar"
             aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button>
           <span className="topbar-title">{application.mode === "platform" ? "Platform Console" : "Horizon"}</span>
           <div className="context-selectors">
-            {application.mode === "client" && <><label><span>Organization</span>
+            {application.mode === "client" && !showOrganizationSwitcher && !showWorkspaceSwitcher && <span className="context-current" title={`Workspace: ${workspace.workspace?.displayName ?? ""}`}>{auth.organization?.organizationName}</span>}
+            {application.mode === "client" && showOrganizationSwitcher && <label><span>Organization</span>
               <select aria-label="Organization" value={auth.organization?.slug ?? ""} onChange={(event) => { auth.selectOrganization(event.target.value); navigate(appPath("/app")); }}>
                 <option value="">Choose organization</option>
                 {auth.organizations.map((item) => <option key={item.slug} value={item.slug}>{item.organizationName}</option>)}
               </select>
-            </label>
-            <label><span>Workspace</span>
+            </label>}
+            {application.mode === "client" && showWorkspaceSwitcher && <label><span>Workspace</span>
               <select aria-label="Workspace" disabled={!auth.organization || workspace.loading} value={workspace.workspace?.key ?? ""}
                 onChange={(event) => { workspace.selectWorkspace(event.target.value); navigate(appPath("/app")); }}>
                 <option value="">Choose workspace</option>
-                {workspace.workspaces.map((item) => <option key={item.key} value={item.key}>{item.displayName} · {item.products.map(product => product.displayName).join(", ")}</option>)}
+                {workspace.workspaces.map((item) => <option key={item.key} value={item.key}>{item.displayName}</option>)}
               </select>
-            </label></>}
+            </label>}
             {application.mode === "platform" && <Button size="sm" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/app"); } }}>Client application</Button>}
             {application.mode === "client" && application.hasPlatformAccess && <Button size="sm" onClick={() => { if (consoleHost() === "client") window.location.assign(consoleUrl("platform")); else { application.enterPlatform(); navigate("/app"); } }}>Platform</Button>}
           </div>

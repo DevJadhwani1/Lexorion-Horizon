@@ -1,7 +1,9 @@
 import { ApiError } from "./types";
 import { session, usesSharedSessionCookie } from "./session";
 
-export interface RequestOptions extends Omit<RequestInit, "body"> { body?: unknown; authenticated?: boolean; organizationScoped?: boolean; workspaceScoped?: boolean; retryOnUnauthorized?: boolean; }
+export interface RequestOptions extends Omit<RequestInit, "body"> { body?: unknown; authenticated?: boolean; organizationScoped?: boolean; workspaceScoped?: boolean; retryOnUnauthorized?: boolean;
+  /** Statuses the caller handles itself (for example 404 when checking whether a record exists). They still throw, but are not shown as global errors. */
+  expectedStatuses?: number[]; }
 interface TokenResponse { accessToken: string; refreshToken: string | null; }
 let refreshPromise: Promise<boolean> | null = null;
 const authRequest = (path: string) => /^\/api\/(core|platform)\/auth\/(login|refresh|logout)$/.test(path);
@@ -26,7 +28,7 @@ async function refreshAccess(): Promise<boolean> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, authenticated = true, organizationScoped = true, workspaceScoped = /^\/api\/(workforce|payroll)\//.test(path), retryOnUnauthorized = true, ...init } = options;
+  const { body, authenticated = true, organizationScoped = true, workspaceScoped = /^\/api\/(workforce|payroll)\//.test(path), retryOnUnauthorized = true, expectedStatuses = [], ...init } = options;
   // Capture the request's tenant context once. Never replay a mutation in a newly selected workspace.
   const version = session.contextVersion(), organization = session.organization(), workspace = session.workspace();
   const assertContext = () => {
@@ -64,7 +66,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     assertContext();
     const fallback:Record<number,string>={400:"The request was invalid.",401:"Your session is no longer valid.",403:"You do not have access to this operation.",404:"The requested resource was not found.",409:"The request conflicts with the current resource state.",500:"The service encountered an unexpected error.",502:"The Gateway received an invalid response from a service.",503:"The requested service is temporarily unavailable."};
     const message = typeof details === "object" && details && "message" in details ? String((details as {message: unknown}).message) : fallback[response.status]??`Request failed (${response.status}).`;
-    const apiError=new ApiError(response.status,message,details);reportError(apiError);throw apiError;
+    const apiError=new ApiError(response.status,message,details);if(!expectedStatuses.includes(response.status))reportError(apiError);throw apiError;
   }
   if (response.status === 204 || response.headers.get("content-length") === "0") return undefined as T;
   const result = await response.json() as T;

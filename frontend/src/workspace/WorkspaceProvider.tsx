@@ -62,6 +62,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         session.setWorkspace(null);
         setKey(null);
       }
+      // With exactly one accessible workspace there is nothing to choose. Only a server-returned key is selected.
+      if (items.length === 1 && storedKey !== items[0].key) {
+        session.setWorkspace(items[0].key);
+        setKey(items[0].key);
+      }
     } catch (reason) {
       if (!isCurrent()) return;
       setWorkspaces([]);
