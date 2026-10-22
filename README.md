@@ -63,6 +63,7 @@ Horizon/
 - Jenkins CI information is in `docs/ci-cd.md`.
 - The implemented security, tenancy, migration, API, audit, and deployment conventions are in `docs/foundation.md`.
 - The verified pre-change baseline is in `docs/foundation-baseline.md`.
+- UX and flow evaluation against a Zoho-style experience, with a phased redesign plan, is in `docs/horizon-zoho-ux-evaluation.md`.
 
 PostgreSQL is an external dependency and is not included in Docker Compose. See the Docker documentation for required environment variables and known local database prerequisites.
 
