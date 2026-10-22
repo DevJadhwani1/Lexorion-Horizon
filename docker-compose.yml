@@ -177,9 +177,10 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9001/actuator/health"]
 
   frontend:
+    # Serves the bundle built inside the image (lint, typecheck, build). A local frontend/dist is
+    # deliberately not mounted: it goes stale silently. Apply frontend changes with
+    # `docker compose up -d --build frontend`.
     build: ./frontend
-    volumes:
-      - ./frontend/dist:/usr/share/nginx/html:ro
     ports: ["${HORIZON_BIND_ADDRESS:-127.0.0.1}:80:9000", "127.0.0.1:9000:9000"]
     networks: [horizon]
     depends_on:
