@@ -79,7 +79,7 @@ export function AdminEntitlements({ entitlements }: { entitlements: EffectiveEnt
       icon: "card",
       iconClass: "generic",
       description:
-        "Financial operations, ledger accounting, invoice tracking, and corporate spend visibility.",
+        "Client billing with invoices, payment collection, and receivables tracking.",
       available: financeAvailable,
       limits: [],
     });

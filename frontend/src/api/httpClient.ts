@@ -28,7 +28,7 @@ async function refreshAccess(): Promise<boolean> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, authenticated = true, organizationScoped = true, workspaceScoped = /^\/api\/(workforce|payroll)\//.test(path), retryOnUnauthorized = true, expectedStatuses = [], ...init } = options;
+  const { body, authenticated = true, organizationScoped = true, workspaceScoped = /^\/api\/(workforce|payroll|finance)\//.test(path), retryOnUnauthorized = true, expectedStatuses = [], ...init } = options;
   // Capture the request's tenant context once. Never replay a mutation in a newly selected workspace.
   const version = session.contextVersion(), organization = session.organization(), workspace = session.workspace();
   const assertContext = () => {

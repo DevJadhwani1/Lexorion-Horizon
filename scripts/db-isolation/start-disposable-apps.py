@@ -14,7 +14,7 @@ def inspect(name):return json.loads(subprocess.check_output(['docker','inspect',
 state=json.loads((a.directory/'state.json').read_text());db=inspect(state['container'])
 if db['Config']['Labels'].get('horizon.db-isolation')!='disposable':raise SystemExit('Refusing non-disposable database target.')
 roles=dict(l.split('=',1) for l in (a.directory/'plan/roles.env').read_text().splitlines())
-services={};tokens={k:secrets.token_urlsafe(48) for k in ['JWT_SECRET','WORKFORCE_SERVICE_TOKEN','PAYROLL_SERVICE_TOKEN']}
+services={};tokens={k:secrets.token_urlsafe(48) for k in ['JWT_SECRET','WORKFORCE_SERVICE_TOKEN','PAYROLL_SERVICE_TOKEN','FINANCE_SERVICE_TOKEN']}
 for service in ['eureka','platform','workforce','payroll','finance','gateway','frontend']:
     original=inspect('lexorion-horizon-'+service+'-1')
     env=dict(v.split('=',1) for v in original['Config']['Env'])
@@ -29,7 +29,7 @@ for service in ['eureka','platform','workforce','payroll','finance','gateway','f
     services[service]={'image':original['Image'],'environment':env,'networks':['isolated']}
     if original['Config'].get('Healthcheck'):
         h=original['Config']['Healthcheck'];services[service]['healthcheck']={'test':h['Test'],'interval':'5s','timeout':'5s','retries':36,'start_period':'30s'}
-    dependencies={'platform':['eureka'],'finance':['eureka'],'workforce':['platform'],'payroll':['workforce'],'gateway':['eureka'],'frontend':['gateway']}.get(service,[])
+    dependencies={'platform':['eureka'],'finance':['platform'],'workforce':['platform'],'payroll':['workforce'],'gateway':['eureka'],'frontend':['gateway']}.get(service,[])
     if dependencies:services[service]['depends_on']={s:{'condition':'service_healthy'} for s in dependencies}
 services['frontend']['ports']=[f'127.0.0.1:{a.port}:9000']
 config={'name':state['container']+'-apps','services':services,'networks':{'isolated':{'external':True,'name':state['network']}}}

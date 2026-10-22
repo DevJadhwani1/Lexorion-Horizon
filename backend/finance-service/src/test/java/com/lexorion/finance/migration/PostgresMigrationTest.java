@@ -5,6 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;import org.flywaydb.cor
 class PostgresMigrationTest {
     @Container static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
     @Test void migrationsBuildTheFinanceSchemaOnPostgres() {
-        assertThat(Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword()).locations("classpath:db/migration").load().migrate().migrationsExecuted).isEqualTo(2);
     }
 }

@@ -70,6 +70,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a unique secret of at least 32 characters}
       WORKFORCE_SERVICE_TOKEN: ${WORKFORCE_SERVICE_TOKEN:?Set WORKFORCE_SERVICE_TOKEN to a unique secret of at least 32 characters}
       PAYROLL_SERVICE_TOKEN: ${PAYROLL_SERVICE_TOKEN:?Set PAYROLL_SERVICE_TOKEN to a unique secret of at least 32 characters}
+      FINANCE_SERVICE_TOKEN: ${FINANCE_SERVICE_TOKEN:?Set FINANCE_SERVICE_TOKEN to a unique secret of at least 32 characters}
       LEXORION_BOOTSTRAP_ENABLED: ${LEXORION_BOOTSTRAP_ENABLED:-false}
       LEXORION_BOOTSTRAP_EMAIL: ${LEXORION_BOOTSTRAP_EMAIL:-}
       LEXORION_BOOTSTRAP_PASSWORD: ${LEXORION_BOOTSTRAP_PASSWORD:-}
@@ -149,12 +150,15 @@ services:
       DB_NAME: ${FINANCE_DB_NAME:-lexorion_finance}
       DB_USERNAME: ${FINANCE_DB_USERNAME:?Set FINANCE_DB_USERNAME to a dedicated database role}
       DB_PASSWORD: ${FINANCE_DB_PASSWORD:?Set FINANCE_DB_PASSWORD}
+      LEXORION_PLATFORM_SERVICE_URL: http://platform-service
+      FINANCE_SERVICE_TOKEN: ${FINANCE_SERVICE_TOKEN:?Set FINANCE_SERVICE_TOKEN to a unique secret of at least 32 characters}
     extra_hosts: ["host.docker.internal:host-gateway"]
     expose: ["9006"]
     networks: [horizon]
     depends_on:
       postgres: {condition: service_healthy}
       eureka: {condition: service_healthy}
+      platform: {condition: service_healthy}
     healthcheck:
       <<: *backend-healthcheck
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9006/actuator/health"]

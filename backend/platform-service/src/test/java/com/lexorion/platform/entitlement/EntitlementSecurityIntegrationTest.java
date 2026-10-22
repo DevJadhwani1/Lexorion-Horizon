@@ -214,6 +214,23 @@ class EntitlementSecurityIntegrationTest {
         }
     }
 
+    @Test void financeAuthorityFollowsTheAttachedProductAndItsOwnServiceToken() throws Exception {
+        assign(owner, "starter", "alpha").andExpect(status().isOk());
+        tenant(post("/api/tenant/workspaces").contentType(MediaType.APPLICATION_JSON)
+            .content("{\"key\":\"books\",\"displayName\":\"Books\",\"productKey\":\"workforce\",\"productKeys\":[\"workforce\",\"finance\"]}"), owner, "alpha", HOST).andExpect(status().isCreated());
+        String bearer = token(owner), finance = "test-finance-service-token-32-bytes-minimum";
+        mvc.perform(get("/internal/finance/workspaces/books/context").header("Host", HOST).header("Authorization", "Bearer " + bearer)
+            .header("X-Lexorion-Organization", "alpha").header("X-Lexorion-Service-Token", finance))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.workspaceKey").value("books")).andExpect(jsonPath("$.role").value("ADMIN"));
+        mvc.perform(get("/internal/finance/workspaces/books/context").header("Host", HOST).header("Authorization", "Bearer " + bearer)
+            .header("X-Lexorion-Organization", "alpha").header("X-Lexorion-Service-Token", "test-payroll-service-token-32-bytes-minimum"))
+            .andExpect(status().isUnauthorized());
+        tenant(patch("/api/tenant/workspaces/books").contentType(MediaType.APPLICATION_JSON).content("{\"productKeys\":[\"workforce\"]}"), owner, "alpha", HOST).andExpect(status().isOk());
+        mvc.perform(get("/internal/finance/workspaces/books/context").header("Host", HOST).header("Authorization", "Bearer " + bearer)
+            .header("X-Lexorion-Organization", "alpha").header("X-Lexorion-Service-Token", finance))
+            .andExpect(status().isForbidden());
+    }
+
     @Test void concurrentBusinessWorkspaceCreationCannotExceedOrganizationCapacity() throws Exception {
         assign(owner, "business", "alpha").andExpect(status().isOk());
         String accessToken = token(owner);
