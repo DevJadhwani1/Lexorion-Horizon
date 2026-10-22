@@ -57,13 +57,50 @@ interface Draft { displayName: string; category: ComponentCategory; amountType: 
 export const PRESETS: (Draft & { key: string; hint: string })[] = [
   { key: "BASIC", displayName: "Basic salary", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "TAXABLE", hint: "Fixed monthly earning" },
   { key: "DA", displayName: "Dearness allowance", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "TAXABLE", hint: "Counts toward PF wages" },
-  { key: "HRA", displayName: "House rent allowance", category: "EARNING", amountType: "PERCENTAGE", occurrenceType: "RECURRING", taxability: "TAXABLE", hint: "% of fixed earnings; exemption depends on regime" },
+  { key: "HRA", displayName: "House rent allowance", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "TAXABLE", hint: "Usually 40% of basic (50% in metro cities); exemption depends on regime" },
   { key: "SPECIAL_ALLOWANCE", displayName: "Special allowance", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "TAXABLE", hint: "Fixed monthly earning" },
   { key: "BONUS", displayName: "Bonus", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "ONE_TIME", taxability: "TAXABLE", hint: "Paid in the first period only" },
   { key: "REIMBURSEMENT", displayName: "Reimbursement", category: "EARNING", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "NON_TAXABLE", hint: "Against bills; tax treatment needs review" },
   { key: "PF_EMPLOYEE", displayName: "Provident fund (employee)", category: "DEDUCTION", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "NON_TAXABLE", hint: "Enter the amount; see the EPF estimate below" },
   { key: "PF_EMPLOYER", displayName: "Provident fund (employer)", category: "EMPLOYER_CONTRIBUTION", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "NON_TAXABLE", hint: "Employer cost, not deducted from pay" },
+  { key: "PROFESSIONAL_TAX", displayName: "Professional tax", category: "DEDUCTION", amountType: "FIXED_AMOUNT", occurrenceType: "RECURRING", taxability: "NON_TAXABLE", hint: "Enter the slab amount for the employee's work state" },
 ];
+
+/** The components most Indian salaries start from. */
+export const STANDARD_COMPONENT_KEYS = ["BASIC", "HRA", "SPECIAL_ALLOWANCE", "PF_EMPLOYEE", "PROFESSIONAL_TAX", "PF_EMPLOYER"];
+
+/**
+ * Creates whichever standard components are missing, matching by key or display name so an admin's own
+ * "Basic salary" is not duplicated. A component created concurrently (409) counts as present.
+ */
+export async function createStandardComponents(existing: Component[]): Promise<number> {
+  const names = new Set(existing.map((component) => component.displayName.toLowerCase()));
+  const keys = new Set(existing.map((component) => component.componentKey));
+  let created = 0;
+  for (const preset of PRESETS.filter((item) => STANDARD_COMPONENT_KEYS.includes(item.key))) {
+    if (keys.has(preset.key) || names.has(preset.displayName.toLowerCase())) continue;
+    const { key, hint: _hint, ...draft } = preset;
+    try {
+      await createComponent({ componentKey: key, ...draft, status: "ACTIVE" });
+      created++;
+    } catch (reason) {
+      if (!(reason instanceof ApiError && reason.status === 409)) throw reason;
+    }
+  }
+  return created;
+}
+
+/**
+ * Splits an annual gross salary into monthly Basic (50% of gross, so wages meet the Code on Social Security's
+ * 50% rule), HRA (40% of basic, 50% in metro cities) and Special allowance (the rest). Amounts are whole rupees;
+ * the allowance absorbs rounding so the three always add up to the monthly gross.
+ */
+export function splitAnnualGross(annual: number, metro: boolean) {
+  const monthly = Math.round((annual / 12) * 100) / 100;
+  const basic = Math.round(monthly * 0.5);
+  const hra = Math.round(basic * (metro ? 0.5 : 0.4));
+  return { monthly, BASIC: basic, HRA: hra, SPECIAL_ALLOWANCE: Math.round((monthly - basic - hra) * 100) / 100 };
+}
 
 const categoryLabel: Record<ComponentCategory, string> = { EARNING: "Earning", DEDUCTION: "Deduction", EMPLOYER_CONTRIBUTION: "Employer contribution" };
 const basisLabel = (category: ComponentCategory) => category === "EARNING" ? "of fixed earnings" : "of gross pay";
@@ -83,6 +120,7 @@ export function CompensationForm({ employee, profiles, onSaved, submitLabel = "S
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [estimate, setEstimate] = useState<StatutoryEstimate | null>(null), [estimating, setEstimating] = useState(false);
+  const [annualGross, setAnnualGross] = useState(""), [metro, setMetro] = useState(false), [seeding, setSeeding] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
   const money = (value: number) => formatMoney(value, employee.currency, locale);
   const loadComponents = () => getComponents()
@@ -123,6 +161,28 @@ export function CompensationForm({ employee, profiles, onSaved, submitLabel = "S
       .catch((reason) => setError(reason instanceof ApiError ? explain(reason.message) : "Unable to save salary"))
       .finally(() => setBusy(false));
   };
+  const addStandard = async () => {
+    setSeeding(true); setError("");
+    try { await createStandardComponents(components ?? []); return await loadComponents(); }
+    catch (reason) { setError(reason instanceof ApiError ? reason.message : "Unable to add the standard components"); return null; }
+    finally { setSeeding(false); }
+  };
+  const split = Number(annualGross) > 0 ? splitAnnualGross(Number(annualGross), metro) : null;
+  const fillFromGross = async () => {
+    if (!split) { setError("Enter the annual gross salary first."); return; }
+    const splitKeys = ["BASIC", "HRA", "SPECIAL_ALLOWANCE"] as const;
+    let list = components ?? [];
+    if (splitKeys.some((key) => !list.some((component) => component.componentKey === key))) list = (await addStandard()) ?? list;
+    const unusable = splitKeys.map((key) => list.find((component) => component.componentKey === key))
+      .find((component) => !component || component.category !== "EARNING" || component.amountType !== "FIXED_AMOUNT" || component.occurrenceType !== "RECURRING");
+    if (unusable !== undefined || list.length === 0) {
+      setError(unusable ? `${unusable.displayName} must be a recurring fixed-amount earning to be filled from gross salary. Enter the lines yourself instead.` : "Basic salary, HRA and Special allowance components are needed. Add them under Salary components.");
+      return;
+    }
+    setOrder((current) => [...splitKeys, ...current.filter((key) => !(splitKeys as readonly string[]).includes(key))]);
+    setValues((current) => ({ ...current, ...Object.fromEntries(splitKeys.map((key) => [key, String(split[key])])) }));
+    setEstimate(null); setError("");
+  };
   const checkStatutory = () => {
     const basic = chosen.filter(isPfWage).reduce((sum, component) => sum + lineAmount(component, values, chosen), 0);
     setEstimating(true); setError("");
@@ -143,6 +203,18 @@ export function CompensationForm({ employee, profiles, onSaved, submitLabel = "S
       <Field label="Currency" hint="From the employee’s payroll settings."><input value={employee.currency} readOnly aria-readonly="true" /></Field>
       <label>Pay frequency<input value={humanize(employee.payFrequency)} readOnly aria-readonly="true" /></label>
     </div>
+
+    {employee.payFrequency === "MONTHLY" && <section className="gross-builder" aria-labelledby="gross-builder-heading">
+      <h3 id="gross-builder-heading">Build from annual gross salary</h3>
+      <div className="gross-builder-row">
+        <Field label="Annual gross salary" hint="Before deductions. Employer PF and other employer costs are not part of it.">
+          <input type="number" inputMode="decimal" min="0" step="1" value={annualGross} placeholder="e.g. 600000" onChange={(event) => setAnnualGross(event.target.value)} />
+        </Field>
+        <label className="checkbox-label"><input type="checkbox" checked={metro} onChange={(event) => setMetro(event.target.checked)} /> Metro city (HRA at 50% of basic)</label>
+        <Button type="button" disabled={!split || seeding} onClick={() => void fillFromGross()}>{seeding ? "Adding components…" : "Fill salary lines"}</Button>
+      </div>
+      {split && <p className="snapshot-note" aria-live="polite">{money(split.monthly)} a month: Basic {money(split.BASIC)} · HRA {money(split.HRA)} · Special allowance {money(split.SPECIAL_ALLOWANCE)}. Basic is 50% of gross, HRA {metro ? 50 : 40}% of basic and the allowance is the rest; you can change any line afterwards.</p>}
+    </section>}
 
     <section className="salary-lines-section" aria-labelledby="salary-lines-heading">
       <div className="section-heading">
@@ -165,7 +237,11 @@ export function CompensationForm({ employee, profiles, onSaved, submitLabel = "S
           if (!created) throw new Error(`A component with the key ${key} exists but is inactive. Activate it under Salary components or choose another name.`);
           add(created);
         }} />}
-      {chosen.length === 0 ? <p className="empty-inline">No pay components yet. Start with basic salary, then add allowances, deductions and employer contributions.</p>
+      {chosen.length === 0 ? <div className="empty-inline">
+          <p>No pay components yet. Start with basic salary, then add allowances, deductions and employer contributions.</p>
+          {!STANDARD_COMPONENT_KEYS.every((key) => byKey.has(key)) && <Button type="button" disabled={seeding} onClick={() => void addStandard()}>
+            {seeding ? "Adding…" : components.length ? "Add missing standard Indian components" : "Add standard Indian components"}</Button>}
+        </div>
         : <ul className="salary-lines">
           {chosen.map((component) => {
             const percent = component.amountType === "PERCENTAGE";

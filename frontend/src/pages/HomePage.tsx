@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useWorkspace } from "../workspace/WorkspaceProvider";
 import { Notice, Page } from "../components/ui/Page";
 import { Badge, StatusBadge } from "../components/ui/Badge";
-import { formatMoney, formatPeriod, humanize, personName } from "../lib/format";
+import { formatMoney, formatPeriod, personName } from "../lib/format";
 import { getOrganization } from "../features/admin/adminApi";
 import { getOrganizationWorkspaces } from "../features/admin/workspaceApi";
 import { getEffectiveEntitlements, getEntitlementLimit, type EffectiveEntitlements } from "../features/entitlements/entitlementApi";
@@ -167,38 +167,6 @@ export function HomePage() {
         <p className="overview-welcome-subtitle">
           Workspace <strong>{selected.displayName}</strong> is active. Here is your operational overview for <strong>{organization.organizationName}</strong>.
         </p>
-      </div>
-      <div className="overview-welcome-meta">
-        <span className="overview-context-tag">
-          <Icon name="building" />
-          <span>{organization.organizationName}</span>
-        </span>
-        <span className="overview-context-tag">
-          <Icon name="panels" />
-          <span>{selected.displayName} ({selected.key})</span>
-        </span>
-        <span className="overview-context-tag">
-          <Icon name="shield" />
-          <span>{humanize(role)}</span>
-        </span>
-      </div>
-    </div>
-
-    <div className="organization-context-banner horizon-context-banner">
-      <div>
-        <span>Current workspace</span>
-        <strong>{selected.displayName}</strong>
-        <small>{selected.key} · {selected.status}</small>
-      </div>
-      <div>
-        <span>Organization role</span>
-        <strong>{humanize(role)}</strong>
-        <small>Organization membership · {data.organizationStatus}</small>
-      </div>
-      <div>
-        <span>Signed in as</span>
-        <strong>{userName}</strong>
-        <small>{auth.user?.email}</small>
       </div>
     </div>
 
@@ -485,7 +453,7 @@ function PayrollNext({ readiness, runs, names, guided }: { readiness: PayrollRea
     to = guided ? `/app/workforce/employees/new?employee=${encodeURIComponent(code)}` : `/app/payroll/compensation?employee=${encodeURIComponent(code)}`;
   }
   return <section className="organization-panel"><header><div><span className="eyebrow">Next payroll action</span><h2>{heading}</h2><p>{detail}</p></div><Link className="button primary" to={appPath(to)}>{action}</Link></header>
-    <p className="snapshot-note">Configuration counts are not a pay-period approval. Calculation validates effective dates, frequency and compensation eligibility for each included employee.</p>
+    <p className="snapshot-note">This shows setup coverage only. Each employee’s dates and salary are checked when the pay run is calculated.</p>
     {latestResult && <p>Recent finalized result: <Link to={`${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(latestResult.payRunKey)}`}>{latestResult.payRunKey}</Link> · {formatMoney(latestResult.netTotal, latestResult.currency)} net · {formatPeriod(latestResult.periodStart, latestResult.periodEnd)}</p>}
   </section>;
 }

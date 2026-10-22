@@ -383,7 +383,7 @@ export function CreateWorkspaceModal({
                   placeholder="e.g. main-hr"
                 />
                 <small className="field-hint">
-                  Lowercase letters, digits, and hyphens. Stable tenant identifier.
+                  Filled in from the name and used in links. Lowercase letters, digits and hyphens; it cannot be changed later.
                 </small>
               </label>
             </div>

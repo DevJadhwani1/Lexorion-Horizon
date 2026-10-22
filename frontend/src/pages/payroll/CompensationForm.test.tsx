@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { CompensationForm, componentKeyFromName, estimatePay } from "./CompensationForm";
+import { CompensationForm, componentKeyFromName, estimatePay, splitAnnualGross } from "./CompensationForm";
 import * as payrollApi from "../../features/payroll/payrollApi";
 import { ApiError } from "../../api/types";
 import { chooseOption } from "../../test/dropdown";
@@ -102,4 +102,28 @@ it("shows the EPF and ESI estimate as guidance with its status and source, witho
   expect(payrollApi.getStatutoryEstimate).toHaveBeenCalledWith("EMP-1", { asOf: "2026-10-01", basicWages: 30000, grossWages: 30000 });
   expect(screen.getByText(/Review with your payroll adviser/)).toBeTruthy();
   expect(within(screen.getByLabelText("Estimated pay")).getByText("Employee deductions").nextElementSibling?.textContent).toBe("₹0.00");
+});
+
+it("splits an annual gross into basic, HRA and special allowance that add up to the monthly gross", () => {
+  expect(splitAnnualGross(600000, false)).toEqual({ monthly: 50000, BASIC: 25000, HRA: 10000, SPECIAL_ALLOWANCE: 15000 });
+  expect(splitAnnualGross(600000, true)).toEqual({ monthly: 50000, BASIC: 25000, HRA: 12500, SPECIAL_ALLOWANCE: 12500 });
+  const odd = splitAnnualGross(500001, false);
+  expect(odd.BASIC + odd.HRA + odd.SPECIAL_ALLOWANCE).toBeCloseTo(odd.monthly, 2);
+});
+
+it("creates the standard components when missing and fills the salary from annual gross", async () => {
+  const standard = [component("BASIC", "Basic salary", "EARNING"), component("HRA", "House rent allowance", "EARNING"),
+    component("SPECIAL_ALLOWANCE", "Special allowance", "EARNING"), component("PF_EMPLOYEE", "Provident fund (employee)", "DEDUCTION"),
+    component("PROFESSIONAL_TAX", "Professional tax", "DEDUCTION"), component("PF_EMPLOYER", "Provident fund (employer)", "EMPLOYER_CONTRIBUTION")];
+  vi.mocked(payrollApi.getComponents).mockResolvedValueOnce([]).mockResolvedValue(standard);
+  vi.mocked(payrollApi.createComponent).mockResolvedValue(standard[0]);
+  render(<CompensationForm employee={employee} profiles={[]} onSaved={vi.fn()} locale="en-IN" />);
+  fireEvent.change(await screen.findByLabelText("Annual gross salary"), { target: { value: "600000" } });
+  fireEvent.click(screen.getByRole("button", { name: "Fill salary lines" }));
+  expect(await screen.findByLabelText("Basic salary per month")).toBeTruthy();
+  expect(payrollApi.createComponent).toHaveBeenCalledTimes(6);
+  expect(payrollApi.createComponent).toHaveBeenCalledWith(expect.objectContaining({ componentKey: "HRA", amountType: "FIXED_AMOUNT", status: "ACTIVE" }));
+  expect(screen.getByLabelText("Basic salary per month").textContent).toBe("₹25,000.00");
+  expect(screen.getByLabelText("House rent allowance per month").textContent).toBe("₹10,000.00");
+  expect(screen.getByLabelText("Special allowance per month").textContent).toBe("₹15,000.00");
 });

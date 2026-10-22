@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { CurrencyDropdown } from "../../components/ui/CurrencyDropdown";
 import { ApiError } from "../../api/types";
 import { Button } from "../../components/ui/Button";
 import { Dropdown } from "../../components/ui/Dropdown";
@@ -95,9 +96,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
     {error && <Notice>{error}</Notice>}
 
     <Section title="Payroll enrollment" status={status("enrollment")}>
-      <Field label="Currency" hint={enrollment ? "Currency of salaries and payslips." : "Your organization’s currency by default."}>
-        <input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={enrollment?.currency ?? defaultCurrency} placeholder="e.g. INR" />
-      </Field>
+      <CurrencyDropdown defaultValue={enrollment?.currency ?? defaultCurrency} hint={enrollment ? "Currency of salaries and payslips." : "Your organization’s currency by default."} />
       <Dropdown label="Pay frequency" name="payFrequency" defaultValue={enrollment?.payFrequency ?? "MONTHLY"}
         options={[{ value: "MONTHLY", label: "Monthly" }, { value: "BIWEEKLY", label: "Every two weeks" }, { value: "WEEKLY", label: "Weekly" }]} />
       <Field label="Payroll start date" hint={`Joined ${formatDate(employee.joiningDate)}.`}>

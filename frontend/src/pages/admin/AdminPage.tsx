@@ -36,6 +36,8 @@ import { CURRENCIES, formatCurrencyLabel } from "../../data/currencies";
 import { getTimeZoneOptions } from "../../data/timezones";
 import { INDUSTRY_TAXONOMY } from "../../data/industries";
 import { getDatePatternOptions } from "../../data/dateFormats";
+import { INDIAN_STATES } from "../../data/indianStates";
+import { LOCALE_OPTIONS, SERVER_DEFAULT_REGION, regionalDefaultsFor } from "../../data/regionalDefaults";
 import { formatDate, setPreferredDateFormat } from "../../utils/dateFormat";
 import { AdminScreen } from "./AdminScreen";
 import { useOptionalAuth } from "../../auth/AuthProvider";
@@ -397,6 +399,13 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
     return BASE_INDUSTRY_SELECT_OPTIONS;
   }, [industry]);
 
+  // The profile stores the state's name; keep a stored value that is not in the list selectable.
+  const indianStateOptions = useMemo<SelectOption[]>(() => {
+    const options = INDIAN_STATES.map((st) => ({ value: st.name, label: st.name, keywords: [st.code] }));
+    const current = stateProvince.trim();
+    return !current || options.some((o) => o.value === current) ? options : [{ value: current, label: current }, ...options];
+  }, [stateProvince]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -536,7 +545,6 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
             label="Primary Phone"
             value={primaryPhone}
             onChange={setPrimaryPhone}
-            placeholder="555 123 4567"
           />
 
           <SearchSelect
@@ -615,18 +623,34 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
             hint="Standard ISO 3166-1 country code."
           />
 
-          <label>
-            State / Province / Region
-            <input
-              type="text"
+          {addressCountry.trim().toUpperCase() === "IN" ? (
+            <SearchSelect
+              id="org-state-province"
               name="stateProvince"
-              maxLength={100}
+              label="State / Union territory"
               value={stateProvince}
-              onChange={(e) => setStateProvince(e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              placeholder="e.g. California, Ontario, Karnataka"
+              onChange={setStateProvince}
+              options={indianStateOptions}
+              placeholder="Select state..."
+              searchPlaceholder="Search state or union territory..."
+              clearable
+              onClear={() => setStateProvince("")}
+              hint="Professional tax and labour welfare rules follow the state."
             />
-          </label>
+          ) : (
+            <label>
+              State / Province / Region
+              <input
+                type="text"
+                name="stateProvince"
+                maxLength={100}
+                value={stateProvince}
+                onChange={(e) => setStateProvince(e.target.value)}
+                onFocus={(e) => e.currentTarget.select()}
+                placeholder="e.g. California, Ontario, Karnataka"
+              />
+            </label>
+          )}
 
           <label>
             City
@@ -703,6 +727,27 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
     setBrandingDisplayName(settings.brandingDisplayName || "");
   }
 
+  // Picking a country fills its currency, time zone, date format and locale, but only where the admin has
+  // not already chosen something other than the previous country's (or a new organization's) default.
+  const changeCountry = (next: string) => {
+    const previous = regionalDefaultsFor(country) ?? SERVER_DEFAULT_REGION;
+    const suggested = regionalDefaultsFor(next);
+    setCountry(next);
+    if (!suggested) return;
+    const keep = (current: string, key: keyof typeof previous) =>
+      current === previous[key] || current === SERVER_DEFAULT_REGION[key] ? suggested[key] : current;
+    setCurrency(keep(currency, "currency"));
+    setTimeZone(keep(timeZone, "timeZone"));
+    setDateFormat(keep(dateFormat, "dateFormat"));
+    setLocale(keep(locale, "locale"));
+  };
+
+  // Keep a stored locale outside the list selectable, as the industry picker does for legacy values.
+  const localeOptions = useMemo<SelectOption[]>(
+    () => (!locale || LOCALE_OPTIONS.some((o) => o.value === locale) ? LOCALE_OPTIONS : [{ value: locale, label: locale }, ...LOCALE_OPTIONS]),
+    [locale],
+  );
+
   const isDirty =
     country !== (settings.country || "US") ||
     currency !== (settings.currency || "USD") ||
@@ -776,7 +821,7 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
             name="country"
             label="Default Country"
             value={country}
-            onChange={setCountry}
+            onChange={changeCountry}
             options={COUNTRY_SELECT_OPTIONS}
             placeholder="Select default country..."
             searchPlaceholder="Search country or ISO code..."
@@ -819,23 +864,17 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
             hint="Applied across administrative screens and timestamps."
           />
 
-          <div className="admin-form-field">
-            <label htmlFor="settings-locale" className="admin-form-field-label">
-              Language / Locale
-            </label>
-            <input
-              id="settings-locale"
-              type="text"
-              name="locale"
-              maxLength={35}
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-              placeholder="e.g. en-US, en-GB, fr-FR"
-            />
-            <span className="admin-form-field-hint">
-              Primary language and regional format tag (BCP 47).
-            </span>
-          </div>
+          <SearchSelect
+            id="settings-locale"
+            name="locale"
+            label="Language / Locale"
+            value={locale}
+            onChange={setLocale}
+            options={localeOptions}
+            placeholder="Select language and number format..."
+            searchPlaceholder="Search language or region..."
+            hint="Sets number grouping and month names. English (India) shows amounts as 12,34,567."
+          />
 
           <div className="admin-form-field">
             <label htmlFor="settings-branding-display-name" className="admin-form-field-label">

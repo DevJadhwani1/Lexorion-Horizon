@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { HomePage } from "./HomePage";
 import * as payroll from "../features/payroll/payrollApi";
@@ -69,7 +69,7 @@ it("identifies missing compensation without claiming a period is ready", async (
   vi.mocked(workforce.getEmployees).mockResolvedValue({ content: [{ employeeCode: "EMP-2", firstName: "Grace", lastName: "Hopper", status: "ACTIVE" }], totalElements: 1, totalPages: 1 } as never);
   renderHome(); await screen.findByRole("heading", { name: "Add a salary for Grace Hopper" });
   expect(screen.getByRole("link", { name: "Set up compensation" }).getAttribute("href")).toBe("/app/workforce/employees/new?employee=EMP-2");
-  expect(screen.getByText(/Configuration counts are not a pay-period approval/)).toBeTruthy();
+  expect(screen.getByText(/This shows setup coverage only/)).toBeTruthy();
 });
 it("resumes a failed run and links to the latest finalized result", async () => {
   const base = { currency: "USD", netTotal: 100, periodStart: "2026-01-01", periodEnd: "2026-01-31", employeeCount: 1 };
@@ -122,7 +122,7 @@ it("renders operational overview with active workspace context, real metrics, an
 
   renderHome();
   await screen.findByRole("heading", { name: /Welcome back, Admin/ });
-  expect(screen.getByText("Main (main)")).toBeTruthy();
+  expect(document.querySelector(".overview-welcome-subtitle")?.textContent).toContain("Workspace Main is active");
   expect(screen.getByRole("heading", { name: "Workforce management" })).toBeTruthy();
   expect(screen.getByRole("link", { name: "Manage employees" })).toBeTruthy();
   expect(screen.getByRole("link", { name: "Pay runs" })).toBeTruthy();
@@ -154,7 +154,8 @@ it("renders operational attention items when pay run failures occur", async () =
 });
 it("handles switching workspaces and updates the active workspace context", async () => {
   const view = renderHome();
-  await screen.findByText("Main (main)");
+  const subtitle = () => document.querySelector(".overview-welcome-subtitle")?.textContent ?? "";
+  await waitFor(() => expect(subtitle()).toContain("Workspace Main is active"));
 
   state.workspace = {
     key: "finance",
@@ -162,7 +163,7 @@ it("handles switching workspaces and updates the active workspace context", asyn
     products: [{ key: "payroll", displayName: "Payroll" }],
   };
   view.rerender(<MemoryRouter><HomePage /></MemoryRouter>);
-  await screen.findByText("Finance Workspace (finance)");
+  await waitFor(() => expect(subtitle()).toContain("Workspace Finance Workspace is active"));
 });
 
 it("renders onboarding page for a signed-in admin with zero workspaces (Lexorion Client scenario)", async () => {

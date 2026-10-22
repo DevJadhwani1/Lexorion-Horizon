@@ -80,7 +80,7 @@ it("walks through details, payroll setup, salary and an honest review, creating 
   expect(location()).toBe("?employee=EMP-002");
   expect(workforceApi.createEmployee).toHaveBeenCalledOnce();
   expect(workforceApi.createEmployee).toHaveBeenCalledWith(expect.objectContaining({ employeeCode: "EMP-002", status: "ACTIVE", phone: "+919876543210", phoneCountry: "IN", employmentType: "FULL_TIME" }));
-  expect((screen.getByLabelText("Currency") as HTMLInputElement).value).toBe("INR");
+  expect((document.querySelector('input[name="currency"]') as HTMLInputElement).value).toBe("INR");
   fireEvent.change(screen.getByLabelText("PAN"), { target: { value: "ABCDE1234F" } });
   fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
 

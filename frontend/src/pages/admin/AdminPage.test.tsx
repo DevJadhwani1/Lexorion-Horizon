@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AdminPage } from "./AdminPage";
+import { chooseOption } from "../../test/dropdown";
 import type { Organization } from "../../features/admin/adminApi";
 import { getOrganization, updateOrganization, updateSettings } from "../../features/admin/adminApi";
 
@@ -281,32 +282,25 @@ describe("AdminPage - Organization Profile Form", () => {
   it("replaces, clears, saves, and reloads address fields without concatenating values", async () => {
     renderAdminPage("organization");
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("Karnataka")).toBeTruthy();
-    });
-
-    const stateInput = screen.getByLabelText("State / Province / Region") as HTMLInputElement;
-    const cityInput = screen.getByLabelText("City") as HTMLInputElement;
+    const cityInput = (await screen.findByLabelText("City")) as HTMLInputElement;
     const postalInput = screen.getByLabelText("Postal / ZIP Code") as HTMLInputElement;
+    // An Indian address uses the state picker rather than free text.
+    expect(screen.queryByLabelText("State / Province / Region")).toBeNull();
+    expect(screen.getByRole("combobox", { name: "State / Union territory" }).textContent).toContain("Karnataka");
 
-    fireEvent.change(stateInput, { target: { value: "Maharashtra" } });
-    fireEvent.change(stateInput, { target: { value: "Karnataka" } });
+    chooseOption("State / Union territory", "Maharashtra");
+    chooseOption("State / Union territory", "Karnataka");
     fireEvent.change(cityInput, { target: { value: "Mumbai" } });
     fireEvent.change(cityInput, { target: { value: "Bengaluru" } });
     fireEvent.change(postalInput, { target: { value: "400001" } });
     fireEvent.change(postalInput, { target: { value: "560001" } });
 
-    expect(stateInput.value).toBe("Karnataka");
     expect(cityInput.value).toBe("Bengaluru");
     expect(postalInput.value).toBe("560001");
 
-    fireEvent.focus(stateInput);
-    expect(stateInput.selectionStart).toBe(0);
-    expect(stateInput.selectionEnd).toBe(stateInput.value.length);
-    fireEvent.change(stateInput, { target: { value: "Maharashtra" } });
-    expect(stateInput.value).toBe("Maharashtra");
-    fireEvent.change(stateInput, { target: { value: "Karnataka" } });
-
+    fireEvent.focus(cityInput);
+    expect(cityInput.selectionStart).toBe(0);
+    expect(cityInput.selectionEnd).toBe(cityInput.value.length);
     fireEvent.change(cityInput, { target: { value: "" } });
     expect(cityInput.value).toBe("");
 
@@ -323,10 +317,18 @@ describe("AdminPage - Organization Profile Form", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("Karnataka")).toBeTruthy();
+      expect(screen.getByRole("combobox", { name: "State / Union territory" }).textContent).toContain("Karnataka");
       expect(screen.getByDisplayValue("560001")).toBeTruthy();
     });
     expect((screen.getByLabelText("City") as HTMLInputElement).value).toBe("");
+  });
+
+  it("uses a free-text state field outside India", async () => {
+    testState.org.addressCountry = "US";
+    renderAdminPage("organization");
+    const stateInput = (await screen.findByLabelText("State / Province / Region")) as HTMLInputElement;
+    fireEvent.change(stateInput, { target: { value: "California" } });
+    expect(stateInput.value).toBe("California");
   });
 
   it("validates primary email as non-blank and formatted before submission", async () => {
@@ -446,6 +448,18 @@ describe("AdminPage - Organization Settings Form", () => {
     });
 
     expect(await screen.findByText(/organization settings updated successfully/i)).toBeTruthy();
+  });
+
+  it("fills currency, time zone, date format and locale from a newly chosen country", async () => {
+    renderAdminPage("settings");
+    await screen.findByText("Regional & Localization Defaults");
+    chooseOption("Default Country", /United Kingdom/);
+    fireEvent.click(screen.getByRole("button", { name: /save settings changes/i }));
+    await waitFor(() => {
+      expect(updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ country: "GB", currency: "GBP", timeZone: "Europe/London", dateFormat: "DD/MM/YYYY", locale: "en-GB" })
+      );
+    });
   });
 
   it("displays dirty indicator when field is modified and clears on successful save", async () => {

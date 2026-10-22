@@ -15,6 +15,7 @@ import {
   InviteMemberModal,
 } from "../../features/onboarding/OnboardingModals";
 import { HelpModal } from "../../features/onboarding/HelpModal";
+import { isUntouchedServerDefault } from "../../data/regionalDefaults";
 
 export function OnboardingPage() {
   const auth = useAuth();
@@ -325,6 +326,16 @@ export function OnboardingPage() {
             </div>
 
             <div className="step-card-body">
+              {step1Complete && isUntouchedServerDefault(organization?.settings) && (
+                <div className="step-callout warning" role="note" style={{ marginBottom: 12 }}>
+                  <Icon name="info" size={14} />
+                  <span>
+                    Regional settings are still the defaults for a new organization (United States · USD · UTC).
+                    Payroll and amounts use them, so{" "}
+                    <Link to={appPath("/organization/settings")}>confirm your country and currency</Link>.
+                  </span>
+                </div>
+              )}
               {step1Complete ? (
                 <div className="step-data-preview">
                   <div className="data-preview-item">

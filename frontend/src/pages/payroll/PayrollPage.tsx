@@ -1,4 +1,5 @@
 import { PayRunPreparation } from "./PayRunPreparation";
+import { CurrencyDropdown } from "../../components/ui/CurrencyDropdown";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../../api/types";
@@ -51,7 +52,7 @@ import { Dropdown } from "../../components/ui/Dropdown";
 import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, formatMoney, formatPeriod, humanize, payRunStatusDescription, personName } from "../../lib/format";
-import { CompensationForm } from "./CompensationForm";
+import { CompensationForm, STANDARD_COMPONENT_KEYS, createStandardComponents } from "./CompensationForm";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
@@ -216,7 +217,7 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
       >
         {error && <Notice>{error}</Notice>}
         <label>Employee code<input name="employeeCode" required defaultValue={initialCode} /></label>
-        <label key={defaults.currency}>Currency<input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={defaults.currency} placeholder="e.g. INR" /></label>
+        <CurrencyDropdown defaultValue={defaults.currency} />
         <Dropdown label="Pay frequency" name="payFrequency" defaultValue="MONTHLY" options={payFrequencyOptions} />
         <label>Payroll start date<input name="effectiveFrom" type="date" required /></label>
         <Button variant="primary" disabled={busy}>{busy ? "Saving…" : "Save payroll settings"}</Button>
@@ -253,6 +254,17 @@ function Components({
     <Page title="Salary components" description="The earnings, deductions and employer contributions you can use in salaries and templates.">
       {confirmDialog}
       {error && <Notice>{error}</Notice>}
+      {!STANDARD_COMPONENT_KEYS.every((key) => items.some((c) => c.componentKey === key)) && (
+        <div className="card standard-components-card">
+          <div>
+            <strong>{items.length ? "Add the standard Indian components you don’t have yet" : "Start with the standard Indian components"}</strong>
+            <p>Basic salary, House rent allowance, Special allowance, Provident fund (employee and employer) and Professional tax. You can rename or deactivate any of them.</p>
+          </div>
+          <Button variant="primary" disabled={busy} onClick={() => void run(() => createStandardComponents(items))}>
+            {busy ? "Adding…" : "Add standard components"}
+          </Button>
+        </div>
+      )}
       <details className="card">
         <summary>Create component</summary>
         <form
@@ -284,9 +296,8 @@ function Components({
           </Button>
         </form>
       </details>
-      <Table
+      {items.length === 0 ? <Empty>No salary components yet. Add the standard set above or create your own.</Empty> : <Table
         headers={[
-          "Key",
           "Name",
           "Category",
           "Type",
@@ -297,8 +308,7 @@ function Components({
       >
         {items.map((c) => (
           <tr key={c.componentKey}>
-            <td>{c.componentKey}</td>
-            <td>{c.displayName}</td>
+            <td>{c.displayName}<br /><small>{c.componentKey}</small></td>
             <td>{humanize(c.category)}</td>
             <td>{humanize(c.amountType)}</td>
             <td>{humanize(c.occurrenceType)}</td>
@@ -373,7 +383,7 @@ function Components({
             </td>
           </tr>
         ))}
-      </Table>
+      </Table>}
     </Page>
   );
 }
@@ -461,7 +471,7 @@ function SalaryTemplates({
             {input("templateKey")}
             {input("displayName")}
             {input("description")}
-            <span key={defaults.currency} className="contents">{input("currency", defaults.currency, "text", { pattern: "[A-Z]{3}", maxLength: 3 })}</span>
+            <CurrencyDropdown defaultValue={defaults.currency} />
             {select("payFrequency", ["MONTHLY", "BIWEEKLY", "WEEKLY"])}
             {input("effectiveFrom", "", "date")}
           </div>
@@ -585,7 +595,7 @@ function SalaryTemplates({
                   }));
                 }}
               >
-                {input("versionCurrency", t.currency, "text", { required: true, pattern: "[A-Z]{3}", maxLength: 3 })}
+                <CurrencyDropdown name="versionCurrency" defaultValue={t.currency} />
                 {select("versionPayFrequency", ["MONTHLY", "BIWEEKLY", "WEEKLY"])}
                 {input("versionEffectiveFrom", "", "date", { required: true })}
                 {input("versionEffectiveTo", "", "date")}
@@ -709,7 +719,7 @@ function VersionHistory({
                 })),
               })).then(() => setEditing(null));
             }}>
-              {input("currency", version.currency, "text", { required: true, pattern: "[A-Z]{3}", maxLength: 3 })}
+              <CurrencyDropdown defaultValue={version.currency} />
               {select("payFrequency", ["MONTHLY", "BIWEEKLY", "WEEKLY"])}
               {input("effectiveFrom", version.effectiveFrom, "date", { required: true })}
               {input("effectiveTo", version.effectiveTo ?? "", "date")}

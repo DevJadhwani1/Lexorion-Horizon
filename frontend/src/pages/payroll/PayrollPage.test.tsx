@@ -30,7 +30,7 @@ describe("Payroll employee handoff", () => {
   it("opens compensation after configuring the selected workforce employee, defaulting to the organization currency", async () => {
     render(<MemoryRouter initialEntries={["/payroll/employees?employee=EMP-001"]}><CurrentLocation /><Routes><Route path="/payroll/employees" element={<PayrollPage sectionKey="employees" />} /><Route path="/payroll/compensation" element={<PayrollPage sectionKey="compensation" />} /></Routes></MemoryRouter>);
     expect((await screen.findByLabelText("Employee code") as HTMLInputElement).value).toBe("EMP-001");
-    await waitFor(() => expect((screen.getByLabelText("Currency") as HTMLInputElement).value).toBe("INR"));
+    await waitFor(() => expect((document.querySelector('input[name="currency"]') as HTMLInputElement).value).toBe("INR"));
     fireEvent.change(screen.getByLabelText("Payroll start date"), { target: { value: "2026-01-01" } });
     fireEvent.click(screen.getByRole("button", { name: "Save payroll settings" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("/payroll/compensation?employee=EMP-001"));
