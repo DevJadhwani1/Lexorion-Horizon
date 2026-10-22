@@ -669,7 +669,6 @@ describe("AdminPage - Settings > Product access", () => {
 describe("AdminPage - Members & Invitations custom dropdowns", () => {
   it("renders custom dropdown for member role and changes role with confirmation", async () => {
     const { changeMemberRole } = await import("../../features/admin/adminApi");
-    vi.spyOn(window, "confirm").mockImplementation(() => true);
     renderAdminPage("members");
 
     await waitFor(() => {
@@ -696,7 +695,10 @@ describe("AdminPage - Members & Invitations custom dropdowns", () => {
     // Click MANAGER
     fireEvent.click(screen.getByRole("option", { name: "MANAGER" }));
 
-    expect(window.confirm).toHaveBeenCalledWith("Change Dev Jadhwani's role to MANAGER?");
+    await screen.findByRole("dialog", { name: "Change Dev Jadhwani's role to Manager?" });
+    expect(changeMemberRole).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Change role" }));
+    await waitFor(() => expect(changeMemberRole).toHaveBeenCalledOnce());
     expect(changeMemberRole).toHaveBeenCalledWith("mem-1", "MANAGER");
   });
 

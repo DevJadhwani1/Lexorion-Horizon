@@ -52,6 +52,7 @@ import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDire
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
 import { formatDate, formatMoney, formatPeriod, humanize, payRunStatusDescription, personName } from "../../lib/format";
 import { CompensationForm } from "./CompensationForm";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import { Table } from "../admin/AdminPage";
@@ -134,6 +135,7 @@ export function PayrollPage({ sectionKey }: { sectionKey?: string }) {
 
 /** Payroll enrollment list, joined to Workforce records for names, plus everyone who still needs payroll setup. */
 function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[]; reload(): Promise<void> }) {
+  const [ask, confirmDialog] = useConfirm();
   const directory = useWorkforceDirectory();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState("");
@@ -142,6 +144,7 @@ function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[];
   const requested = searchParams.get("employee");
   return (
     <Page title="Payroll employees" description="People who are set up to be paid in this workspace.">
+      {confirmDialog}
       {error && <Notice>{error}</Notice>}
       {(requested || !directory.available || directory.error) && <EmployeeForm reload={reload} />}
       {pending.length > 0 && <section className="card" aria-labelledby="payroll-pending-heading">
@@ -167,8 +170,10 @@ function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[];
               <td className="row-actions">
                 <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`}>Salary</Link>
                 <Link to={`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`}>Payslips</Link>
-                <Button size="sm" onClick={() =>
-                  confirm(`${e.status === "ACTIVE" ? "Stop paying" : "Resume paying"} ${directory.nameOf(e.employeeCode)}?`) &&
+                <Button size="sm" onClick={async () =>
+                  await ask({ title: `${e.status === "ACTIVE" ? "Stop paying" : "Resume paying"} ${directory.nameOf(e.employeeCode)}?`,
+                    body: e.status === "ACTIVE" ? "They will not be eligible for new pay runs until payroll is resumed. Finalized history is kept." : "They become eligible for new pay runs again.",
+                    confirmLabel: e.status === "ACTIVE" ? "Stop paying" : "Resume paying", tone: e.status === "ACTIVE" ? "destructive" : "primary" }) &&
                   void updatePayrollEmployee(e.employeeCode, { status: e.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })
                     .then(reload)
                     .catch((x) => setError(x instanceof ApiError ? x.message : "Unable to update payroll employee"))}>
@@ -229,6 +234,7 @@ function Components({
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [editingKey, setEditingKey] = useState<string | null>(null);
+  const [ask, confirmDialog] = useConfirm();
   const run = async (action: () => Promise<unknown>) => {
     setError("");
     setBusy(true);
@@ -244,7 +250,8 @@ function Components({
     }
   };
   return (
-    <Page title="Salary components" description="The earnings and deductions you can use in salaries and templates.">
+    <Page title="Salary components" description="The earnings, deductions and employer contributions you can use in salaries and templates.">
+      {confirmDialog}
       {error && <Notice>{error}</Notice>}
       <details className="card">
         <summary>Create component</summary>
@@ -268,7 +275,7 @@ function Components({
             required: true,
             maxLength: 150,
           })}
-          {select("category", ["EARNING", "DEDUCTION"])}
+          {select("category", ["EARNING", "DEDUCTION", "EMPLOYER_CONTRIBUTION"])}
           {select("amountType", ["FIXED_AMOUNT", "PERCENTAGE"])}
           {select("occurrenceType", ["RECURRING", "ONE_TIME"])}
           {select("taxability", ["TAXABLE", "NON_TAXABLE"])}
@@ -347,11 +354,11 @@ function Components({
               <Button
                 variant={c.status === "ACTIVE" ? "destructive" : "secondary"}
                 disabled={busy}
-                onClick={() => {
+                onClick={async () => {
                   const next = c.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
                   if (
                     c.status === "ACTIVE" &&
-                    !confirm("Deactivate component?")
+                    !(await ask({ title: `Deactivate ${c.displayName}?`, body: "It can no longer be added to salaries. Existing salaries and history keep it.", confirmLabel: "Deactivate", tone: "destructive" }))
                   )
                     return;
                   void run(() =>
@@ -382,6 +389,7 @@ function SalaryTemplates({
     [busy, setBusy] = useState(false),
     [versions, setVersions] = useState<Record<string, SalaryTemplateVersion[]>>({}),
     [selectedVersions, setSelectedVersions] = useState<Record<string, number>>({});
+  const [ask, confirmDialog] = useConfirm();
   const defaults = useOrganizationDefaults();
   const directory = useWorkforceDirectory();
   const activeComponents = components.filter((c) => c.status === "ACTIVE");
@@ -414,6 +422,7 @@ function SalaryTemplates({
       title="Salary Templates"
       description="A template is a reusable configuration. Assigning it creates an independent employee compensation snapshot; later template changes do not rewrite that history."
     >
+      {confirmDialog}
       <details className="card">
         <summary>Create salary template</summary>
         <form
@@ -509,8 +518,8 @@ function SalaryTemplates({
               <Button
                 variant={t.status === "ACTIVE" ? "destructive" : "secondary"}
                 disabled={busy}
-                onClick={() => {
-                  if (t.status === "ACTIVE" && !confirm(`Deactivate ${t.displayName}?`)) return;
+                onClick={async () => {
+                  if (t.status === "ACTIVE" && !(await ask({ title: `Deactivate ${t.displayName}?`, body: "It can no longer be assigned. Salaries already created from it are unchanged.", confirmLabel: "Deactivate", tone: "destructive" }))) return;
                   void run(() => t.status === "ACTIVE"
                     ? deactivateSalaryTemplate(t.templateKey)
                     : updateSalaryTemplate(t.templateKey, { status: "ACTIVE" }));
@@ -948,6 +957,15 @@ function EmployeeDetail({ section }: { section: string }) {
                   </p>
                 ))}
               </section>
+              {c.lines.some((line) => line.category === "EMPLOYER_CONTRIBUTION") && <section>
+                <h4>Employer contributions</h4>
+                {c.lines.filter((line) => line.category === "EMPLOYER_CONTRIBUTION").map((l) => (
+                  <p key={l.componentKey}>
+                    {l.displayName}: {money(l.calculatedAmount, c.currency)}{l.percentageBasis ? ` (${label(l.percentageBasis)})` : ""}
+                  </p>
+                ))}
+                <p className="snapshot-note">Paid by the employer. Not deducted from net pay.</p>
+              </section>}
             </div>
           </article>
         ))}
@@ -1041,6 +1059,16 @@ function EmployeeDetail({ section }: { section: string }) {
                   <p>No deductions</p>
                 )}
               </section>
+              {Boolean(p.employerContributions?.length) && <section>
+                <h4>Employer contributions</h4>
+                {p.employerContributions!.map((l) => (
+                  <p key={l.componentKey}>
+                    <span>{l.displayName}</span>
+                    <strong>{money(l.amount, p.currency)}</strong>
+                  </p>
+                ))}
+                <p className="snapshot-note">Paid by the employer in addition to your pay. Not deducted from net pay.</p>
+              </section>}
             </div>
             <footer>
               <div>
@@ -1174,11 +1202,13 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
   run: PayRun; employees: PayRunEmployee[]; busy: boolean; nameOf(code: string): string;
   mutate(action: () => Promise<PayRun>): Promise<void>; onPrepared(): Promise<void>; onClose(): void;
 }) {
+  const [ask, confirmDialog] = useConfirm();
   const returnTo = `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(run.payRunKey)}`;
   const steps = ["Choose employees", "Calculate", "Review & finalize"];
   const position = run.status === "DRAFT" || run.status === "FAILED" ? 0 : run.status === "PROCESSING" ? 1 : run.status === "CALCULATED" ? 2 : 3;
   return (
     <article className="card pay-run-detail" aria-label={`Pay run ${run.payRunKey}`}>
+      {confirmDialog}
       <div className="card-heading">
         <div>
           <h3>{run.payRunKey} <StatusBadge status={run.status} /></h3>
@@ -1194,13 +1224,14 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
       </ol>
       {run.status === "DRAFT" && <PayRunPreparation key={run.payRunKey} run={run} busy={busy} nameOf={nameOf}
         onSaved={onPrepared}
-        onProcess={() => { if (confirm("Calculate pay for the selected employees?")) void mutate(() => processPayRun(run.payRunKey)); }} />}
+        onProcess={async () => { if (await ask({ title: "Calculate pay?", body: "Pay is calculated for the selected employees. You can review the results and reset before finalizing.", confirmLabel: "Calculate pay" })) void mutate(() => processPayRun(run.payRunKey)); }} />}
       {run.status !== "DRAFT" && <>
         {(run.status === "CALCULATED" || run.status === "FINALIZED") && <dl className="pay-estimate run-totals" aria-label="Pay run totals">
           <div><dt>Employees</dt><dd>{run.employeeCount}</dd></div>
           <div><dt>Gross pay</dt><dd>{money(run.grossTotal, run.currency)}</dd></div>
           <div><dt>Deductions</dt><dd>{money(run.deductionTotal, run.currency)}</dd></div>
           <div className="net"><dt>Net pay</dt><dd>{money(run.netTotal, run.currency)}</dd></div>
+          {Boolean(run.employerContributionTotal) && <div><dt>Employer contributions</dt><dd>{money(run.employerContributionTotal ?? 0, run.currency)}</dd></div>}
         </dl>}
         {employees.length ? (
           <Table headers={["Employee", "Gross", "Deductions", "Net pay", ""]}>
@@ -1224,11 +1255,12 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
       <div className="toolbar">
         {run.status === "CALCULATED" && (
           <Button variant="primary" disabled={busy}
-            onClick={() => confirm(`Finalize ${run.payRunKey}? Net pay of ${money(run.netTotal, run.currency)} for ${run.employeeCount} employee${run.employeeCount === 1 ? "" : "s"} will be locked and payslips issued. This cannot be undone.`) && void mutate(() => finalizePayRun(run.payRunKey))}>
+            onClick={async () => await ask({ title: `Finalize ${run.payRunKey}?`, tone: "destructive", confirmLabel: "Finalize pay run",
+              body: `Net pay of ${money(run.netTotal, run.currency)} for ${run.employeeCount} employee${run.employeeCount === 1 ? "" : "s"} will be locked and payslips issued. This cannot be undone.` }) && void mutate(() => finalizePayRun(run.payRunKey))}>
             Finalize
           </Button>
         )}
-        {run.status === "CALCULATED" && <Button disabled={busy} onClick={() => confirm("Return this run to Draft? Previous calculation snapshots remain in history; process again before finalizing.") && void mutate(() => recoverPayRun(run.payRunKey))}>Reset for recalculation</Button>}
+        {run.status === "CALCULATED" && <Button disabled={busy} onClick={async () => await ask({ title: "Return this run to Draft?", body: "Previous calculation snapshots remain in history. Calculate again before finalizing.", confirmLabel: "Return to Draft" }) && void mutate(() => recoverPayRun(run.payRunKey))}>Reset for recalculation</Button>}
         {run.status === "FINALIZED" && (
           <Notice tone="success">
             Finalized payroll is immutable. Open each employee’s payslip or ledger above to review the results.

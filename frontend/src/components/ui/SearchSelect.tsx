@@ -42,6 +42,8 @@ export interface SearchSelectProps {
   searchable?: boolean;
   compact?: boolean;
   minMenuWidth?: number;
+  /** Focus the control when it first renders (for example in a panel that just opened). */
+  autoFocus?: boolean;
 }
 
 export function SearchSelect({
@@ -68,6 +70,7 @@ export function SearchSelect({
   searchable = true,
   compact = false,
   minMenuWidth,
+  autoFocus = false,
 }: SearchSelectProps) {
   const generatedId = useId();
   const id = explicitId || generatedId;
@@ -85,6 +88,7 @@ export function SearchSelect({
   });
 
   const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (autoFocus) triggerRef.current?.focus(); }, [autoFocus]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +107,15 @@ export function SearchSelect({
     if (opt.keywords && opt.keywords.some((kw) => kw.toLowerCase().includes(term))) return true;
     return false;
   });
+  // Best matches first: an exact name, then names starting with the search, then everything else (order kept).
+  if (searchTerm.trim() && !filterOption) {
+    const term = searchTerm.toLowerCase().trim();
+    const rank = (opt: SelectOption) => {
+      const names = [opt.label.replace(/^[^\p{L}\p{N}]+/u, ""), ...(opt.keywords ?? [])].map((name) => name.toLowerCase());
+      return names.includes(term) ? 0 : names.some((name) => name.startsWith(term)) ? 1 : 2;
+    };
+    filteredOptions.sort((a, b) => rank(a) - rank(b));
+  }
 
   // Calculate coordinates for portal dropdown to prevent container clipping
   const updateCoords = useCallback(() => {

@@ -19,7 +19,7 @@ public class CalculationLine extends Auditable {
     @JoinColumn(name = "calculation_id", nullable = false, updatable = false) private Calculation calculation;
     @Column(name = "component_key", nullable = false, updatable = false, length = 64) private String componentKey;
     @Column(name = "display_name", nullable = false, updatable = false, length = 150) private String displayName;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16) private ComponentCategory category;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 32) private ComponentCategory category;
     @Enumerated(EnumType.STRING) @Column(name = "amount_type", nullable = false, updatable = false, length = 20) private AmountType amountType;
     @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16) private OccurrenceType occurrence;
     @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16) private Taxability taxability;

@@ -38,9 +38,9 @@ describe("employee profile", () => {
     expect(await screen.findByText("Engineering")).toBeTruthy();
     expect((await screen.findByRole("link", { name: "View compensation" })).getAttribute("href")).toContain("employee=EMP-001");
     fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
-    expect(screen.getByRole("combobox", { name: "Department" }).textContent).toContain("Engineering");
-    chooseOption("Department", "No department");
-    chooseOption("Designation", "No designation");
+    expect(screen.getByRole("combobox", { name: "Department (optional)" }).textContent).toContain("Engineering");
+    chooseOption("Department (optional)", "No department");
+    chooseOption("Designation (optional)", "No designation");
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(workforceApi.updateEmployee).toHaveBeenCalledWith("EMP-001", expect.objectContaining({ departmentKey: null, designationKey: null, reportingManagerEmployeeCode: null })));
   });

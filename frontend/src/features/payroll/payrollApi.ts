@@ -6,11 +6,15 @@ export interface PayrollEmployee {
   currency: string;
   payFrequency: "MONTHLY" | "BIWEEKLY" | "WEEKLY";
   effectiveFrom: string;
+  payGroup?: string | null;
+  workState?: string | null;
+  workLocation?: string | null;
 }
+export type ComponentCategory = "EARNING" | "DEDUCTION" | "EMPLOYER_CONTRIBUTION";
 export interface Component {
   componentKey: string;
   displayName: string;
-  category: "EARNING" | "DEDUCTION";
+  category: ComponentCategory;
   amountType: "FIXED_AMOUNT" | "PERCENTAGE";
   occurrenceType: "RECURRING" | "ONE_TIME";
   taxability: "TAXABLE" | "NON_TAXABLE";
@@ -57,6 +61,7 @@ export interface Calculation {
   deductionAmount: number;
   netAmount: number;
   lines: CalculationLine[];
+  employerContributionAmount?: number;
   periodStart?: string | null;
   periodEnd?: string | null;
 }
@@ -75,6 +80,7 @@ export interface PayRun {
   finalizedAt: string | null;
   failureMessage?: string | null;
   processingStartedAt?: string | null;
+  employerContributionTotal?: number;
 }
 export interface PayRunEmployee {
   employeeCode: string;
@@ -83,6 +89,7 @@ export interface PayRunEmployee {
   netAmount: number;
   currency: string;
   calculationDate: string;
+  employerContributionAmount?: number;
 }
 export interface SalaryTemplateComponent {
   componentKey: string;
@@ -164,6 +171,8 @@ export interface Payslip {
   deductionAmount: number;
   netAmount: number;
   finalizedAt: string;
+  employerContributions?: PayslipLine[];
+  employerContributionAmount?: number;
 }
 export const getPayrollEmployees = () =>
   apiRequest<PayrollEmployee[]>("/api/payroll/employees");
@@ -347,3 +356,43 @@ export const savePayRunPreparation = (key: string, employeeCodes: string[]) =>
   apiRequest<PayRunPreparation>(`/api/payroll/pay-runs/${encodeURIComponent(key)}/preparation`, {
     method: "PUT", body: { employeeCodes },
   });
+
+export type PaymentMethod = "BANK_TRANSFER" | "CHEQUE" | "CASH";
+export type TaxRegime = "NEW" | "OLD" | "NOT_DECLARED";
+export type Applicability = "UNDECIDED" | "APPLICABLE" | "NOT_APPLICABLE";
+export type SectionStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE" | "NOT_APPLICABLE" | "PENDING_VERIFICATION";
+/** Masked view: identifiers come back as "••••1234" and are never returned in full. */
+export interface StatutoryProfile {
+  paymentMethod: PaymentMethod | null; bankAccountHolder: string | null; bankAccountNumberMasked: string | null; bankIfsc: string | null;
+  bankName: string | null; bankVerified: boolean; panMasked: string | null; panVerified: boolean; taxRegime: TaxRegime | null;
+  pfApplicability: Applicability | null; uanMasked: string | null; pfMemberSince: string | null; pfHigherWagesOptIn: boolean; pfVerified: boolean;
+  esiApplicability: Applicability | null; esiIpNumberMasked: string | null; esiVerified: boolean;
+  ptApplicability: Applicability | null; ptState: string | null; lwfApplicability: Applicability | null; lwfState: string | null;
+}
+export interface SetupSection { key: string; title: string; status: SectionStatus; missing: string[] }
+export interface PayrollSetup {
+  enrollment: PayrollEmployee; statutoryProfile: StatutoryProfile | null; salaryConfigured: boolean; sections: SetupSection[];
+  readiness: { readyForPayroll: boolean; setupComplete: boolean; blockers: string[]; warnings: string[] };
+}
+/** Partial update: omitted fields stay as they are, "" clears a field. Sensitive values go in the body only. */
+export type StatutoryProfileUpdate = Partial<{
+  paymentMethod: PaymentMethod; bankAccountHolder: string; bankAccountNumber: string; bankIfsc: string; bankName: string; bankVerified: boolean;
+  pan: string; panVerified: boolean; taxRegime: TaxRegime; pfApplicability: Applicability; uan: string; pfMemberSince: string;
+  pfHigherWagesOptIn: boolean; pfVerified: boolean; esiApplicability: Applicability; esiIpNumber: string; esiVerified: boolean;
+  ptApplicability: Applicability; ptState: string; lwfApplicability: Applicability; lwfState: string;
+}>;
+export type EstimateStatus = "ESTIMATED" | "NOT_APPLICABLE" | "NEEDS_DECISION" | "ABOVE_CEILING" | "UNAVAILABLE";
+export interface StatutoryEstimate {
+  employeeCode: string; asOf: string; currency: string; pfWages: number; esiWages: number;
+  employeeDeductionTotal: number; employerContributionTotal: number;
+  lines: { scheme: string; label: string; party: "EMPLOYEE" | "EMPLOYER"; amount: number | null; status: EstimateStatus; note: string }[];
+  sources: { scheme: string; effectiveFrom: string; effectiveTo: string | null; reference: string; url: string | null; reviewStatus: string }[];
+  warnings: string[];
+}
+/** A 404 means the employee is not enrolled in payroll yet; callers handle it, so it is not reported globally. */
+export const getPayrollSetup = (code: string) =>
+  apiRequest<PayrollSetup>(`/api/payroll/employees/${encodeURIComponent(code)}/setup`, { expectedStatuses: [404] });
+export const saveStatutoryProfile = (code: string, body: StatutoryProfileUpdate) =>
+  apiRequest<PayrollSetup>(`/api/payroll/employees/${encodeURIComponent(code)}/statutory-profile`, { method: "PUT", body });
+export const getStatutoryEstimate = (code: string, body: { asOf: string; basicWages: number; grossWages: number }) =>
+  apiRequest<StatutoryEstimate>(`/api/payroll/employees/${encodeURIComponent(code)}/statutory-estimate`, { method: "POST", body });

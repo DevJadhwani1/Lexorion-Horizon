@@ -93,7 +93,7 @@ public class TenantAdministrationService {
       }
 
       if (request.has("primaryPhone")) {
-         organization.setPrimaryPhone(trimToNull(request.primaryPhone()));
+         organization.setPrimaryPhone(com.lexorion.platform.validation.PhoneNumbers.normalizeOptional(request.primaryPhone(), "Primary phone"));
       }
 
       if (request.has("addressLine1")) {

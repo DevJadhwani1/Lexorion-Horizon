@@ -1,5 +1,6 @@
 package com.lexorion.platform.tenantadmin;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -136,6 +137,35 @@ class TenantOrganizationAdministrationIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"website\":\"javascript:alert(1)\"}"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void primaryPhoneAcceptsFormattedInternationalNumbersAndStoresE164() throws Exception {
+        String[][] cases = {
+            {"+91 98765-43210", "+919876543210"},     // India mobile, formatted
+            {"+44 20 7946 0958", "+442079460958"},    // UK landline
+            {"+1 (415) 555-2671", "+14155552671"},    // US, parentheses
+            {"00 91 22 2345 6789", "+912223456789"}, // international 00 prefix, Indian landline
+        };
+        for (String[] item : cases) {
+            tenant(patch("/api/tenant/organization").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"primaryPhone\":\"" + item[0] + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.primaryPhone").value(item[1]));
+        }
+        tenant(get("/api/tenant/organization")).andExpect(jsonPath("$.primaryPhone").value("+912223456789"));
+    }
+
+    @Test
+    void primaryPhoneRejectsNumbersWithoutCountryCodeOrDigitsAndKeepsPreviousValue() throws Exception {
+        tenant(patch("/api/tenant/organization").contentType(MediaType.APPLICATION_JSON).content("{\"primaryPhone\":\"+919876543210\"}"))
+            .andExpect(status().isOk());
+        for (String bad : new String[] {"98765 43210", "+91 98765 ABCDE", "+12", "+1234567890123456"}) {
+            tenant(patch("/api/tenant/organization").contentType(MediaType.APPLICATION_JSON).content("{\"primaryPhone\":\"" + bad + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("Primary phone")));
+        }
+        tenant(get("/api/tenant/organization")).andExpect(jsonPath("$.primaryPhone").value("+919876543210"));
     }
 
     @Test

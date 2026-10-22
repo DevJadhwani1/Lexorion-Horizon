@@ -25,6 +25,7 @@ public class PayRun extends Auditable {
  @Column(name="gross_total",nullable=false,precision=19,scale=4)private BigDecimal grossTotal;
  @Column(name="deduction_total",nullable=false,precision=19,scale=4)private BigDecimal deductionTotal;
  @Column(name="net_total",nullable=false,precision=19,scale=4)private BigDecimal netTotal;
+ @Column(name="employer_contribution_total",nullable=false,precision=19,scale=4)private BigDecimal employerContributionTotal=BigDecimal.ZERO;
  @Column(name="processing_attempt")private UUID processingAttempt;
  @Column(name="processing_started_at")private Instant processingStartedAt;
  @Column(name="failure_message",length=255)private String failureMessage;

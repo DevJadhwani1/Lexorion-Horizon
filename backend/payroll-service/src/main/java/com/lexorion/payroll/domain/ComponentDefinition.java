@@ -19,7 +19,7 @@ public class ComponentDefinition extends Auditable {
     private String componentKey;
     @Column(name = "display_name", nullable = false, length = 150)
     private String displayName;
-    @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 16)
+    @Enumerated(EnumType.STRING) @Column(nullable = false, updatable = false, length = 32)
     private ComponentCategory category;
     @Enumerated(EnumType.STRING) @Column(name = "amount_type", nullable = false, updatable = false, length = 20)
     private AmountType amountType;

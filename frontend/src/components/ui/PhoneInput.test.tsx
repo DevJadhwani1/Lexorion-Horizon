@@ -1,115 +1,89 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import {
-  PhoneInput,
-  parsePhoneString,
-  validatePhoneNumber,
-} from "./PhoneInput";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { PhoneInput, checkPhone, parsePhoneString, phoneValueFor, validatePhoneNumber } from "./PhoneInput";
 
-afterEach(() => {
-  cleanup();
-});
+afterEach(cleanup);
 
-describe("PhoneInput - parsing and international validation", () => {
-  it("parses international calling codes and local numbers correctly", () => {
-    const res1 = parsePhoneString("+919876543210");
-    expect(res1.callingOption.callingCode).toBe("+91");
-    expect(res1.callingOption.countryCode).toBe("IN");
-    expect(res1.localNumber).toBe("9876543210");
-
-    const res2 = parsePhoneString("+44 20 7946 0958");
-    expect(res2.callingOption.callingCode).toBe("+44");
-    expect(res2.callingOption.countryCode).toBe("GB");
-
-    const res3 = parsePhoneString("+14155552671");
-    expect(res3.callingOption.callingCode).toBe("+1");
+describe("checkPhone", () => {
+  it("accepts formatted numbers for India, the UK and the US and normalizes them to E.164", () => {
+    expect(checkPhone("98765 43210", "IN")).toMatchObject({ status: "valid", e164: "+919876543210" });
+    expect(checkPhone("+91-98765-43210", "IN")).toMatchObject({ status: "valid", e164: "+919876543210" });
+    expect(checkPhone("022 2345 6789", "IN")).toMatchObject({ status: "valid", e164: "+912223456789" }); // landline
+    expect(checkPhone("020 7946 0958", "GB")).toMatchObject({ status: "valid", e164: "+442079460958" });
+    expect(checkPhone("(415) 555-2671", "US")).toMatchObject({ status: "valid", e164: "+14155552671" });
+    expect(checkPhone("415.555.2671", "US")).toMatchObject({ status: "valid", e164: "+14155552671" });
   });
 
-  it("handles duplicate calling codes retaining distinct country identities", () => {
-    // Both US and CA use +1 calling code
-    const parsedUS = parsePhoneString("+14155552671", "US");
-    expect(parsedUS.callingOption.callingCode).toBe("+1");
-
-    const parsedCA = parsePhoneString("+14165550199", "CA");
-    expect(parsedCA.callingOption.callingCode).toBe("+1");
+  it("lets a leading + code name its own country", () => {
+    expect(checkPhone("+44 20 7946 0958", "IN")).toMatchObject({ status: "valid", e164: "+442079460958", country: "GB" });
   });
 
-  it("validates international phone lengths flexibly (ITU-T E.164: 4 to 15 digits)", () => {
-    // Standard international number
-    const valid = validatePhoneNumber("9876543210", "+91");
-    expect(valid.isValid).toBe(true);
-    expect(valid.e164).toBe("+919876543210");
+  it("explains invalid input instead of rejecting the + sign", () => {
+    expect(checkPhone("", "IN")).toMatchObject({ status: "empty", error: null });
+    expect(checkPhone("12345", "IN").error).toBe("This number is too short for India.");
+    expect(checkPhone("555-CALL-NOW", "US").error).toContain("digits, spaces, +");
+    expect(checkPhone("98765+43210", "IN").error).toContain("+ only at the start");
+  });
 
-    // Short valid international number (e.g. 4-6 local digits in smaller island states/networks)
-    const shortValid = validatePhoneNumber("12345", "+676");
-    expect(shortValid.isValid).toBe(true);
+  it("keeps invalid digits so a form cannot silently save a blank number", () => {
+    expect(phoneValueFor("12345", "IN")).toBe("+9112345");
+    expect(phoneValueFor("", "IN")).toBe("");
+  });
 
-    // Too short (under 4 total digits)
-    const tooShort = validatePhoneNumber("1", "+1");
-    expect(tooShort.isValid).toBe(false);
-    expect(tooShort.error).toContain("too short");
-
-    // Too long (over 15 digits total under E.164)
-    const tooLong = validatePhoneNumber("12345678901234567", "+1");
-    expect(tooLong.isValid).toBe(false);
-    expect(tooLong.error).toContain("cannot exceed 15 digits");
-
-    // Invalid non-digit characters
-    const withLetters = validatePhoneNumber("555-CALL-NOW", "+1");
-    expect(withLetters.isValid).toBe(false);
-    expect(withLetters.error).toContain("may only contain digits");
+  it("keeps the submit-time helpers working for stored values, including shared calling codes", () => {
+    expect(parsePhoneString("+919876543210")).toMatchObject({ localNumber: "9876543210", callingOption: { countryCode: "IN" } });
+    expect(parsePhoneString("+442079460958").callingOption.countryCode).toBe("GB");
+    expect(validatePhoneNumber("4155552671", "+1")).toMatchObject({ isValid: true, e164: "+14155552671" });
+    expect(validatePhoneNumber("12345", "+91").isValid).toBe(false);
+    expect(validatePhoneNumber("", "+91").isValid).toBe(true);
   });
 });
 
-describe("PhoneInput component", () => {
-  it("renders with calling code trigger and local number input", () => {
-    const onChange = vi.fn();
-    render(
-      <PhoneInput
-        id="test-phone"
-        label="Primary Phone"
-        value="+919876543210"
-        onChange={onChange}
-      />
-    );
-
+describe("PhoneInput", () => {
+  it("shows the stored number with its country code", () => {
+    render(<PhoneInput label="Primary phone" value="+919876543210" onChange={vi.fn()} />);
     expect(screen.getByText("+91")).toBeTruthy();
-    expect(screen.getByText("🇮🇳")).toBeTruthy();
-    const input = screen.getByRole("textbox", { name: /primary phone local number/i }) as HTMLInputElement;
-    expect(input.value).toBe("9876543210");
+    expect((screen.getByRole("textbox", { name: "Primary phone number" }) as HTMLInputElement).value).toBe("9876543210");
   });
 
-  it("emits E.164 normalized value when local number is edited", () => {
+  it("emits E.164 for formatted input and the typed digits while invalid", () => {
     const onChange = vi.fn();
-    render(
-      <PhoneInput
-        id="test-phone"
-        label="Primary Phone"
-        value="+14155550000"
-        onChange={onChange}
-      />
-    );
-
-    const input = screen.getByRole("textbox", { name: /primary phone local number/i });
-    fireEvent.change(input, { target: { value: "415 555 1234" } });
-
-    expect(onChange).toHaveBeenCalledWith("+14155551234");
+    render(<PhoneInput label="Phone" value="" defaultCountryCode="US" onChange={onChange} />);
+    const input = screen.getByRole("textbox", { name: "Phone number" });
+    fireEvent.change(input, { target: { value: "(415) 555-2671" } });
+    expect(onChange).toHaveBeenLastCalledWith("+14155552671");
+    fireEvent.change(input, { target: { value: "415" } });
+    expect(onChange).toHaveBeenLastCalledWith("+1415");
+    expect(screen.getByRole("alert").textContent).toContain("too short");
   });
 
-  it("displays validation error when letters or illegal characters are entered", () => {
+  it("switches the country when a pasted number carries another country code, and says so", () => {
+    const onCountryChange = vi.fn();
+    render(<PhoneInput label="Phone" value="" defaultCountryCode="IN" onChange={vi.fn()} onCountryChange={onCountryChange} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Phone number" }), { target: { value: "+44 20 7946 0958" } });
+    expect(onCountryChange).toHaveBeenCalledWith("GB");
+    expect(screen.getByText("+44")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("United Kingdom");
+  });
+
+  it("keeps the typed digits when the country changes and re-validates them", () => {
     const onChange = vi.fn();
-    render(
-      <PhoneInput
-        id="test-phone"
-        label="Primary Phone"
-        value=""
-        onChange={onChange}
-      />
-    );
+    render(<PhoneInput label="Phone" value="" defaultCountryCode="GB" onChange={onChange} />);
+    const input = screen.getByRole("textbox", { name: "Phone number" }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "(415) 555-2671" } });
+    expect(screen.getByRole("alert").textContent).toContain("United Kingdom");
+    fireEvent.click(screen.getByRole("combobox", { name: "Phone country" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /search country/i }), { target: { value: "United States" } });
+    fireEvent.click(within(screen.getByRole("listbox")).getByRole("option", { name: /^🇺🇸 United States/ }));
+    expect(input.value).toBe("(415) 555-2671");
+    expect(onChange).toHaveBeenLastCalledWith("+14155552671");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 
-    const input = screen.getByRole("textbox", { name: /primary phone local number/i });
-    fireEvent.change(input, { target: { value: "abc" } });
-
-    expect(screen.getByRole("alert").textContent).toContain("may only contain digits");
+  it("does not flag an optional blank field", () => {
+    render(<PhoneInput label="Phone" value="" onChange={vi.fn()} />);
+    fireEvent.blur(screen.getByRole("textbox", { name: "Phone number" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("(optional)")).toBeTruthy();
   });
 });

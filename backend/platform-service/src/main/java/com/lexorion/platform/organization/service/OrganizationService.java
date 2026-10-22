@@ -1,5 +1,6 @@
 package com.lexorion.platform.organization.service;
 
+import com.lexorion.platform.validation.PhoneNumbers;
 import com.lexorion.core.exception.ResourceNotFoundException;
 import com.lexorion.horizon.membership.entity.MembershipStatus;
 import com.lexorion.horizon.membership.entity.OrganizationRole;
@@ -49,7 +50,7 @@ public class OrganizationService {
    public OrganizationResponse create(CreateOrganizationRequest request) {
       var organization = coreOrganizations.create(new com.lexorion.core.organization.service.CoreOrganizationService.CreateOrganization(
             request.name(), request.organizationCode(), request.slug(), request.primaryEmail(), request.ownerUserId()));
-      organization.setLegalName(request.legalName()); organization.setPrimaryPhone(request.primaryPhone());
+      organization.setLegalName(request.legalName()); organization.setPrimaryPhone(PhoneNumbers.normalizeOptional(request.primaryPhone(), "Primary phone"));
       var ownership = membershipRepository.findByUserIdAndOrganizationIdAndStatus(request.ownerUserId(), organization.getId(), MembershipStatus.ACTIVE).orElseThrow();
       ownership.setRole(OrganizationRole.ADMIN); membershipRepository.saveAndFlush(ownership);
       horizon.enroll(organization.getId());
@@ -91,7 +92,7 @@ public class OrganizationService {
       }
 
       if (request.primaryPhone() != null) {
-         organization.setPrimaryPhone(request.primaryPhone());
+         organization.setPrimaryPhone(PhoneNumbers.normalizeOptional(request.primaryPhone(), "Primary phone"));
       }
 
       return OrganizationResponse.from((Organization)this.organizationRepository.saveAndFlush(organization));

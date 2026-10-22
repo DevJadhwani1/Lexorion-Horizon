@@ -45,17 +45,20 @@ public class PayRunTransactions {
         PayRunService.requireStatus(run, PayRunStatus.PROCESSING);
         if (!attempt.equals(run.getProcessingAttempt())) throw new PayrollException(409, "Processing attempt has been superseded");
         List<PayRunEmployee> included = employees.findByPayRunIdOrderByEmployeeCodeAsc(run.getId());
-        BigDecimal gross = ZERO, deductions = ZERO, net = ZERO;
+        BigDecimal gross = ZERO, deductions = ZERO, net = ZERO, employer = ZERO;
         for (PayRunEmployee item : included) {
             Calculation calculation = calculations.persist(eligibility.evaluate(run, item.getPayrollEmployee()));
             item.setCalculation(calculation); item.setGrossSnapshot(calculation.getGrossAmount());
             item.setDeductionSnapshot(calculation.getDeductionAmount()); item.setNetSnapshot(calculation.getNetAmount());
+            item.setEmployerContributionSnapshot(calculation.getEmployerContributionAmount());
             item.setCurrency(calculation.getCurrency()); employees.save(item);
             gross = gross.add(calculation.getGrossAmount()); deductions = deductions.add(calculation.getDeductionAmount()); net = net.add(calculation.getNetAmount());
+            employer = employer.add(calculation.getEmployerContributionAmount());
         }
         gross = PayRunEligibility.money(gross); deductions = PayRunEligibility.money(deductions); net = PayRunEligibility.money(net);
         if (net.compareTo(gross.subtract(deductions)) != 0) throw new PayrollException(409, "Pay Run totals are inconsistent");
         run.setGrossTotal(gross); run.setDeductionTotal(deductions); run.setNetTotal(net);
+        run.setEmployerContributionTotal(PayRunEligibility.money(employer));
         run.setStatus(PayRunStatus.CALCULATED); run.setProcessingAttempt(null); run.setProcessingStartedAt(null);
         return runs.saveAndFlush(run);
     }
@@ -84,12 +87,12 @@ public class PayRunTransactions {
             // Keep old calculation objects immutable and visible in history; a later process creates new snapshots.
             for (PayRunEmployee employee : included) {
                 employee.setCalculation(null); employee.setGrossSnapshot(ZERO);
-                employee.setDeductionSnapshot(ZERO); employee.setNetSnapshot(ZERO); employees.save(employee);
+                employee.setDeductionSnapshot(ZERO); employee.setNetSnapshot(ZERO); employee.setEmployerContributionSnapshot(ZERO); employees.save(employee);
             }
         } else if (included.stream().anyMatch(e -> e.getCalculation() != null)) {
             throw new PayrollException(409, "Failed run has unexpected committed snapshots and requires operator review");
         }
-        run.setGrossTotal(ZERO); run.setDeductionTotal(ZERO); run.setNetTotal(ZERO);
+        run.setGrossTotal(ZERO); run.setDeductionTotal(ZERO); run.setNetTotal(ZERO); run.setEmployerContributionTotal(ZERO);
         run.setStatus(PayRunStatus.DRAFT); run.setProcessingAttempt(null); run.setProcessingStartedAt(null);
         run.setFailureMessage(null); runs.saveAndFlush(run);
     }

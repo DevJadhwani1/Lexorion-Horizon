@@ -21,5 +21,6 @@ public class PayRunEmployee extends Auditable {
  @Column(name="gross_snapshot",nullable=false,precision=19,scale=4)private BigDecimal grossSnapshot;
  @Column(name="deduction_snapshot",nullable=false,precision=19,scale=4)private BigDecimal deductionSnapshot;
  @Column(name="net_snapshot",nullable=false,precision=19,scale=4)private BigDecimal netSnapshot;
+ @Column(name="employer_contribution_snapshot",nullable=false,precision=19,scale=4)private BigDecimal employerContributionSnapshot=BigDecimal.ZERO;
  @Column(name="currency_snapshot",nullable=false,length=3)private String currency;
 }

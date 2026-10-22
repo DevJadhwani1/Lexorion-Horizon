@@ -25,6 +25,8 @@ import {
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice } from "../../components/ui/Page";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { humanize } from "../../lib/format";
 import { AdminEntitlements } from "./AdminEntitlements";
 import { SearchSelect, type SelectOption } from "../../components/ui/SearchSelect";
 import { WebsiteInput, validateWebsiteInput } from "../../components/ui/WebsiteInput";
@@ -91,6 +93,7 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
     [email, setEmail] = useState(""),
     [role, setRole] = useState("EMPLOYEE");
   const auth = useOptionalAuth();
+  const [ask, confirmDialog] = useConfirm();
   const refreshOrganizations = auth?.refreshOrganizations ?? (async () => true);
 
   const loadData = async (silent: boolean) => {
@@ -162,6 +165,7 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
         title="Members"
         description="Membership roles are enforced by Platform."
       >
+        {confirmDialog}
         {(data as Member[]).length ? (
           <Table headers={["Name", "Email", "Role", "Status", "Actions"]}>
             {(data as Member[]).map((m) => (
@@ -177,12 +181,14 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
                     searchable={false}
                     compact
                     minMenuWidth={130}
-                    onChange={(newRole) => {
+                    onChange={async (newRole) => {
                       if (newRole === m.role) return;
                       if (
-                        confirm(
-                          `Change ${m.fullName}'s role to ${newRole}?`,
-                        )
+                        await ask({
+                          title: `Change ${m.fullName}'s role to ${humanize(newRole)}?`,
+                          body: "Their access changes as soon as you confirm.",
+                          confirmLabel: "Change role",
+                        })
                       ) {
                         void changeMemberRole(m.membershipId, newRole)
                           .then(load)
@@ -200,8 +206,8 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
                 <td>
                   <Button
                     variant="destructive"
-                    onClick={() =>
-                      confirm("Remove this membership?") &&
+                    onClick={async () =>
+                      (await ask({ title: `Remove ${m.fullName}?`, body: "They lose access to this organization. You can invite them again later.", confirmLabel: "Remove member", tone: "destructive" })) &&
                       void removeMember(m.membershipId)
                         .then(load)
                         .catch((x) => setError((x as Error).message))

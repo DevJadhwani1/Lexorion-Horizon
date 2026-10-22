@@ -38,7 +38,7 @@ it("estimates recurring pay in the calculator's order", () => {
   const component = (componentKey: string, category: Component["category"], amountType: Component["amountType"], occurrenceType: Component["occurrenceType"] = "RECURRING"): Component =>
     ({ componentKey, displayName: componentKey, category, amountType, occurrenceType, taxability: "TAXABLE", status: "ACTIVE" });
   const components = [component("BASIC", "EARNING", "FIXED_AMOUNT"), component("HRA", "EARNING", "PERCENTAGE"), component("PF", "DEDUCTION", "PERCENTAGE"), component("BONUS", "EARNING", "FIXED_AMOUNT", "ONE_TIME")];
-  expect(estimatePay(components, { BASIC: "1000", HRA: "50", PF: "10", BONUS: "999" })).toEqual({ gross: 1500, deductions: 150, net: 1350 });
+  expect(estimatePay(components, { BASIC: "1000", HRA: "50", PF: "10", BONUS: "999" })).toEqual({ gross: 1500, deductions: 150, net: 1350, employer: 0, employerCost: 1500 });
 });
 
 it("generates profile keys that do not collide", () => {

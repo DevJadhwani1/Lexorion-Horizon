@@ -29,6 +29,8 @@ public class Calculation extends Auditable {
     @Column(name = "gross_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal grossAmount;
     @Column(name = "deduction_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal deductionAmount;
     @Column(name = "net_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal netAmount;
+    /** Employer cost on top of gross pay. Not deducted from the employee and not part of net pay. */
+    @Column(name = "employer_contribution_amount", nullable = false, updatable = false, precision = 19, scale = 4) private BigDecimal employerContributionAmount = BigDecimal.ZERO;
     @OneToMany(mappedBy = "calculation", cascade = CascadeType.ALL, orphanRemoval = false)
     @OrderBy("componentKey ASC") private List<CalculationLine> lines = new ArrayList<>();
 }

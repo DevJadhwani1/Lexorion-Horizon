@@ -37,6 +37,7 @@ import { appPath } from "../../app/hostRouting";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { formatDate, humanize, keyFromName, personName } from "../../lib/format";
 import { EmployeeFields } from "./EmployeeFields";
+import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   const { section: routeSection, employeeCode } = useParams(),
@@ -225,20 +226,23 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to load employee history"))
       .finally(() => setHistoryLoading(false));
   }, [admin, employee.employeeCode, self]);
+  const [ask, confirmDialog] = useConfirm();
   const name = personName(employee);
   const manager = employee.reportingManagerEmployeeCode;
   return (
     <Page title={name} description={`${employee.employeeCode} · ${employee.workEmail}`}
       actions={admin && !self && !editing ? <Button onClick={() => { setEditing(true); setSaved(""); }}>Edit details</Button> : undefined}>
+      {confirmDialog}
       {error && <Notice>{error}</Notice>}
       {saved && <Notice tone="success">{saved}</Notice>}
-      {editing ? <form className="card form-grid" aria-label="Edit employee" onSubmit={(event: FormEvent) => {
+      {editing ? <form className="card employee-form" aria-label="Edit employee" onSubmit={(event: FormEvent) => {
         event.preventDefault();
         setError(""); setBusy(true);
         const form = new FormData(event.currentTarget as HTMLFormElement);
         const values: Record<string, unknown> = Object.fromEntries(form.entries());
         // Optional fields are cleared explicitly so the PATCH removes a previous value.
-        for (const key of ["middleName", "phone", "departmentKey", "designationKey", "reportingManagerEmployeeCode"]) if (values[key] === "") values[key] = null;
+        for (const key of ["middleName", "phone", "employmentType", "departmentKey", "designationKey", "reportingManagerEmployeeCode"]) if (values[key] === "") values[key] = null;
+        if (values.phone === null) values.phoneCountry = null;
         void updateEmployee(employee.employeeCode, values)
           .then(async () => { setEditing(false); setSaved("Employee details saved."); await reload(); })
           .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to update employee"))
@@ -256,6 +260,7 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
             <div><dt>Status</dt><dd><StatusBadge status={employee.status} /></dd></div>
             <div><dt>Joined</dt><dd>{formatDate(employee.joiningDate)}</dd></div>
             <div><dt>Phone</dt><dd>{employee.phone || "—"}</dd></div>
+            <div><dt>Employment type</dt><dd>{employee.employmentType ? humanize(employee.employmentType) : "—"}</dd></div>
           </dl>
         </article>
         <article>
@@ -275,8 +280,9 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
             <div className="toolbar">
               {transitions[employee.status].map((action) => (
                 <Button key={action} variant={action === "terminate" ? "destructive" : "secondary"} disabled={busy}
-                  onClick={() => {
-                    if (!confirm(`${transitionLabels[action]} for ${name}?`)) return;
+                  onClick={async () => {
+                    if (!(await ask({ title: `${transitionLabels[action]} for ${name}?`, confirmLabel: transitionLabels[action], tone: action === "terminate" ? "destructive" : "primary",
+                      body: action === "terminate" || action === "resign" ? "This is recorded in the employee’s history. Their employee code stays reserved and is not reused." : "This is recorded in the employee’s history." }))) return;
                     setBusy(true); setError("");
                     void transitionEmployee(employee.employeeCode, action)
                       .then(async () => { setSaved(`${transitionLabels[action]}: done.`); await reload(); })

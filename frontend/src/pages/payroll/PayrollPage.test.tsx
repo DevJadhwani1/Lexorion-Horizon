@@ -41,7 +41,6 @@ describe("Payroll employee handoff", () => {
 
 it("retains the selected pay run through processing and finalization reloads", async () => {
   const run = { payRunKey: "RUN-1", periodStart: "2026-10-01", periodEnd: "2026-10-31", calculationDate: "2026-10-31", currency: "USD", status: "DRAFT", grossTotal: 1000, deductionTotal: 0, netTotal: 1000, employeeCount: 1, createdAt: "2026-10-01", finalizedAt: null };
-  vi.spyOn(window, "confirm").mockReturnValue(true);
   vi.mocked(payrollApi.getPayRuns).mockResolvedValue({ content: [run], page: 0, totalPages: 1, size: 20, totalElements: 1, sort: "createdAt", direction: "desc" });
   vi.mocked(payrollApi.getPayRunEmployees).mockResolvedValue([{ employeeCode: "EMP-001", grossAmount: 1000, deductionAmount: 0, netAmount: 1000, currency: "USD", calculationDate: "2026-10-31" }]);
   vi.mocked(payrollApi.processPayRun).mockResolvedValue({ ...run, status: "CALCULATED" });
@@ -50,8 +49,11 @@ it("retains the selected pay run through processing and finalization reloads", a
   fireEvent.click(await screen.findByRole("button", { name: "Open" }));
   await screen.findByText("EMP-001");
   fireEvent.click(screen.getByRole("button", { name: "Process" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Calculate pay" }));
   await waitFor(() => expect(screen.getByRole("button", { name: "Finalize" }).hasAttribute("disabled")).toBe(false));
   fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
+  expect((await screen.findByRole("dialog", { name: "Finalize RUN-1?" })).textContent).toContain("This cannot be undone.");
+  fireEvent.click(screen.getByRole("button", { name: "Finalize pay run" }));
   await screen.findByText(/Finalized payroll is immutable/);
   expect(payrollApi.finalizePayRun).toHaveBeenCalledWith("RUN-1");
   vi.restoreAllMocks();

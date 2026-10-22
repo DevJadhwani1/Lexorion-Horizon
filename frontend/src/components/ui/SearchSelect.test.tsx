@@ -216,3 +216,13 @@ describe("SearchSelect - accessibility and functionality", () => {
     expect(onChange).toHaveBeenCalledWith("EMPLOYEE");
   });
 });
+
+describe("SearchSelect ranking", () => {
+  it("lists exact and prefix matches before other matches", () => {
+    render(<SearchSelect label="Country" value="" onChange={() => undefined}
+      options={[{ value: "IO", label: "🇮🇴 British Indian Ocean Territory" }, { value: "ID", label: "🇮🇩 Indonesia" }, { value: "IN", label: "🇮🇳 India" }]} />);
+    fireEvent.click(screen.getByRole("combobox", { name: "Country" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /search/i }), { target: { value: "india" } });
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["🇮🇳 India", "🇮🇴 British Indian Ocean Territory"]);
+  });
+});

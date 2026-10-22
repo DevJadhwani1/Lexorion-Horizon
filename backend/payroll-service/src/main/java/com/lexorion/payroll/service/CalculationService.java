@@ -84,6 +84,9 @@ public class CalculationService {
         BigDecimal percentageDeductions = sum(ordered, ComponentCategory.DEDUCTION, AmountType.PERCENTAGE, gross);
         BigDecimal deductions = money(fixedDeductions.add(percentageDeductions));
         if (deductions.compareTo(gross) > 0) throw new PayrollException(409, "Deductions exceed gross earnings");
+        // Employer contributions are an employer cost: they never reduce net pay and are not counted as deductions.
+        BigDecimal employerContributions = money(sum(ordered, ComponentCategory.EMPLOYER_CONTRIBUTION, AmountType.FIXED_AMOUNT, BigDecimal.ZERO)
+            .add(sum(ordered, ComponentCategory.EMPLOYER_CONTRIBUTION, AmountType.PERCENTAGE, gross)));
 
         Calculation calculation = new Calculation();
         calculation.setWorkspace(workspace);
@@ -95,6 +98,7 @@ public class CalculationService {
         calculation.setGrossAmount(gross);
         calculation.setDeductionAmount(deductions);
         calculation.setNetAmount(money(gross.subtract(deductions)));
+        calculation.setEmployerContributionAmount(employerContributions);
         for (ComponentAssignment assignment : ordered) {
                 BigDecimal base = assignment.getAmountType() == AmountType.FIXED_AMOUNT ? BigDecimal.ZERO
                     : assignment.getCategory() == ComponentCategory.EARNING ? fixedGross : gross;
