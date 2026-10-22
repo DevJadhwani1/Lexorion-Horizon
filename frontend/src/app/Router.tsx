@@ -14,6 +14,8 @@ import { AdminWorkspaces } from "../pages/admin/AdminWorkspaces";
 import { WorkforcePage } from "../pages/workforce/WorkforcePage";
 import { EmployeeSetupWizard } from "../pages/workforce/EmployeeSetupWizard";
 import { PayrollPage } from "../pages/payroll/PayrollPage";
+import { FinancePage } from "../pages/finance/FinancePage";
+import { TemplatesPage } from "../pages/finance/TemplatesPage";
 import { PlatformHomePage } from "../pages/platform/PlatformHomePage";
 import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pages/platform/PlatformOrganizationsPage";
 import { PlatformResourcesPage } from "../pages/platform/PlatformResourcesPage";
@@ -28,12 +30,13 @@ function Protected() {
   return auth.user ? <AppShell /> : <Navigate to="/login" replace />;
 }
 
-function ContextRequired({ area }: { area: "administration" | "workforce" | "payroll" }) {
+function ContextRequired({ area }: { area: "administration" | "workforce" | "payroll" | "finance" }) {
   const auth = useAuth(), workspace = useWorkspace(), application = useApplicationContext();
   if (application.mode !== "client") return <Navigate to={consoleHost() === "local" ? "/app" : "/"} replace />;
   if (!auth.organization) return <ContextNotice title={title(area)}>Choose an organization before opening this area.</ContextNotice>;
   if (area === "administration") return auth.organization.membershipRole === "ADMIN" ? <Outlet /> : <ContextNotice title="Access denied">Your organization role does not provide administration access.</ContextNotice>;
   if (area === "payroll" && auth.organization.membershipRole !== "ADMIN") return <ContextNotice title="Access denied">Your organization role does not provide Payroll access.</ContextNotice>;
+  if (area === "finance" && auth.organization.membershipRole !== "ADMIN") return <ContextNotice title="Access denied">Your organization role does not provide Finance access.</ContextNotice>;
   if (workspace.loading) return <ContextNotice title={title(area)}>Loading available workspaces…</ContextNotice>;
   if (workspace.error) return <ContextNotice title={title(area)}>{workspace.error}</ContextNotice>;
   if (!workspace.workspace || !workspace.workspace.products.some((product) => product.key === area)) return <ContextNotice title={title(area)}>Choose an active {title(area)} workspace before opening this area.</ContextNotice>;
@@ -101,6 +104,7 @@ export function clientRoutes(local: boolean): RouteObject[] {
     ] },
     { element: <ContextRequired area="workforce" />, children: workforceRoutes() },
     { element: <ContextRequired area="payroll" />, children: payrollRoutes() },
+    { element: <ContextRequired area="finance" />, children: financeRoutes() },
   ];
 }
 
@@ -119,6 +123,19 @@ function WorkforceLanding() { const role = useAuth().organization?.membershipRol
 function payrollRoutes(): RouteObject[] { return [
   ...["payroll", "payroll/dashboard"].map((path) => ({ path, element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/payroll/pay-runs`} replace /> })),
   ...["employees", "components", "compensation", "salary-templates", "calculations", "pay-runs", "ledger", "payslips"].map((section) => ({ path: `payroll/${section}`, element: <PayrollPage sectionKey={section} /> })),
+]; }
+
+function financeRoutes(): RouteObject[] { return [
+  { path: "finance", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/finance/overview`} replace /> },
+  { path: "finance/overview", element: <FinancePage sectionKey="overview" /> },
+  { path: "finance/invoices", element: <FinancePage sectionKey="invoices" /> },
+  { path: "finance/invoices/new", element: <FinancePage sectionKey="new-invoice" /> },
+  { path: "finance/invoices/:reference", element: <FinancePage sectionKey="invoice" /> },
+  { path: "finance/clients", element: <FinancePage sectionKey="clients" /> },
+  { path: "finance/payments", element: <FinancePage sectionKey="payments" /> },
+  { path: "finance/templates", element: <TemplatesPage section="list" /> },
+  { path: "finance/templates/new", element: <TemplatesPage section="new" /> },
+  { path: "finance/templates/:templateKey", element: <TemplatesPage section="edit" /> },
 ]; }
 
 const host = consoleHost();

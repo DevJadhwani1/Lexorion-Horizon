@@ -54,6 +54,8 @@ class ApiGatewayApplicationTests {
                 .isEqualTo("PreserveHostHeader");
         assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[3].filters[0]"))
                 .isEqualTo("PreserveHostHeader");
+        assertThat(environment.getProperty("spring.cloud.gateway.server.webmvc.routes[4].filters[0]"))
+                .isEqualTo("PreserveHostHeader");
     }
 
     private void assertRoute(int index, String path, String uri) {

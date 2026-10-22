@@ -1,6 +1,6 @@
 # Lexorion Horizon
 
-Lexorion Horizon is an academic enterprise workforce platform project built with a microservices architecture. The current implementation includes platform and tenant administration, Workforce functionality, foundational Payroll workflows, a Finance service shell, service discovery, an API Gateway, and a legacy functional React client.
+Lexorion Horizon is an academic enterprise workforce platform project built with a microservices architecture. The current implementation includes platform and tenant administration, Workforce functionality, foundational Payroll workflows, a Finance billing workspace (clients, invoices, payments and receivables), service discovery, an API Gateway, and a legacy functional React client.
 
 ## Project Members
 

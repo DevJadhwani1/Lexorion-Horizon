@@ -31,6 +31,11 @@ const payroll: readonly NavEntry[] = [
   ["salary-templates", "Salary templates", "payroll"], ["payslips", "Payslips", "payroll"],
   ["ledger", "Payroll ledger", "payroll"], ["calculations", "Pay preview", "payroll"],
 ];
+const finance: readonly NavEntry[] = [
+  ["overview", "Billing overview", "grid"], ["invoices", "Invoices", "document"],
+  ["clients", "Clients", "building"], ["payments", "Payments received", "card"],
+  ["templates", "Invoice templates", "layers"],
+];
 const platformPrimary: readonly NavEntry[] = [["", "Overview", "home"], ["organizations", "Organizations", "building"], ["users", "Users", "workforce"], ["access", "Platform Access", "shield"]];
 const platformCatalog: readonly NavEntry[] = [["products", "Products", "package"], ["plans", "Plans", "card"], ["entitlements", "Entitlements", "badge"]];
 const platformOperations: readonly NavEntry[] = [["workspaces", "Workspaces", "panels"]];
@@ -114,6 +119,7 @@ function AppShellInner() {
     }
     if (role && workforceProduct) addGroup("Workforce", "workforce", workforce);
     if (adminRole && workspace.workspace?.products.some(product => product.key === "payroll")) addGroup("Payroll", "payroll", payroll);
+    if (adminRole && workspace.workspace?.products.some(product => product.key === "finance")) addGroup("Finance", "finance", finance);
   }
   const accountLinks = application.mode === "client" && adminRole && workforceProduct ? [{ to: appPath("/app/workforce/me"), label: "My profile" }] : [];
   const toggleSidebar = () => setCollapsed((value) => {

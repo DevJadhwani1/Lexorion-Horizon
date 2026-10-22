@@ -16,11 +16,14 @@ public class InternalServiceIdentityFilter extends OncePerRequestFilter {
     public static final String HEADER = "X-Lexorion-Service-Token";
     private final byte[] workforceToken;
     private final byte[] payrollToken;
+    private final byte[] financeToken;
 
     public InternalServiceIdentityFilter(@Value("${lexorion.service-auth.workforce-token}") String workforceToken,
-            @Value("${lexorion.service-auth.payroll-token}") String payrollToken) {
+            @Value("${lexorion.service-auth.payroll-token}") String payrollToken,
+            @Value("${lexorion.service-auth.finance-token}") String financeToken) {
         this.workforceToken = require(workforceToken);
         this.payrollToken = require(payrollToken);
+        this.financeToken = require(financeToken);
     }
 
     @Override protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -30,7 +33,8 @@ public class InternalServiceIdentityFilter extends OncePerRequestFilter {
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         byte[] expected = request.getRequestURI().startsWith("/internal/workforce/") ? workforceToken
-                : request.getRequestURI().startsWith("/internal/payroll/") ? payrollToken : null;
+                : request.getRequestURI().startsWith("/internal/payroll/") ? payrollToken
+                : request.getRequestURI().startsWith("/internal/finance/") ? financeToken : null;
         String supplied = request.getHeader(HEADER);
         if (expected == null || supplied == null
                 || !MessageDigest.isEqual(expected, supplied.getBytes(StandardCharsets.UTF_8))) {

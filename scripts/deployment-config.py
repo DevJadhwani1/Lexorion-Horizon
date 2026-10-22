@@ -22,7 +22,7 @@ if args.command == 'init':
         stream.write('POSTGRES_USER=horizon_provisioner\nLEXORION_BOOTSTRAP_ENABLED=false\n')
         for name in ['PLATFORM', 'WORKFORCE', 'PAYROLL', 'FINANCE']:
             stream.write(f'{name}_DB_USERNAME=horizon_{name.lower()}\n{name}_DB_PASSWORD={secrets.token_urlsafe(48)}\n')
-        for key in ['POSTGRES_PASSWORD', 'JWT_SECRET', 'WORKFORCE_SERVICE_TOKEN', 'PAYROLL_SERVICE_TOKEN']:
+        for key in ['POSTGRES_PASSWORD', 'JWT_SECRET', 'WORKFORCE_SERVICE_TOKEN', 'PAYROLL_SERVICE_TOKEN', 'FINANCE_SERVICE_TOKEN']:
             stream.write(f'{key}={secrets.token_urlsafe(48)}\n')
     print(f'Create the new persistent volume with: docker volume create {volume_name}')
     print('Created private .env for a NEW database. Configure bootstrap explicitly if needed.')
@@ -38,8 +38,8 @@ else:
         raise SystemExit('Compose configuration rejected. Supply all required variables; run docker compose config -q for variable names.')
     services = json.loads(result.stdout)['services']
     platform = services['platform']['environment']
-    values = [platform[key] for key in ['JWT_SECRET', 'WORKFORCE_SERVICE_TOKEN', 'PAYROLL_SERVICE_TOKEN']]
-    if any(not isinstance(value, str) or len(value.encode()) < 32 for value in values) or len(set(values)) != 3:
+    values = [platform[key] for key in ['JWT_SECRET', 'WORKFORCE_SERVICE_TOKEN', 'PAYROLL_SERVICE_TOKEN', 'FINANCE_SERVICE_TOKEN']]
+    if any(not isinstance(value, str) or len(value.encode()) < 32 for value in values) or len(set(values)) != len(values):
         raise SystemExit('JWT and service credentials must each be independent secrets of at least 32 bytes.')
     if any('local-development-only' in value or 'change-me' in value.lower() for value in values):
         raise SystemExit('Placeholder credentials are not allowed.')
@@ -60,7 +60,7 @@ else:
         raise SystemExit('Database provisioning password must be at least 16 characters.')
     if len(set(db_users + [postgres['POSTGRES_USER']])) != len(db_users) + 1 or len(set(db_passwords + [postgres['POSTGRES_PASSWORD']])) != len(db_passwords) + 1:
         raise SystemExit('Each service and the database provisioner need distinct roles and passwords.')
-    for service, key in [('workforce', 'WORKFORCE_SERVICE_TOKEN'), ('workforce', 'PAYROLL_SERVICE_TOKEN'), ('payroll', 'PAYROLL_SERVICE_TOKEN')]:
+    for service, key in [('workforce', 'WORKFORCE_SERVICE_TOKEN'), ('workforce', 'PAYROLL_SERVICE_TOKEN'), ('payroll', 'PAYROLL_SERVICE_TOKEN'), ('finance', 'FINANCE_SERVICE_TOKEN')]:
         if services[service]['environment'][key] != platform[key]:
             raise SystemExit(f'{service}: inconsistent service credential.')
     if str(platform.get('LEXORION_BOOTSTRAP_ENABLED', '')).lower() == 'true':
