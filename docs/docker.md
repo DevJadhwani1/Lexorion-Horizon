@@ -159,3 +159,12 @@ Each service then needs independent `<SERVICE>_DB_USERNAME/PASSWORD` and
 `<SERVICE>_MIGRATION_USERNAME/PASSWORD`. Required migration credentials have no
 fallback. `--env-file <private-file>` validates a proposed configuration before
 installation. The existing deployment has not yet undergone this ownership transfer.
+
+## Applying code changes
+
+The `frontend` container serves the bundle built inside its image; a local `frontend/dist` is not used.
+After pulling changes, rebuild the affected images and hard-refresh the browser:
+
+```sh
+docker compose up -d --build frontend payroll-service workforce-service platform-service
+```
