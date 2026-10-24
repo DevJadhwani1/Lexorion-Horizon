@@ -41,6 +41,7 @@ services:
       retries: 5
 
   eureka:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-eureka:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/eureka-server
     environment:
       EUREKA_PORT: 9003
@@ -52,6 +53,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9003/actuator/health"]
 
   platform:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-platform:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/platform-service
     environment:
       <<: *database-environment
@@ -104,6 +106,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9002/actuator/health"]
 
   workforce:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-workforce:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/workforce-service
     environment:
       <<: *database-environment
@@ -126,6 +129,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9004/actuator/health"]
 
   payroll:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-payroll:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/payroll-service
     environment:
       <<: *database-environment
@@ -149,6 +153,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9005/actuator/health"]
 
   finance:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-finance:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/finance-service
     environment:
       <<: *database-environment
@@ -170,6 +175,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9006/actuator/health"]
 
   gateway:
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-gateway:${HORIZON_IMAGE_TAG:-local}
     build: ./backend/api-gateway
     environment:
       GATEWAY_PORT: 9001
@@ -186,6 +192,7 @@ services:
     # Serves the bundle built inside the image (lint, typecheck, build). A local frontend/dist is
     # deliberately not mounted: it goes stale silently. Apply frontend changes with
     # `docker compose up -d --build frontend`.
+    image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-frontend:${HORIZON_IMAGE_TAG:-local}
     build: ./frontend
     ports: ["${HORIZON_BIND_ADDRESS:-127.0.0.1}:80:9000", "127.0.0.1:9000:9000"]
     networks: [horizon]

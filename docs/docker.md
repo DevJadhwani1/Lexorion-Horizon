@@ -167,10 +167,10 @@ After pulling changes, rebuild the images and hard-refresh the browser (Compose 
 `platform`, `workforce`, `payroll`, `finance`, `gateway` and `frontend`):
 
 ```sh
-sh scripts/update-running-stack.sh
+bash scripts/update-running-stack.sh
 ```
 
-Pushes to `main` also publish the same images to GHCR. The local stack still has to be rebuilt from the checkout; it does not pull those registry tags.
+A push to `main` publishes the images and the Deploy job pulls the `:main` tags onto the host runner. This command remains the local rebuild when that runner is not the machine you are using.
 
 The account menu in the sidebar shows when the running frontend was built; if it predates your pull, the
 frontend image was not rebuilt.

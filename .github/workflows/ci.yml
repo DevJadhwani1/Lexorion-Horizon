@@ -69,6 +69,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build images
         run: |
+          owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          export HORIZON_IMAGE_REGISTRY="ghcr.io/${owner}"
+          export HORIZON_IMAGE_TAG=local
           docker compose --env-file infrastructure/ci/compose.env build
           docker compose --env-file infrastructure/ci/compose.env config -q
       - name: Log in to GHCR
@@ -83,10 +86,27 @@ jobs:
           owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           sha="${{ github.sha }}"
           for service in eureka platform workforce payroll finance gateway frontend; do
-            source="lexorion-horizon-${service}:latest"
+            source="ghcr.io/${owner}/horizon-${service}:local"
             remote="ghcr.io/${owner}/horizon-${service}"
             docker tag "$source" "${remote}:${sha}"
             docker tag "$source" "${remote}:main"
             docker push "${remote}:${sha}"
             docker push "${remote}:main"
           done
+
+  deploy:
+    name: Deploy
+    needs: images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, horizon]
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update the running stack
+        env:
+          HORIZON_IMAGE_TAG: main
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/update-running-stack.sh

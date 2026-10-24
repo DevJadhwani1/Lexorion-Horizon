@@ -122,7 +122,7 @@ pipeline {
         stage('Verification Summary') {
             steps {
                 echo 'Backend compile/tests, frontend checks, Docker image builds, and Compose validation passed.'
-                echo 'Jenkins does not start containers or publish images. GitHub Actions publishes main images to GHCR.'
+                echo 'Jenkins does not start containers or publish images. GitHub Actions publishes main images and deploys them on the horizon runner.'
             }
         }
     }

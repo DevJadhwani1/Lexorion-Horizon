@@ -4,13 +4,9 @@ GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every p
 
 The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
 
-After a pull, the running containers still serve the previous images until they are rebuilt:
+A push to `main` then deploys. After the images are published, the Deploy job runs on the self-hosted runner labeled `horizon` and pulls the `:main` tags onto the host that is already running the stack. Postgres and its volume are not replaced.
 
-```sh
-sh scripts/update-running-stack.sh
-```
-
-That recreates Eureka, platform, workforce, payroll, finance, gateway, and frontend from the current checkout. It does not remove the Postgres volume.
+The runner needs `HORIZON_ENV_FILE` pointing at the host `.env`. That file stays on the host and is not stored in GitHub.
 
 ## Jenkins agent prerequisites
 
@@ -43,4 +39,4 @@ Any failed command fails its stage and the pipeline. Application containers are 
 
 CI does not modify or depend on a shared PostgreSQL instance. Critical migration tests start disposable PostgreSQL 16 Testcontainers, apply Flyway from an empty schema, and remove the containers after the suite. Other backend tests retain isolated test configuration. Docker images are built without launching the application stack.
 
-No deployment credentials are embedded in either pipeline. Jenkins does not publish images. GitHub Actions publishes the `main` images to GHCR with the workflow token. Neither pipeline starts the application stack or replaces the local Postgres volume. The host still runs `scripts/update-running-stack.sh` to pick up a new checkout.
+No deployment secrets are stored in the repository. Jenkins does not publish images or start the stack. GitHub Actions publishes the `main` images to GHCR and the Deploy job updates the running application containers from those tags. Postgres is not recreated. A checkout without the runner can still rebuild locally with `bash scripts/update-running-stack.sh`.
