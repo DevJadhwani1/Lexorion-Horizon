@@ -1,19 +1,21 @@
+import { useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthLayout } from "../components/auth/AuthLayout";
-import { appPath } from "../app/hostRouting";
+import { homePath } from "../app/hostRouting";
 
 export function RegisterPage() {
   const auth = useAuth();
-  if (auth.user) return <Navigate to={appPath("/app")} replace />;
+  useEffect(() => { document.title = "Invitation required · Horizon"; }, []);
+  if (auth.user) return <Navigate to={homePath()} replace />;
 
   return (
     <AuthLayout>
       <section className="auth-card auth-card-register" aria-labelledby="register-title">
         <Link to="/login" className="auth-back">← <span>Back</span></Link>
         <div className="auth-card-heading auth-register-heading">
-          <h1 id="register-title">Create your Horizon account</h1>
-          <p>Account registration is managed by your organization.</p>
+          <h1 id="register-title">Access is by invitation</h1>
+          <p>Horizon accounts are created by an organization administrator.</p>
         </div>
         <div className="auth-registration-notice">
           <div className="auth-registration-mark" aria-hidden="true">

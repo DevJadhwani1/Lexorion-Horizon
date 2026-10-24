@@ -17,13 +17,14 @@ interface SearchItem {
 }
 
 const SEARCH_DESTINATIONS: SearchItem[] = [
-  { title: "Overview / Onboarding", category: "Setup", path: "/app" },
+  { title: "Dashboard", category: "Setup", path: "/overview" },
   { title: "Organization details", category: "Administration", path: "/organization" },
   { title: "Workspaces", category: "Administration", path: "/organization/workspaces" },
-  { title: "Members", category: "Administration", path: "/organization/members" },
+  { title: "Members", category: "Administration", path: "/people" },
   { title: "Invitations", category: "Administration", path: "/organization/invitations" },
   { title: "Settings", category: "Administration", path: "/organization/settings" },
   { title: "Product access", category: "Administration", path: "/organization/settings/product-access" },
+
 ];
 
 export function OnboardingTopBar({

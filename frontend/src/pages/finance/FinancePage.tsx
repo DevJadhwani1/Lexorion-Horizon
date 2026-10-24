@@ -22,7 +22,7 @@ import { InvoiceDocument } from "./InvoiceDocument";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
-const financePath = (path = "") => appPath(`/app/finance${path}`);
+const financePath = (path = "") => appPath(`/finance${path}`);
 const invoicePath = (invoice: { reference: string }) => financePath(`/invoices/${encodeURIComponent(invoice.reference)}`);
 const message = (reason: unknown, fallback: string) => reason instanceof ApiError || reason instanceof Error ? reason.message : fallback;
 
@@ -85,7 +85,7 @@ function Overview() {
     <Link className="button secondary" to={financePath("/clients/new")}>New client</Link>
   </div>;
   return <Page title="Finance" description={`Billing and collections for ${workspace?.displayName ?? "this workspace"}, as of ${formatDate(summary.asOf, defaults.locale)}.`} actions={actions}>
-    {templates.length === 0 && <Notice tone="info">Your invoices use the standard format. <Link to={appPath("/app/finance/templates/new")}>Design your own invoice template</Link> with your logo, bank details, numbering and industry fields.</Notice>}
+    {templates.length === 0 && <Notice tone="info">Your invoices use the standard format. <Link to={appPath("/finance/templates/new")}>Design your own invoice template</Link> with your logo, bank details, numbering and industry fields.</Notice>}
     {summary.activeClients === 0 && <Notice tone="info">Start by <Link to={financePath("/clients/new")}>adding a client</Link>. You can then raise an invoice, issue it and record payments as they arrive.</Notice>}
     {totals.map((total) => <section key={total.currency} aria-label={`${total.currency} receivables`}>
       {totals.length > 1 && <h2 className="section-heading">{total.currency}</h2>}
@@ -259,6 +259,7 @@ function PaymentForm({ invoice, busy, onSubmit, onCancel }: { invoice: Invoice; 
       reference: String(values.reference || "").trim() || undefined, notes: String(values.notes || "").trim() || undefined });
   }}>
     <h3>Record payment</h3>
+    <p className="snapshot-note">This records that the client paid {invoice.currency}. Horizon does not collect the money or send it to a bank.</p>
     <div className="form-grid">
       <label>Amount ({invoice.currency})<input name="amount" type="number" required min="0.01" max={invoice.balanceDue} step="0.01" defaultValue={invoice.balanceDue} /></label>
       <label>Payment date<input name="paymentDate" type="date" required min={invoice.issueDate} max={today} defaultValue={today < invoice.issueDate ? invoice.issueDate : today} /></label>

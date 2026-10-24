@@ -19,7 +19,7 @@ export function PlatformWorkspacesPage() {
     {loading ? <Notice tone="info">Loading organizations…</Notice> : error ? <Notice>{error}</Notice> : organizations.length === 0 ? <Empty>No organizations are available.</Empty>
       : <div className="platform-table"><table><thead><tr><th>Organization</th><th>Status</th><th>Workspace access</th><th></th></tr></thead><tbody>{organizations.map((organization) => {
         const membership = auth.organizations.find((item) => item.organizationId === organization.id);
-        return <tr key={organization.id}><td><strong>{organization.name}</strong><small>{organization.organizationCode}</small></td><td><StatusBadge value={organization.status} /></td><td>{membership ? `${membership.membershipRole} membership` : "No organization membership"}</td><td>{membership ? <Button size="sm" onClick={() => enter(organization)}>Enter workspaces</Button> : <Link className="table-action" to={appPath(`/app/platform/organizations/${organization.id}`)}>View organization</Link>}</td></tr>;
+        return <tr key={organization.id}><td><strong>{organization.name}</strong><small>{organization.organizationCode}</small></td><td><StatusBadge value={organization.status} /></td><td>{membership ? `${membership.membershipRole} membership` : "No organization membership"}</td><td>{membership ? <Button size="sm" onClick={() => enter(organization)}>Enter workspaces</Button> : <Link className="table-action" to={appPath(`/platform/organizations/${organization.id}`)}>View organization</Link>}</td></tr>;
       })}</tbody></table></div>}
   </Page>;
 }

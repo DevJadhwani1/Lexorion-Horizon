@@ -5,9 +5,11 @@ import { useWorkspace } from "../workspace/WorkspaceProvider";
 import { Notice, Page } from "../components/ui/Page";
 import { Badge, StatusBadge } from "../components/ui/Badge";
 import { formatMoney, formatPeriod, humanize, personName } from "../lib/format";
-import { getOrganization } from "../features/admin/adminApi";
+import { getInvitations, getOrganization, type Organization } from "../features/admin/adminApi";
 import { getOrganizationWorkspaces } from "../features/admin/workspaceApi";
-import { getEffectiveEntitlements, getEntitlementLimit, type EffectiveEntitlements } from "../features/entitlements/entitlementApi";
+import { deriveProductKeysFromEntitlements, getEffectiveEntitlements, getEntitlementLimit, type EffectiveEntitlements } from "../features/entitlements/entitlementApi";
+import { getBillingSummary, type BillingSummary } from "../features/finance/financeApi";
+import { nextPayrollAction, operationalAttention, readinessLabel, workspaceChecklist, type ReadinessItem } from "../features/readiness/readiness";
 import { getDepartments, getDesignations, getEmployees, getMe, getTeam, type Employee, type Team } from "../features/workforce/workforceApi";
 import { getPayRuns, getPayrollEmployees, getPayrollReadiness, type PayrollReadiness, type PayRun } from "../features/payroll/payrollApi";
 import { appPath } from "../app/hostRouting";
@@ -15,7 +17,10 @@ import { Icon } from "../layout/SidebarIcon";
 import { OnboardingPage } from "./onboarding/OnboardingPage";
 
 interface OverviewData {
+  organizationProfile: Organization | null;
   organizationStatus: string;
+  invitations: { status: string }[];
+  billing: BillingSummary | null;
   entitlements: EffectiveEntitlements;
   activeWorkspaces: number | null;
   employeeCount: number | null;
@@ -36,7 +41,11 @@ export function HomePage() {
   const organization = auth.organization, selected = workspace.workspace, role = organization?.membershipRole;
   const workforceEnabled = Boolean(selected?.products.some((product) => product.key === "workforce"));
   const payrollEnabled = Boolean(selected?.products.some((product) => product.key === "payroll"));
+  const financeEnabled = Boolean(selected?.products.some((product) => product.key === "finance"));
   const [data, setData] = useState<OverviewData | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState("");
+  const checklistStorageKey = `lexorion.setup-checklist.${organization?.slug ?? "none"}`;
+  const [checklistOpen, setChecklistOpen] = useState(true);
+  useEffect(() => { try { setChecklistOpen(localStorage.getItem(checklistStorageKey) !== "closed"); } catch { setChecklistOpen(true); } }, [checklistStorageKey]);
 
   const [revision, setRevision] = useState(0);
   useEffect(() => {
@@ -46,7 +55,7 @@ export function HomePage() {
     setLoading(true);
     const load = async () => {
       if (role === "ADMIN") {
-        const [profile, entitlements, workspaces, workforceEmployees, workforceRecords, payrollEmployees, payRuns, readiness, departments, designations] = await Promise.all([
+        const [profile, entitlements, workspaces, workforceEmployees, workforceRecords, payrollEmployees, payRuns, readiness, departments, designations, invitations, billing] = await Promise.all([
           getOrganization(), getEffectiveEntitlements(), getOrganizationWorkspaces(),
           workforceEnabled ? getEmployees("status=ACTIVE&size=1") : Promise.resolve(null),
           workforceEnabled ? getActiveWorkforceEmployees() : Promise.resolve([]),
@@ -55,31 +64,33 @@ export function HomePage() {
           payrollEnabled ? getPayrollReadiness() : Promise.resolve(null),
           workforceEnabled ? getDepartments() : Promise.resolve(null),
           workforceEnabled ? getDesignations() : Promise.resolve(null),
+          getInvitations().catch(() => []),
+          financeEnabled ? getBillingSummary().catch(() => null) : Promise.resolve(null),
         ]);
-        return { organizationStatus: profile.status, entitlements, activeWorkspaces: workspaces.filter((item) => item.status === "ACTIVE").length,
+        return { organizationProfile: profile, organizationStatus: profile.status, invitations, billing, entitlements, activeWorkspaces: workspaces.filter((item) => item.status === "ACTIVE").length,
           employeeCount: workforceEmployees?.totalElements ?? null, workforceEmployeeCodes: workforceRecords.map((employee) => employee.employeeCode),
           workforceNames: Object.fromEntries(workforceRecords.map((employee) => [employee.employeeCode.toUpperCase(), personName(employee)])), currentEmployee: null, team: null,
           payrollEmployees: payrollEmployees?.length ?? null, payrollEmployeeCodes: payrollEmployees?.map((employee) => employee.employeeCode) ?? [], payRuns: payRuns?.content ?? [], readiness, departments: departments?.length ?? null, designations: designations?.length ?? null };
       }
       const currentEmployee = workforceEnabled ? await getMe() : null;
       const team = workforceEnabled && role === "MANAGER" ? await getTeam() : null;
-      return { organizationStatus: organization.organizationStatus, entitlements: [], activeWorkspaces: null, employeeCount: null, workforceEmployeeCodes: [], workforceNames: {}, currentEmployee, team, payrollEmployees: null, payrollEmployeeCodes: [], payRuns: [], readiness: null, departments: null, designations: null };
+      return { organizationProfile: null, organizationStatus: organization.organizationStatus, invitations: [], billing: null, entitlements: [], activeWorkspaces: null, employeeCount: null, workforceEmployeeCodes: [], workforceNames: {}, currentEmployee, team, payrollEmployees: null, payrollEmployeeCodes: [], payRuns: [], readiness: null, departments: null, designations: null };
     };
     void load().then(value => { if (current) setData(value); }).catch((reason) => { if (current) setError(reason instanceof Error ? reason.message : "Unable to load Horizon overview."); })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [organization?.slug, role, selected?.key, workforceEnabled, payrollEnabled, revision]);
+  }, [organization?.slug, role, selected?.key, workforceEnabled, payrollEnabled, financeEnabled, revision]);
 
-  if (auth.organizations.length === 0) return <Page title="Overview"><Notice tone="info">Your account has no active organization memberships. Open an invitation from your organization or ask its administrator for access.</Notice></Page>;
-  if (!organization) return <Page title="Overview"><Notice tone="info">Choose an organization from the header to enter Horizon.</Notice></Page>;
-  if (workspace.loading) return <Page title="Overview"><Notice tone="info">Loading available workspaces…</Notice></Page>;
-  if (workspace.error) return <Page title="Overview"><Notice>{workspace.error}</Notice><button className="button secondary" onClick={() => void workspace.reload()}>Retry workspace access</button></Page>;
+  if (auth.organizations.length === 0) return <Page title="Dashboard"><Notice tone="info">Your account has no active organization memberships. Open an invitation from your organization or ask its administrator for access.</Notice></Page>;
+  if (!organization) return <Page title="Dashboard"><Notice tone="info">Choose an organization from the header to enter Horizon.</Notice></Page>;
+  if (workspace.loading) return <Page title="Dashboard"><Notice tone="info">Loading available workspaces…</Notice></Page>;
+  if (workspace.error) return <Page title="Dashboard"><Notice>{workspace.error}</Notice><button className="button secondary" onClick={() => void workspace.reload()}>Retry workspace access</button></Page>;
   if (workspace.workspaces.length === 0) {
     if (role === "ADMIN") {
       return <OnboardingPage />;
     }
     return (
-      <Page title="Overview" description={organization.organizationName}>
+      <Page title="Dashboard" description={organization.organizationName}>
         <Notice tone="info">
           <p>No active workspaces are available for this organization.</p>
           <p>Ask an organization administrator to provision a workspace and grant you access.</p>
@@ -90,7 +101,7 @@ export function HomePage() {
   if (!selected) {
     return (
       <Page
-        title="Overview"
+        title="Dashboard"
         description={`${organization.organizationName} · Choose an active workspace`}
         actions={
           role === "ADMIN" ? (
@@ -142,30 +153,35 @@ export function HomePage() {
       </Page>
     );
   }
-  if (error) return <Page title="Overview"><Notice>{error}</Notice><button className="button secondary" onClick={() => setRevision(value => value + 1)}>Retry overview</button></Page>;
-  if (loading || !data) return <Page title="Overview"><Notice tone="info">Loading organization overview…</Notice></Page>;
+  if (error) return <Page title="Dashboard"><Notice>{error}</Notice><button className="button secondary" onClick={() => setRevision(value => value + 1)}>Retry</button></Page>;
+  if (loading || !data) return <Page title="Dashboard"><Notice tone="info">Loading the dashboard…</Notice></Page>;
 
   const planNames = [...new Set(data.entitlements.map((item) => item.planName))];
   const employeeLimit = getEntitlementLimit(data.entitlements, "platform.employee_limit");
   const workspaceLimit = getEntitlementLimit(data.entitlements, "platform.workspace_limit");
-  const payrollEmployeeCodes = new Set(data.payrollEmployeeCodes);
-  const unconfiguredPayrollCode = data.workforceEmployeeCodes.find((code) => !payrollEmployeeCodes.has(code));
-  const attention = role === "ADMIN" ? [
-    workforceEnabled && data.employeeCount === 0 ? { text: "No active Workforce employees are configured.", to: "/app/workforce/employees" } : null,
-    payrollEnabled && data.payrollEmployees === 0 ? { text: "No employees are configured for Payroll.", to: "/app/payroll/employees" } : null,
-    workforceEnabled && payrollEnabled && unconfiguredPayrollCode ? { text: "Some active Workforce employees are not configured for Payroll.", to: `/app/payroll/employees?employee=${encodeURIComponent(unconfiguredPayrollCode)}` } : null,
-    payrollEnabled && data.payrollEmployees !== null && data.payrollEmployees > 0 && data.payRuns.length === 0 ? { text: "Payroll employees exist, but no pay runs have been created.", to: "/app/payroll/pay-runs" } : null,
-    ...data.payRuns.filter(r => r.status === "FAILED").map(r => ({ text: `Pay run ${r.payRunKey} failed: ${r.failureMessage || "Review failure and recover."}`, to: `/app/payroll/pay-runs?run=${encodeURIComponent(r.payRunKey)}` })),
-  ].filter((item): item is { text: string; to: string } => item !== null) : [];
+  const payrollEmployeeCodes = new Set(data.payrollEmployeeCodes.map((code) => code.toUpperCase()));
+  const unconfiguredPayrollCode = data.workforceEmployeeCodes.find((code) => !payrollEmployeeCodes.has(code.toUpperCase())) ?? null;
+  const payrollAction = payrollEnabled && data.readiness ? nextPayrollAction({ readiness: data.readiness, runs: data.payRuns, names: data.workforceNames, guided: workforceEnabled }) : null;
+  const overviewInput = {
+    organization: data.organizationProfile, workspaces: workspace.workspaces, requiredProductKeys: deriveProductKeysFromEntitlements(data.entitlements),
+    invitations: data.invitations, workforceEnabled, payrollEnabled, financeEnabled,
+    employeeCount: data.employeeCount, departmentCount: data.departments, activePayrollEmployees: data.readiness?.activeEmployees ?? 0,
+    employeesWithCompensation: data.readiness?.employeesWithCompensation ?? 0, nextEmployeeCode: data.readiness?.nextEmployeeCode ?? null,
+    unenrolledEmployeeCode: unconfiguredPayrollCode, runs: data.payRuns, statutoryDecisionsOpen: data.readiness?.statutoryDecisionsOpen ?? 0,
+    detailsAwaitingVerification: data.readiness?.detailsAwaitingVerification ?? 0, pendingInvitationCount: data.invitations.filter((invitation) => invitation.status === "PENDING").length,
+    overdueInvoices: data.billing?.overdueInvoices ?? null, activeClients: data.billing?.activeClients ?? null,
+  };
+  const attention = role === "ADMIN" ? operationalAttention(overviewInput, payrollAction?.featuredKey ?? null) : [];
+  const checklist = role === "ADMIN" ? workspaceChecklist(overviewInput) : [];
 
   const userName = `${auth.user?.firstName ?? ""} ${auth.user?.lastName ?? ""}`.trim() || auth.user?.email;
 
-  return <Page title={organization.organizationName} description="Your workspace setup and next payroll actions." actions={<button className="button secondary" onClick={() => setRevision(value => value + 1)}>Refresh overview</button>}>
+  return <Page title="Dashboard" description={`${organization.organizationName} · Your workspace setup and next payroll actions.`} actions={<button className="button secondary" onClick={() => setRevision(value => value + 1)}>Refresh</button>}>
     <div className="overview-welcome-card">
       <div className="overview-welcome-main">
         <h2>Welcome back, {auth.user?.firstName || userName || "Administrator"}</h2>
         <p className="overview-welcome-subtitle">
-          Workspace <strong>{selected.displayName}</strong> is active. Here is your operational overview for <strong>{organization.organizationName}</strong>.
+          Workspace <strong>{selected.displayName}</strong> is active. This is the dashboard for <strong>{organization.organizationName}</strong>.
         </p>
       </div>
       <div className="overview-welcome-meta">
@@ -205,25 +221,25 @@ export function HomePage() {
     <div className="home-quick-actions" aria-label="Quick operations">
       <span className="quick-actions-label">Quick actions:</span>
       {workforceEnabled && (
-        <Link to={appPath("/app/workforce/employees")} className="quick-action-chip">
+        <Link to={appPath("/workforce/employees")} className="quick-action-chip">
           <Icon name="profile" />
           <span>Manage employees</span>
         </Link>
       )}
       {workforceEnabled && (
-        <Link to={appPath("/app/workforce/departments")} className="quick-action-chip">
+        <Link to={appPath("/workforce/departments")} className="quick-action-chip">
           <Icon name="workforce" />
           <span>Departments</span>
         </Link>
       )}
       {payrollEnabled && (
-        <Link to={appPath("/app/payroll/pay-runs")} className="quick-action-chip">
+        <Link to={appPath("/payroll/runs")} className="quick-action-chip">
           <Icon name="payroll" />
           <span>Pay runs</span>
         </Link>
       )}
       {payrollEnabled && (
-        <Link to={appPath("/app/payroll/compensation")} className="quick-action-chip">
+        <Link to={appPath("/payroll/compensation")} className="quick-action-chip">
           <Icon name="card" />
           <span>Compensation</span>
         </Link>
@@ -235,7 +251,7 @@ export function HomePage() {
         </Link>
       )}
       {role === "ADMIN" && (
-        <Link to={appPath("/organization/members")} className="quick-action-chip">
+        <Link to={appPath("/people")} className="quick-action-chip">
           <Icon name="profile" />
           <span>Members</span>
         </Link>
@@ -277,16 +293,16 @@ export function HomePage() {
         </header>
         <ul className="organization-attention-list">
           {attention.map(item => (
-            <li key={item.to}>
-              <span>{item.text}</span>
-              <Link to={appPath(item.to)}>Review →</Link>
+            <li key={item.key}>
+              <span>{item.explanation}</span>
+              {item.actionTo && <Link to={appPath(item.actionTo)}>{item.actionLabel ?? "Review"} →</Link>}
             </li>
           ))}
         </ul>
       </section>
     )}
 
-    {role === "ADMIN" && payrollEnabled && <PayrollNext readiness={data.readiness!} runs={data.payRuns} names={data.workforceNames} guided={workforceEnabled} />}
+    {role === "ADMIN" && payrollEnabled && payrollAction && <PayrollNext action={payrollAction} runs={data.payRuns} />}
 
     <section className="organization-panel">
       <header>
@@ -315,30 +331,25 @@ export function HomePage() {
           <div>
             <span className="eyebrow">Workforce shortcuts</span>
             <h2>Workforce management</h2>
-            <p>Direct navigation to directory, organizational structure, and departmental hierarchy.</p>
+            <p>Direct navigation to employee directory, departments, and designations.</p>
           </div>
-          {role === "ADMIN" && <Link to={appPath("/app/workforce/employees")}>Open employees →</Link>}
+          {role === "ADMIN" && <Link to={appPath("/workforce/employees")}>Open employees →</Link>}
         </header>
         <div className="workforce-shortcuts-grid">
-          <Link to={appPath("/app/workforce/employees")} className="workforce-shortcut-card">
+          <Link to={appPath("/workforce/employees")} className="workforce-shortcut-card">
             <div className="workforce-shortcut-icon"><Icon name="profile" /></div>
             <strong>Employee directory</strong>
             <span>{data.employeeCount !== null ? `${data.employeeCount} active record${data.employeeCount === 1 ? "" : "s"}` : "Manage employee profiles"}</span>
           </Link>
-          <Link to={appPath("/app/workforce/departments")} className="workforce-shortcut-card">
+          <Link to={appPath("/workforce/departments")} className="workforce-shortcut-card">
             <div className="workforce-shortcut-icon"><Icon name="workforce" /></div>
             <strong>Departments</strong>
             <span>{data.departments !== null ? `${data.departments} active department${data.departments === 1 ? "" : "s"}` : "Organize teams and divisions"}</span>
           </Link>
-          <Link to={appPath("/app/workforce/designations")} className="workforce-shortcut-card">
+          <Link to={appPath("/workforce/designations")} className="workforce-shortcut-card">
             <div className="workforce-shortcut-icon"><Icon name="badge" /></div>
             <strong>Job designations</strong>
             <span>{data.designations !== null ? `${data.designations} defined title${data.designations === 1 ? "" : "s"}` : "Standardize roles and titles"}</span>
-          </Link>
-          <Link to={appPath("/app/workforce/structure")} className="workforce-shortcut-card">
-            <div className="workforce-shortcut-icon"><Icon name="panels" /></div>
-            <strong>Reporting structure</strong>
-            <span>Organizational hierarchy</span>
           </Link>
         </div>
       </section>
@@ -355,29 +366,21 @@ export function HomePage() {
           <button
             type="button"
             className="button secondary sm setup-toggle-btn"
-            onClick={() => {
-              const el = document.getElementById("horizon-setup-steps");
-              if (el) el.hidden = !el.hidden;
-            }}
+            aria-expanded={checklistOpen}
+            onClick={() => setChecklistOpen((open) => {
+              const next = !open;
+              try { localStorage.setItem(checklistStorageKey, next ? "open" : "closed"); } catch { /* Preference storage may be unavailable. */ }
+              return next;
+            })}
           >
-            Toggle checklist
+            {checklistOpen ? "Hide checklist" : "Show checklist"}
           </button>
         </header>
-        <div id="horizon-setup-steps">
+        {checklistOpen && <div id="horizon-setup-steps">
           <ol className="horizon-setup-list">
-            <SetupStep title="Organization details" detail={`Review the organization profile and regional settings before onboarding people. Current status: ${data.organizationStatus}.`} to="/organization" action="Review organization" />
-            <SetupStep title="Workspace and plan" detail={`${data.activeWorkspaces ?? 0} active workspace${data.activeWorkspaces === 1 ? "" : "s"}. Workspace capabilities come from the assigned organization plan.`} to="/organization/workspaces" action="Manage workspace" />
-            {workforceEnabled && <>
-              <SetupStep title="Departments and designations" detail={`${data.departments} departments · ${data.designations} designations. Optional: organize employees by team and job title.`} to="/app/workforce/departments" action="Configure organization details" />
-              <SetupStep title="Employees" detail={`${data.employeeCount} active employees. A Workforce employee must exist before payroll enrollment.`} to="/app/workforce/employees" action="Manage employees" />
-              <SetupStep title="Reporting structure" detail="Optional: assign managers from employee profiles. The server prevents reporting cycles." to="/app/workforce/structure" action="Review reporting structure" />
-            </>}
-            {payrollEnabled && <>
-              <SetupStep title="Payroll employees" detail={`${data.readiness?.activeEmployees ?? 0} active payroll employees. Configure currency, pay frequency and eligibility date.`} to={unconfiguredPayrollCode ? `/app/payroll/employees?employee=${encodeURIComponent(unconfiguredPayrollCode)}` : "/app/payroll/employees"} action="Configure payroll employees" />
-              <SetupStep title="Compensation" detail={`${data.readiness?.employeesWithCompensation ?? 0} active payroll employees have an active profile with components. Effective dates and frequency must match the chosen pay period.`} to={data.readiness?.nextEmployeeCode ? `/app/payroll/compensation?employee=${encodeURIComponent(data.readiness.nextEmployeeCode)}` : "/app/payroll/compensation"} action="Review compensation" />
-            </>}
+            {checklist.map((entry) => <SetupStep key={entry.key} item={entry} />)}
           </ol>
-        </div>
+        </div>}
         {!workforceEnabled && !payrollEnabled && <Notice tone="info">No business capabilities are available. <Link to={appPath("/organization/workspaces")}>Review workspace products and access</Link>.</Notice>}
       </section>
     </>}
@@ -389,7 +392,7 @@ export function HomePage() {
             <h2>Recent pay runs</h2>
             <p>Latest five runs in {selected.displayName}.</p>
           </div>
-          <Link to={appPath("/app/payroll/pay-runs")}>Open Pay Runs →</Link>
+          <Link to={appPath("/payroll/runs")}>Open Pay Runs →</Link>
         </header>
         {data.payRuns.length ? (
           <div className="platform-table compact">
@@ -409,7 +412,7 @@ export function HomePage() {
                     <td>
                       <strong>{run.payRunKey}</strong>
                       <br />
-                      <Link to={`${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(run.payRunKey)}`}>
+                      <Link to={`${appPath("/payroll/runs")}?run=${encodeURIComponent(run.payRunKey)}`}>
                         Open pay run
                       </Link>
                     </td>
@@ -432,7 +435,7 @@ export function HomePage() {
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) { return <article><span>{label}</span><strong>{value}</strong><small>{note}</small></article>; }
 function ProductSummary({ name, productKey, role, count }: { name: string; productKey: string; role?: string; count: number | null }) {
-  const route = productKey === "workforce" ? role === "ADMIN" ? "/app/workforce/employees" : "/app/workforce/me" : productKey === "payroll" && role === "ADMIN" ? "/app/payroll/pay-runs" : null;
+  const route = productKey === "workforce" ? role === "ADMIN" ? "/workforce/employees" : "/workforce/me" : productKey === "payroll" && role === "ADMIN" ? "/payroll/runs" : null;
   return <article><div><Badge label="Enabled" variant="success" /><h3>{name}</h3>{count !== null && <p>{count} configured employee{count === 1 ? "" : "s"}</p>}</div>{route && <Link to={appPath(route)}>Open {name} →</Link>}</article>;
 }
 function usage(current: number, limit: number | null) { return limit === null ? String(current) : `${current} / ${limit}`; }
@@ -443,49 +446,14 @@ async function getActiveWorkforceEmployees(): Promise<Employee[]> {
   return employees;
 }
 
-function SetupStep({ title, detail, to, action }: { title: string; detail: string; to: string; action: string }) {
-  return <li><div><h3>{title}</h3><p>{detail}</p></div><Link to={appPath(to)}>{action} →</Link></li>;
+function SetupStep({ item }: { item: ReadinessItem }) {
+  const tone = item.state === "COMPLETE" ? "success" : item.state === "BLOCKED" || item.state === "ACTION_REQUIRED" ? "warning" : "neutral";
+  return <li><div><h3>{item.title} <span className={`badge ${tone}`}>{readinessLabel(item)}</span></h3><p>{item.explanation}</p></div>{item.actionTo && item.state !== "COMPLETE" && <Link to={appPath(item.actionTo)}>{item.actionLabel} →</Link>}</li>;
 }
-export function FirstRunChecklist({ organizationStatus, hasPlan }: { organizationStatus: string; hasPlan: boolean }) {
-  return <section className="organization-panel setup-panel" aria-labelledby="first-run-checklist">
-    <header className="setup-panel-header">
-      <div>
-        <span className="eyebrow">First-run setup</span>
-        <h2 id="first-run-checklist">Get your organization ready</h2>
-        <p>Resume setup at any time. Each step opens the existing workflow and preserves server-side authorization and plan rules.</p>
-      </div>
-    </header>
-    <ol className="horizon-setup-list">
-      <SetupStep title="Organization details" detail={`Review organization profile, regional defaults and branding. Current status: ${organizationStatus}.`} to="/organization" action="Review organization" />
-      <li>
-        <div><h3>Assign a plan and create a workspace</h3><p>{hasPlan ? "An active plan is assigned. Create a workspace to unlock Workforce and Payroll setup." : "No active plan is assigned. A Horizon platform administrator must assign Starter or Business before workspace creation."}</p></div>
-        <Link to={appPath("/organization/workspaces")}>{hasPlan ? "Create workspace" : "Review plan"} →</Link>
-      </li>
-      <SetupStep title="Departments and designations" detail="Available after a workspace is created. Use the workspace step above first." to="/organization/workspaces" action="Create workspace first" />
-      <SetupStep title="Employees" detail="Available after a workspace is created. Add active people before configuring payroll enrollment." to="/organization/workspaces" action="Create workspace first" />
-      <SetupStep title="Compensation and payroll readiness" detail="Available after a workspace is created. Enroll payroll employees, add effective compensation profiles, then create and finalize a pay run." to="/organization/workspaces" action="Create workspace first" />
-    </ol>
-  </section>;
-}
-function PayrollNext({ readiness, runs, names, guided }: { readiness: PayrollReadiness; runs: PayRun[]; names: Record<string, string>; guided: boolean }) {
-  const run = runs.find(item => item.status !== "FINALIZED");
+function PayrollNext({ action, runs }: { action: { heading: string; detail: string; action: string; to: string }; runs: PayRun[] }) {
   const latestResult = runs.find(item => item.status === "FINALIZED");
-  let heading = "Choose a payroll period", detail = "Create a pay run with dates matching your employees’ pay frequency. Processing calculates all included employees; previewing an individual calculation is optional.", action = "Create a pay run", to = "/app/payroll/pay-runs";
-  if (run) {
-    heading = `${run.payRunKey} · ${run.status}`;
-    detail = run.status === "DRAFT" ? "Include employees, check their compensation and period, then process this draft." : run.status === "CALCULATED" ? "Review the calculated totals before finalizing. Finalization creates immutable ledger entries and payslips." : run.status === "FAILED" ? (run.failureMessage || "Review the failure, correct setup and recover this run to draft.") : "Refresh the run to check processing or review its recovery options.";
-    action = run.status === "FAILED" ? "Review failed run" : run.status === "CALCULATED" ? "Review and finalize" : "Continue pay run";
-    to += `?run=${encodeURIComponent(run.payRunKey)}`;
-  } else if (readiness.activeEmployees === 0) {
-    heading = "Configure an employee for payroll"; detail = "Payroll needs an active employee with a currency, pay frequency and eligibility date."; action = "Configure payroll employees"; to = "/app/payroll/employees";
-  } else if (readiness.nextEmployeeCode) {
-    const code = readiness.nextEmployeeCode;
-    heading = `Add a salary for ${names[code.toUpperCase()] ?? code}`; detail = "This employee is set up for payroll but has no salary yet, so they cannot be paid."; action = "Set up compensation";
-    // The guided setup resumes at the salary step for an enrolled employee; without Workforce, use Compensation directly.
-    to = guided ? `/app/workforce/employees/new?employee=${encodeURIComponent(code)}` : `/app/payroll/compensation?employee=${encodeURIComponent(code)}`;
-  }
-  return <section className="organization-panel"><header><div><span className="eyebrow">Next payroll action</span><h2>{heading}</h2><p>{detail}</p></div><Link className="button primary" to={appPath(to)}>{action}</Link></header>
+  return <section className="organization-panel"><header><div><span className="eyebrow">Next payroll action</span><h2>{action.heading}</h2><p>{action.detail}</p></div><Link className="button primary" to={appPath(action.to)}>{action.action}</Link></header>
     <p className="snapshot-note">Configuration counts are not a pay-period approval. Calculation validates effective dates, frequency and compensation eligibility for each included employee.</p>
-    {latestResult && <p>Recent finalized result: <Link to={`${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(latestResult.payRunKey)}`}>{latestResult.payRunKey}</Link> · {formatMoney(latestResult.netTotal, latestResult.currency)} net · {formatPeriod(latestResult.periodStart, latestResult.periodEnd)}</p>}
+    {latestResult && <p>Recent finalized result, not a payment: <Link to={`${appPath("/payroll/runs")}?run=${encodeURIComponent(latestResult.payRunKey)}`}>{latestResult.payRunKey}</Link> · {formatMoney(latestResult.netTotal, latestResult.currency)} calculated net · {formatPeriod(latestResult.periodStart, latestResult.periodEnd)}</p>}
   </section>;
 }

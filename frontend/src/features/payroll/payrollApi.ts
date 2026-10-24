@@ -81,6 +81,8 @@ export interface PayRun {
   failureMessage?: string | null;
   processingStartedAt?: string | null;
   employerContributionTotal?: number;
+  /** Always NOT_AVAILABLE until a separate payment flow exists. Finalized is not paid. */
+  disbursementStatus?: "NOT_AVAILABLE";
 }
 export interface PayRunEmployee {
   employeeCode: string;
@@ -331,7 +333,7 @@ export const finalizePayRun = (key: string) =>
 
 export const recoverPayRun = (key: string) => apiRequest<PayRun>(`/api/payroll/pay-runs/${key}/recover`, { method: "POST" });
 
-export interface PayrollReadiness { activeEmployees: number; employeesWithCompensation: number; nextEmployeeCode: string | null; }
+export interface PayrollReadiness { activeEmployees: number; employeesWithCompensation: number; nextEmployeeCode: string | null; statutoryDecisionsOpen?: number; detailsAwaitingVerification?: number; }
 export const getPayrollReadiness = () => apiRequest<PayrollReadiness>("/api/payroll/readiness");
 
 export interface PayRunPreparation {
@@ -369,7 +371,7 @@ export interface StatutoryProfile {
   esiApplicability: Applicability | null; esiIpNumberMasked: string | null; esiVerified: boolean;
   ptApplicability: Applicability | null; ptState: string | null; lwfApplicability: Applicability | null; lwfState: string | null;
 }
-export interface SetupSection { key: string; title: string; status: SectionStatus; missing: string[] }
+export interface SetupSection { key: string; title: string; status: SectionStatus; missing: string[]; note?: string | null }
 export interface PayrollSetup {
   enrollment: PayrollEmployee; statutoryProfile: StatutoryProfile | null; salaryConfigured: boolean; sections: SetupSection[];
   readiness: { readyForPayroll: boolean; setupComplete: boolean; blockers: string[]; warnings: string[] };

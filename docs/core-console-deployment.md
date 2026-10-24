@@ -4,7 +4,7 @@ Repository configuration is ready for `https://core.lexorion.in`. DNS, a public 
 
 ## Local development
 
-Run the existing backend services and `npm run dev` in `frontend`. Open `http://localhost:9000/core/`. Existing Horizon development routes remain at `/app`. Core uses the same-origin `/api/core/**` proxy, shared token store and real platform-service APIs.
+Run the existing backend services and `npm run dev` in `frontend`. Open `http://localhost:9000/core/`. Existing Horizon development routes remain at `/overview`. Core uses the same-origin `/api/core/**` proxy, shared token store and real platform-service APIs.
 
 For host-based testing, map `core.lexorion.in` to your development server in your local hosts file, then open `http://core.lexorion.in:9000/`. This is a local override, not public DNS. Vite explicitly allows that hostname.
 

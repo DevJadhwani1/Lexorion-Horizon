@@ -1,6 +1,7 @@
 import type { Organization, Member, Invitation } from "../admin/adminApi";
 import type { OrganizationWorkspace } from "../admin/workspaceApi";
 import type { EffectiveEntitlements } from "../entitlements/entitlementApi";
+import type { ReadinessItem } from "../readiness/readiness";
 
 export type StepState = "completed" | "active" | "locked";
 
@@ -26,4 +27,6 @@ export interface OnboardingState {
   percentage: number;
   setupStatus: OnboardingSetupStatus;
   isConfigured: boolean;
+  pendingInvitationCount: number;
+  steps: { details: ReadinessItem; workspace: ReadinessItem; access: ReadinessItem; finish: ReadinessItem };
 }

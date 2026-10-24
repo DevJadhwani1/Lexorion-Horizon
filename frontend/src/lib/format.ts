@@ -51,7 +51,7 @@ export function statusTone(status: string): Tone { return tones[status] ?? "neut
 export const payRunStatusDescription: Record<string, string> = {
   DRAFT: "Choose employees and check eligibility. Nothing is calculated yet.",
   PROCESSING: "Pay is being calculated for the selected employees.",
-  CALCULATED: "Pay is calculated and ready for review. Finalize to lock the results and issue payslips.",
-  FINALIZED: "Locked. Ledger entries and payslips were created and can no longer change.",
+  CALCULATED: "Pay is calculated and ready for review. Finalize to lock the results and issue payslips. Finalizing does not send a payment or approve statutory decisions.",
+  FINALIZED: "Locked. Ledger entries and payslips were created and can no longer change. No payment was sent.",
   FAILED: "Calculation stopped before any results were saved. Fix the reported issue, then recover to draft.",
 };

@@ -46,7 +46,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
   const [lwf, setLwf] = useState<Applicability>(profile?.lwfApplicability ?? "UNDECIDED");
   const [verified, setVerified] = useState({ bank: profile?.bankVerified ?? false, pan: profile?.panVerified ?? false, pf: profile?.pfVerified ?? false, esi: profile?.esiVerified ?? false });
   const [error, setError] = useState(""), [busy, setBusy] = useState(false);
-  const status = (key: string) => setup?.sections.find((section) => section.key === key)?.status;
+  const sectionOf = (key: string) => setup?.sections.find((section) => section.key === key);
   // Typing a replacement identifier clears its verification until the admin confirms it again.
   const replaced = (key: keyof typeof verified) => (event: { target: { value: string } }) => { if (event.target.value.trim()) setVerified((current) => ({ ...current, [key]: false })); };
 
@@ -94,7 +94,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
     <p className="snapshot-note">Only the enrollment details are needed now. Everything else can be completed later — the review shows what is still missing before payroll.</p>
     {error && <Notice>{error}</Notice>}
 
-    <Section title="Payroll enrollment" status={status("enrollment")}>
+    <Section title="Payroll enrollment" status={sectionOf("enrollment")?.status} note={sectionOf("enrollment")?.note}>
       <Field label="Currency" hint={enrollment ? "Currency of salaries and payslips." : "Your organization’s currency by default."}>
         <input name="currency" required pattern="[A-Za-z]{3}" maxLength={3} defaultValue={enrollment?.currency ?? defaultCurrency} placeholder="e.g. INR" />
       </Field>
@@ -108,7 +108,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
       <label><span>Work location <span className="field-optional">(optional)</span></span><input name="workLocation" maxLength={120} defaultValue={enrollment?.workLocation ?? ""} placeholder="e.g. Pune" /></label>
     </Section>
 
-    <Section title="Payment method" status={status("payment")}>
+    <Section title="Payment method" status={sectionOf("payment")?.status} note={sectionOf("payment")?.note}>
       <Dropdown label="Paid by" value={paymentMethod} onChange={(value) => setPaymentMethod(value as PaymentMethod | "")}
         options={[...(profile?.paymentMethod ? [] : [{ value: "", label: "Decide later" }]), { value: "BANK_TRANSFER", label: "Bank transfer" }, { value: "CHEQUE", label: "Cheque" }, { value: "CASH", label: "Cash" }]} />
       {paymentMethod === "BANK_TRANSFER" && <>
@@ -120,7 +120,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
       </>}
     </Section>
 
-    <Section title="PAN and tax regime" status={status("tax")}>
+    <Section title="PAN and tax regime" status={sectionOf("tax")?.status} note={sectionOf("tax")?.note}>
       <SecretField label="PAN" name="pan" saved={profile?.panMasked} maxLength={10} placeholder="ABCDE1234F" onChange={replaced("pan")} />
       <Dropdown label="Tax regime" name="taxRegime" defaultValue={profile?.taxRegime ?? ""} hint="The new regime applies unless the employee opts for the old one."
         options={[{ value: "", label: "Not recorded" }, { value: "NEW", label: "New regime" }, { value: "OLD", label: "Old regime" }, { value: "NOT_DECLARED", label: "Not declared yet" }]} />
@@ -128,7 +128,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
       <p className="snapshot-note span-2">Horizon records PAN and regime. It does not calculate income-tax (TDS).</p>
     </Section>
 
-    <Section title="Provident fund (EPF)" status={status("epf")}>
+    <Section title="Provident fund (EPF)" status={sectionOf("epf")?.status} note={sectionOf("epf")?.note}>
       <Dropdown label="EPF" value={pf} onChange={(value) => setPf(value as Applicability)} options={applicabilityOptions}
         hint="Horizon does not decide coverage. Confirm it for your establishment and this employee." />
       {pf === "APPLICABLE" && <>
@@ -139,7 +139,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
       </>}
     </Section>
 
-    <Section title="Employees’ State Insurance (ESI)" status={status("esi")}>
+    <Section title="Employees’ State Insurance (ESI)" status={sectionOf("esi")?.status} note={sectionOf("esi")?.note}>
       <Dropdown label="ESI" value={esi} onChange={(value) => setEsi(value as Applicability)} options={applicabilityOptions} />
       {esi === "APPLICABLE" && <>
         <SecretField label="ESI IP number" name="esiIpNumber" saved={profile?.esiIpNumberMasked} inputMode="numeric" maxLength={10} placeholder="10 digits" optional onChange={replaced("esi")} />
@@ -147,7 +147,7 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
       </>}
     </Section>
 
-    <Section title="Professional tax and labour welfare fund" status={worst(status("pt"), status("lwf"))}>
+    <Section title="Professional tax and labour welfare fund" status={worst(sectionOf("pt")?.status, sectionOf("lwf")?.status)} note={sectionOf("pt")?.note ?? sectionOf("lwf")?.note}>
       <Dropdown label="Professional tax" value={pt} onChange={(value) => setPt(value as Applicability)} options={applicabilityOptions} />
       {pt === "APPLICABLE" ? <Dropdown label="Professional tax state" name="ptState" defaultValue={profile?.ptState ?? enrollment?.workState ?? ""} options={stateOptions} /> : <span className="grid-spacer" aria-hidden="true" />}
       <Dropdown label="Labour welfare fund" value={lwf} onChange={(value) => setLwf(value as Applicability)} options={applicabilityOptions} />
@@ -163,9 +163,10 @@ export function PayrollSetupStep({ employee, setup, defaultCurrency, onSaved, on
   </form>;
 }
 
-function Section({ title, status, children }: { title: string; status?: SectionStatus; children: ReactNode }) {
+function Section({ title, status, note, children }: { title: string; status?: SectionStatus; note?: string | null; children: ReactNode }) {
   return <fieldset className="form-section">
     <legend>{title}{status && <> <SectionStatusBadge status={status} /></>}</legend>
+    {note && <p className="snapshot-note">{note}</p>}
     <div className="form-grid">{children}</div>
   </fieldset>;
 }

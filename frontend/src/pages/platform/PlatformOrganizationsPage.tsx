@@ -36,7 +36,7 @@ export function PlatformOrganizationsPage() {
         event.preventDefault(); setBusy(true); setError("");
         const form = new FormData(event.currentTarget);
         void createPlatformOrganization({ name: String(form.get("name")), organizationCode: String(form.get("organizationCode")), primaryEmail: String(form.get("primaryEmail")), ownerUserId: String(form.get("ownerUserId")), ...(form.get("slug") ? { slug: String(form.get("slug")) } : {}) })
-          .then(async (created) => { await auth.reloadOrganizations(); navigate(appPath(`/app/platform/organizations/${created.id}`)); })
+          .then(async (created) => { await auth.reloadOrganizations(); navigate(appPath(`/platform/organizations/${created.id}`)); })
           .catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to create organization."))
           .finally(() => setBusy(false));
       }}>
@@ -56,7 +56,7 @@ export function PlatformOrganizationsPage() {
     {loading ? <Notice tone="info">Loading organizations…</Notice> : error ? <Notice>{error}</Notice>
       : filtered.length === 0 ? <Empty>No organizations match the current filters.</Empty>
       : <div className="platform-table"><table><thead><tr><th>Organization</th><th>Code</th><th>Status</th><th>Primary contact</th><th>Updated</th><th><span className="sr-only">Actions</span></th></tr></thead>
-        <tbody>{filtered.map((organization) => <tr key={organization.id}><td><strong>{organization.name}</strong><small>{organization.slug}</small></td><td>{organization.organizationCode}</td><td><StatusBadge value={organization.status} /></td><td>{organization.primaryEmail}</td><td>{formatDate(organization.updatedAt)}</td><td><Link className="table-action" to={appPath(`/app/platform/organizations/${organization.id}`)}>View details</Link></td></tr>)}</tbody></table></div>}
+        <tbody>{filtered.map((organization) => <tr key={organization.id}><td><strong>{organization.name}</strong><small>{organization.slug}</small></td><td>{organization.organizationCode}</td><td><StatusBadge value={organization.status} /></td><td>{organization.primaryEmail}</td><td>{formatDate(organization.updatedAt)}</td><td><Link className="table-action" to={appPath(`/platform/organizations/${organization.id}`)}>View details</Link></td></tr>)}</tbody></table></div>}
   </Page>;
 }
 
@@ -77,7 +77,7 @@ export function PlatformOrganizationDetailPage() {
   const enter = () => {
     if (!membership) return;
     if (consoleHost() === "platform") window.location.assign(consoleUrl("client", { organization: organization.slug }));
-    else { auth.selectOrganization(organization.slug); application.enterClient(); navigate("/app"); }
+    else { auth.selectOrganization(organization.slug); application.enterClient(); navigate("/overview"); }
   };
   return <Page title={organization.name} description={`${organization.organizationCode} · ${organization.slug}`}>
     {notice && <Notice tone="success">{notice}</Notice>}
@@ -97,7 +97,7 @@ export function PlatformOrganizationDetailPage() {
           .finally(() => setBusy(false));
       }}><Dropdown label="Organization plan" name="planKey" required placeholder="Choose plan" options={plans.map(plan => ({ value: plan.key, label: plan.displayName }))} /><Button disabled={busy || plans.length === 0}>Assign plan</Button></form>
     </section>
-    <div className="platform-detail-actions"><Link to={appPath("/app/platform/organizations")}>← Organizations</Link>{membership && <Button variant="primary" onClick={enter}>Enter organization</Button>}</div>
+    <div className="platform-detail-actions"><Link to={appPath("/platform/organizations")}>← Organizations</Link>{membership && <Button variant="primary" onClick={enter}>Enter organization</Button>}</div>
     {!membership && <Notice tone="info">Platform Access is separate from organization membership. An active membership is required to enter this client organization.</Notice>}
     <div className="platform-detail-grid">
       <section className="platform-panel"><header><div><span className="eyebrow">Overview</span><h2>Organization profile</h2></div><StatusBadge value={organization.status} /></header><dl className="platform-definition-list">

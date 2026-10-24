@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface StatutoryProfileRepository extends JpaRepository<StatutoryProfile, UUID> {
     Optional<StatutoryProfile> findByPayrollEmployeeId(UUID payrollEmployeeId);
+    @Query("select p from StatutoryProfile p join fetch p.payrollEmployee where p.workspace.id = :workspaceId")
+    List<StatutoryProfile> findForWorkspace(@Param("workspaceId") UUID workspaceId);
     @Query("select p.payrollEmployee.employeeCode from StatutoryProfile p where p.workspace.id = :workspaceId and p.payrollEmployee.id <> :excluded and p.pan = :value")
     List<String> findCodesWithPan(@Param("workspaceId") UUID workspaceId, @Param("excluded") UUID excluded, @Param("value") String value);
     @Query("select p.payrollEmployee.employeeCode from StatutoryProfile p where p.workspace.id = :workspaceId and p.payrollEmployee.id <> :excluded and p.uan = :value")

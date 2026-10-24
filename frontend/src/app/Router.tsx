@@ -1,4 +1,4 @@
-import { Navigate, Outlet, RouterProvider, createBrowserRouter, type RouteObject } from "react-router-dom";
+import { Navigate, Outlet, RouterProvider, createBrowserRouter, useLocation, type RouteObject } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { useWorkspace } from "../workspace/WorkspaceProvider";
@@ -25,8 +25,21 @@ import { PlatformOrganizationDetailPage, PlatformOrganizationsPage } from "../pa
 import { PlatformResourcesPage } from "../pages/platform/PlatformResourcesPage";
 import { PlatformWorkspacesPage } from "../pages/platform/PlatformWorkspacesPage";
 import { useApplicationContext } from "../context/ApplicationContext";
-import { consoleHost } from "./hostRouting";
+import { canonicalize, consoleHost, legacyRedirects } from "./hostRouting";
 import { RouteErrorPage } from "./RouteErrorPage";
+
+function PreserveRedirect({ to }: { to: string }) {
+  const location = useLocation();
+  const target = new URL(to, "http://localhost");
+  return <Navigate to={{ pathname: target.pathname, search: target.search || location.search, hash: location.hash }} replace />;
+}
+
+function LegacyAppRedirect() {
+  const location = useLocation();
+  const next = canonicalize(location.pathname);
+  const pathname = next === location.pathname || next.startsWith("/app") ? "/overview" : next;
+  return <Navigate to={{ pathname, search: location.search, hash: location.hash }} replace />;
+}
 
 function Protected() {
   const auth = useAuth();
@@ -36,7 +49,7 @@ function Protected() {
 
 function ContextRequired({ area }: { area: "administration" | "workforce" | "payroll" | "finance" }) {
   const auth = useAuth(), workspace = useWorkspace(), application = useApplicationContext();
-  if (application.mode !== "client") return <Navigate to={consoleHost() === "local" ? "/app" : "/"} replace />;
+  if (application.mode !== "client") return <Navigate to={consoleHost() === "platform" ? "/" : "/platform"} replace />;
   if (!auth.organization) return <ContextNotice title={title(area)}>Choose an organization before opening this area.</ContextNotice>;
   if (area === "administration") return auth.organization.membershipRole === "ADMIN" ? <Outlet /> : <ContextNotice title="Access denied">Your organization role does not provide administration access.</ContextNotice>;
   if (area === "payroll" && auth.organization.membershipRole !== "ADMIN") return <ContextNotice title="Access denied">Your organization role does not provide Payroll access.</ContextNotice>;
@@ -49,12 +62,13 @@ function ContextRequired({ area }: { area: "administration" | "workforce" | "pay
 
 function ApplicationHome() {
   const { mode } = useApplicationContext();
-  return mode === "platform" ? <Navigate to="/app/platform" replace /> : <HomePage />;
+  if (mode === "platform" && consoleHost() === "local") return <Navigate to="/platform" replace />;
+  return <Navigate to="/overview" replace />;
 }
 function PlatformRequired() {
   const application = useApplicationContext();
   if (application.mode === "platform" && application.hasPlatformAccess) return <Outlet />;
-  return consoleHost() === "platform" ? <ContextNotice title="Platform Access required">This account does not have active Horizon Platform Access.</ContextNotice> : <Navigate to="/app" replace />;
+  return consoleHost() === "platform" ? <ContextNotice title="Platform Access required">This account does not have active Horizon Platform Access.</ContextNotice> : <Navigate to="/overview" replace />;
 }
 function WorkforceRoleRequired({ roles }: { roles: Array<"ADMIN" | "MANAGER" | "EMPLOYEE"> }) {
   const role = useAuth().organization?.membershipRole;
@@ -79,32 +93,18 @@ function platformRoutes(prefix = ""): RouteObject[] {
   ] }];
 }
 
-export function clientRoutes(local: boolean): RouteObject[] {
-  const base = local ? "/app" : "";
+export function clientRoutes(): RouteObject[] {
   return [
-    { index: true, element: <HomePage /> },
+    { index: true, element: <ApplicationHome /> },
+    { path: "overview", element: <HomePage /> },
     { path: "onboarding", element: <OnboardingPage /> },
     { element: <ContextRequired area="administration" />, children: [
       { path: "organization", element: <AdminPage sectionKey="organization" /> },
       { path: "organization/workspaces", element: <AdminWorkspaces /> },
-      { path: "organization/members", element: <AdminPage sectionKey="members" /> },
+      { path: "people", element: <AdminPage sectionKey="members" /> },
       { path: "organization/invitations", element: <AdminPage sectionKey="invitations" /> },
       { path: "organization/settings", element: <AdminPage key="settings" sectionKey="settings" /> },
       { path: "organization/settings/product-access", element: <AdminPage key="product-access" sectionKey="product-access" /> },
-      { path: "organization/entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
-      { path: "admin", element: <Navigate to={`${base}/organization`} replace /> },
-      { path: "admin/organization", element: <Navigate to={`${base}/organization`} replace /> },
-      { path: "admin/workspaces", element: <Navigate to={`${base}/organization/workspaces`} replace /> },
-      { path: "admin/members", element: <Navigate to={`${base}/organization/members`} replace /> },
-      { path: "admin/invitations", element: <Navigate to={`${base}/organization/invitations`} replace /> },
-      { path: "admin/settings", element: <Navigate to={`${base}/organization/settings`} replace /> },
-      { path: "admin/entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
-      { path: "admin/*", element: <Navigate to={`${base}/organization`} replace /> },
-      { path: "workspaces", element: <Navigate to={`${base}/organization/workspaces`} replace /> },
-      { path: "members", element: <Navigate to={`${base}/organization/members`} replace /> },
-      { path: "invitations", element: <Navigate to={`${base}/organization/invitations`} replace /> },
-      { path: "settings", element: <Navigate to={`${base}/organization/settings`} replace /> },
-      { path: "entitlements", element: <Navigate to={`${base}/organization/settings/product-access`} replace /> },
     ] },
     { element: <ContextRequired area="workforce" />, children: workforceRoutes() },
     { element: <ContextRequired area="payroll" />, children: payrollRoutes() },
@@ -115,22 +115,34 @@ export function clientRoutes(local: boolean): RouteObject[] {
 function workforceRoutes(): RouteObject[] { return [
   { path: "workforce", element: <WorkforceLanding /> },
   { element: <WorkforceRoleRequired roles={["ADMIN"]} />, children: [
-    { path: "workforce/dashboard", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/workforce/employees`} replace /> }, { path: "workforce/employees", element: <WorkforcePage sectionKey="employees" /> },
+    { path: "workforce/employees", element: <WorkforcePage sectionKey="employees" /> },
     { path: "workforce/employees/new", element: <EmployeeSetupWizard /> },
-    { path: "workforce/departments", element: <WorkforcePage sectionKey="departments" /> }, { path: "workforce/designations", element: <WorkforcePage sectionKey="designations" /> }, { path: "workforce/structure", element: <WorkforcePage sectionKey="structure" /> },
+    { path: "workforce/departments", element: <WorkforcePage sectionKey="departments" /> },
+    { path: "workforce/designations", element: <WorkforcePage sectionKey="designations" /> },
+    { path: "workforce/structure", element: <Navigate to="/workforce/departments" replace /> },
   ] },
-  { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER"]} />, children: [{ path: "workforce/team", element: <WorkforcePage sectionKey="team" /> }, { path: "workforce/employees/:employeeCode", element: <WorkforcePage /> }] },
-  { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER", "EMPLOYEE"]} />, children: [{ path: "workforce/me", element: <WorkforcePage sectionKey="me" /> }] },
+  { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER"]} />, children: [
+    { path: "workforce/team", element: <WorkforcePage sectionKey="team" /> },
+    { path: "workforce/employees/:employeeCode", element: <WorkforcePage /> },
+  ] },
+  { element: <WorkforceRoleRequired roles={["ADMIN", "MANAGER", "EMPLOYEE"]} />, children: [
+    { path: "workforce/me", element: <WorkforcePage sectionKey="me" /> },
+  ] },
 ]; }
-function WorkforceLanding() { const role = useAuth().organization?.membershipRole; const destination = role === "ADMIN" ? "employees" : "me"; return <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/workforce/${destination}`} replace />; }
+function WorkforceLanding() {
+  const role = useAuth().organization?.membershipRole;
+  return <Navigate to={role === "ADMIN" ? "/workforce/employees" : "/workforce/me"} replace />;
+}
 
-function payrollRoutes(): RouteObject[] { return [
-  ...["payroll", "payroll/dashboard"].map((path) => ({ path, element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/payroll/pay-runs`} replace /> })),
-  ...["employees", "components", "compensation", "salary-templates", "calculations", "pay-runs", "ledger", "payslips"].map((section) => ({ path: `payroll/${section}`, element: <PayrollPage sectionKey={section} /> })),
-]; }
+function payrollRoutes(): RouteObject[] {
+  const sections = ["employees", "components", "compensation", "salary-templates", "calculations", "runs", "ledger", "payslips"] as const;
+  return sections.map((section) => ({
+    path: `payroll/${section}`,
+    element: <PayrollPage sectionKey={section === "runs" ? "pay-runs" : section} />,
+  }));
+}
 
 function financeRoutes(): RouteObject[] { return [
-  { path: "finance", element: <Navigate to={`${consoleHost() === "local" ? "/app" : ""}/finance/overview`} replace /> },
   { path: "finance/overview", element: <FinancePage sectionKey="overview" /> },
   { path: "finance/invoices", element: <FinancePage sectionKey="invoices" /> },
   { path: "finance/invoices/new", element: <InvoiceWizardPage mode="new" /> },
@@ -153,67 +165,34 @@ function financeRoutes(): RouteObject[] { return [
 ]; }
 
 const host = consoleHost();
+
 export function getTopLevelCompatibilityRoutes(currentHost = consoleHost()): RouteObject[] {
-  return currentHost === "local" ? [
-    { path: "/organization", element: <Navigate to="/app/organization" replace /> },
-    { path: "/organization/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
-    { path: "/organization/members", element: <Navigate to="/app/organization/members" replace /> },
-    { path: "/organization/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
-    { path: "/organization/settings", element: <Navigate to="/app/organization/settings" replace /> },
-    { path: "/organization/settings/product-access", element: <Navigate to="/app/organization/settings/product-access" replace /> },
-    { path: "/organization/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
-    { path: "/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
-    { path: "/members", element: <Navigate to="/app/organization/members" replace /> },
-    { path: "/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
-    { path: "/settings", element: <Navigate to="/app/organization/settings" replace /> },
-    { path: "/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
-    { path: "/admin", element: <Navigate to="/app/organization" replace /> },
-    { path: "/admin/organization", element: <Navigate to="/app/organization" replace /> },
-    { path: "/admin/workspaces", element: <Navigate to="/app/organization/workspaces" replace /> },
-    { path: "/admin/members", element: <Navigate to="/app/organization/members" replace /> },
-    { path: "/admin/invitations", element: <Navigate to="/app/organization/invitations" replace /> },
-    { path: "/admin/settings", element: <Navigate to="/app/organization/settings" replace /> },
-    { path: "/admin/entitlements", element: <Navigate to="/app/organization/settings/product-access" replace /> },
-    { path: "/admin/*", element: <Navigate to="/app/organization" replace /> },
-  ] : currentHost === "client" ? [
-    { path: "/app/organization", element: <Navigate to="/organization" replace /> },
-    { path: "/app/organization/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
-    { path: "/app/organization/members", element: <Navigate to="/organization/members" replace /> },
-    { path: "/app/organization/invitations", element: <Navigate to="/organization/invitations" replace /> },
-    { path: "/app/organization/settings", element: <Navigate to="/organization/settings" replace /> },
-    { path: "/app/organization/settings/product-access", element: <Navigate to="/organization/settings/product-access" replace /> },
-    { path: "/app/organization/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
-    { path: "/app/admin", element: <Navigate to="/organization" replace /> },
-    { path: "/app/admin/organization", element: <Navigate to="/organization" replace /> },
-    { path: "/app/admin/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
-    { path: "/app/admin/members", element: <Navigate to="/organization/members" replace /> },
-    { path: "/app/admin/invitations", element: <Navigate to="/organization/invitations" replace /> },
-    { path: "/app/admin/settings", element: <Navigate to="/organization/settings" replace /> },
-    { path: "/app/admin/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
-    { path: "/app/admin/*", element: <Navigate to="/organization" replace /> },
-    { path: "/app/workspaces", element: <Navigate to="/organization/workspaces" replace /> },
-    { path: "/app/members", element: <Navigate to="/organization/members" replace /> },
-    { path: "/app/invitations", element: <Navigate to="/organization/invitations" replace /> },
-    { path: "/app/settings", element: <Navigate to="/organization/settings" replace /> },
-    { path: "/app/entitlements", element: <Navigate to="/organization/settings/product-access" replace /> },
-  ] : [];
+  if (currentHost === "platform") return [];
+  return [
+    ...legacyRedirects().map(({ from, to }) => ({ path: from, element: <PreserveRedirect to={to} /> })),
+    { path: "/app/*", element: <LegacyAppRedirect /> },
+    { path: "/admin/*", element: <PreserveRedirect to="/organization" /> },
+  ];
 }
 
 export const topLevelCompatibilityRoutes: RouteObject[] = getTopLevelCompatibilityRoutes();
 
 const protectedRoute: RouteObject = host === "platform"
   ? { path: "/", element: <Protected />, children: [...platformRoutes(), { path: "*", element: <ContextNotice title="Page not found">This Horizon Platform page does not exist.</ContextNotice> }] }
-  : host === "client"
-    ? { path: "/", element: <Protected />, children: [...clientRoutes(false), { path: "*", element: <ContextNotice title="Page not found">This Horizon Organization page does not exist.</ContextNotice> }] }
-    : { path: "/app", element: <Protected />, children: [{ index: true, element: <ApplicationHome /> }, ...platformRoutes("platform"), ...clientRoutes(true), { path: "*", element: <ContextNotice title="Page not found">This Horizon page does not exist.</ContextNotice> }] };
+  : { path: "/", element: <Protected />, children: [
+      ...clientRoutes(),
+      ...(host === "local" ? platformRoutes("platform") : []),
+      { path: "*", element: <ContextNotice title="Page not found">This Horizon page does not exist.</ContextNotice> },
+    ] };
 
 const router = createBrowserRouter([
   { errorElement: <RouteErrorPage />, children: [
-  { path: "/invitations/accept", element: <InvitationPage /> },
-  { path: "/login", element: <LoginPage /> }, { path: "/register", element: <RegisterPage /> },
-  ...topLevelCompatibilityRoutes,
-  protectedRoute,
-  { path: "*", element: <Navigate to={host === "local" ? "/app" : "/"} replace /> },
+    { path: "/invitations/accept", element: <InvitationPage /> },
+    { path: "/login", element: <LoginPage /> },
+    { path: "/register", element: <RegisterPage /> },
+    ...topLevelCompatibilityRoutes,
+    protectedRoute,
+    { path: "*", element: <Navigate to={host === "platform" ? "/" : "/overview"} replace /> },
   ] },
 ]);
 export function Router() { return <RouterProvider router={router} />; }

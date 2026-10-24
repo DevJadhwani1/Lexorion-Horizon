@@ -15,11 +15,6 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       </header>
       <main className="auth-main">{children}</main>
       <footer className="auth-footer">
-        <div className="auth-footer-links" aria-label="Legal and support links">
-          <a href="#terms">Terms</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#help">Help</a>
-        </div>
         <p>© {new Date().getFullYear()} Lexorion</p>
       </footer>
     </div>

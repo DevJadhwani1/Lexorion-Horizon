@@ -7,7 +7,7 @@ export function RouteErrorPage() {
       <p>Reload the page to try again, or return to the overview to continue.</p>
       <div className="toolbar">
         <button type="button" onClick={() => window.location.reload()}>Reload page</button>
-        <a href={appPath("/app")}>Return to overview</a>
+        <a href={appPath("/overview")}>Return to overview</a>
       </div>
     </section>
   </main>;

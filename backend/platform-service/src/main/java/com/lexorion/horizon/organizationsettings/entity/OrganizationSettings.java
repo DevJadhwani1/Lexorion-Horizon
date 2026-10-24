@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
@@ -106,6 +107,12 @@ public class OrganizationSettings extends Auditable {
       length = 7
    )
    private String secondaryColor;
+   @Column(name = "onboarding_access_decision", length = 16)
+   private String onboardingAccessDecision;
+   @Column(name = "onboarding_access_decided_at")
+   private Instant onboardingAccessDecidedAt;
+   @Column(name = "onboarding_finished_at")
+   private Instant onboardingFinishedAt;
 
    @Generated
    public UUID getId() {
@@ -167,6 +174,18 @@ public class OrganizationSettings extends Auditable {
       return this.secondaryColor;
    }
 
+   public String getOnboardingAccessDecision() {
+      return this.onboardingAccessDecision;
+   }
+
+   public Instant getOnboardingAccessDecidedAt() {
+      return this.onboardingAccessDecidedAt;
+   }
+
+   public Instant getOnboardingFinishedAt() {
+      return this.onboardingFinishedAt;
+   }
+
    @Generated
    public void setId(final UUID id) {
       this.id = id;
@@ -225,6 +244,18 @@ public class OrganizationSettings extends Auditable {
    @Generated
    public void setSecondaryColor(final String secondaryColor) {
       this.secondaryColor = secondaryColor;
+   }
+
+   public void setOnboardingAccessDecision(final String onboardingAccessDecision) {
+      this.onboardingAccessDecision = onboardingAccessDecision;
+   }
+
+   public void setOnboardingAccessDecidedAt(final Instant onboardingAccessDecidedAt) {
+      this.onboardingAccessDecidedAt = onboardingAccessDecidedAt;
+   }
+
+   public void setOnboardingFinishedAt(final Instant onboardingFinishedAt) {
+      this.onboardingFinishedAt = onboardingFinishedAt;
    }
 
    @Generated

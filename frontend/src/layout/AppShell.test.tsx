@@ -50,7 +50,7 @@ it("resets a screen's loaded state when navigating to another domain screen", ()
 it("preserves organization administration forms during a workspace refresh", () => {
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   function Screen() { const [value, setValue] = useState(""); return <input aria-label="Unsaved edit" value={value} onChange={e => setValue(e.target.value)} />; }
-  const tree = (path = "/app/organization/workspaces") => <ThemeProvider><MemoryRouter initialEntries={[path]}><Routes><Route element={<AppShell />}><Route path={path} element={<Screen />} /></Route></Routes></MemoryRouter></ThemeProvider>;
+  const tree = (path = "/organization/workspaces") => <ThemeProvider><MemoryRouter initialEntries={[path]}><Routes><Route element={<AppShell />}><Route path={path} element={<Screen />} /></Route></Routes></MemoryRouter></ThemeProvider>;
   const view = render(tree());
   fireEvent.change(screen.getByLabelText("Unsaved edit"), { target: { value: "workforce" } });
   workspaceState.workspace = null; view.rerender(tree());
@@ -65,10 +65,10 @@ it("renders OnboardingTopBar when organization has 0 workspaces (requires onboar
   workspaceState.workspaces = [];
   render(
     <ThemeProvider>
-      <MemoryRouter initialEntries={["/app"]}>
+      <MemoryRouter initialEntries={["/overview"]}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/app" element={<div>Onboarding Area</div>} />
+            <Route path="/overview" element={<div>Onboarding Area</div>} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -84,10 +84,10 @@ it("renders operational ContextSelector when workspaces exist (setup is complete
   workspaceState.workspaces = [{ key: "main", displayName: "Main", status: "ACTIVE", products: [] }];
   render(
     <ThemeProvider>
-      <MemoryRouter initialEntries={["/app"]}>
+      <MemoryRouter initialEntries={["/overview"]}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/app" element={<div>Dashboard Area</div>} />
+            <Route path="/overview" element={<div>Dashboard Area</div>} />
           </Route>
         </Routes>
       </MemoryRouter>

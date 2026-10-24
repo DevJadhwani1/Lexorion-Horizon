@@ -150,9 +150,9 @@ afterEach(() => {
 
 function renderAdminPage(section = "organization") {
   return render(
-    <MemoryRouter initialEntries={[`/app/admin/${section}`]}>
+    <MemoryRouter initialEntries={[`/admin/${section}`]}>
       <Routes>
-        <Route path="/app/admin/:section" element={<AdminPage />} />
+        <Route path="/admin/:section" element={<AdminPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -459,9 +459,12 @@ describe("AdminPage - Organization Settings Form", () => {
     expect(screen.queryByTestId("settings-dirty-indicator")).toBeNull();
     expect(screen.queryByText(/Unsaved changes/i)).toBeNull();
 
-    // Modify branding display name
-    const brandingInput = screen.getByLabelText(/Branding Display Name/i);
-    fireEvent.change(brandingInput, { target: { value: "Horizon Global" } });
+    // Modify default country
+    const countryTrigger = screen.getByRole("combobox", { name: /default country/i });
+    fireEvent.click(countryTrigger);
+    const searchInput = screen.getByPlaceholderText(/search country/i);
+    fireEvent.change(searchInput, { target: { value: "United States" } });
+    fireEvent.click(screen.getByText(/United States \(US\)/i));
 
     // Dirty indicators appear
     expect(screen.getByTestId("settings-dirty-indicator")).toBeTruthy();
@@ -487,8 +490,12 @@ describe("AdminPage - Organization Settings Form", () => {
       expect(screen.getByText("Regional & Localization Defaults")).toBeTruthy();
     });
 
-    const brandingInput = screen.getByLabelText(/Branding Display Name/i) as HTMLInputElement;
-    fireEvent.change(brandingInput, { target: { value: "Failed Save Attempt" } });
+    // Modify default country
+    const countryTrigger = screen.getByRole("combobox", { name: /default country/i });
+    fireEvent.click(countryTrigger);
+    const searchInput = screen.getByPlaceholderText(/search country/i);
+    fireEvent.change(searchInput, { target: { value: "United States" } });
+    fireEvent.click(screen.getByText(/United States \(US\)/i));
 
     const saveButton = screen.getByRole("button", { name: /save settings changes/i });
     fireEvent.click(saveButton);
@@ -496,9 +503,10 @@ describe("AdminPage - Organization Settings Form", () => {
     expect(await screen.findByText("Failed to update organization settings")).toBeTruthy();
 
     // User's edit is preserved despite failure
-    expect(brandingInput.value).toBe("Failed Save Attempt");
+    expect(screen.getByText(/United States \(US\)/i)).toBeTruthy();
     expect(screen.getByTestId("settings-dirty-indicator")).toBeTruthy();
   });
+
 });
 
 describe("AdminPage - Error handling and retry", () => {
@@ -521,10 +529,10 @@ describe("AdminPage - Error handling and retry", () => {
 
 function renderSettingsSection(section: "settings" | "product-access") {
   return render(
-    <MemoryRouter initialEntries={[section === "settings" ? "/app/organization/settings" : "/app/organization/settings/product-access"]}>
+    <MemoryRouter initialEntries={[section === "settings" ? "/organization/settings" : "/organization/settings/product-access"]}>
       <Routes>
-        <Route path="/app/organization/settings" element={<AdminPage key="settings" sectionKey="settings" />} />
-        <Route path="/app/organization/settings/product-access" element={<AdminPage key="product-access" sectionKey="product-access" />} />
+        <Route path="/organization/settings" element={<AdminPage key="settings" sectionKey="settings" />} />
+        <Route path="/organization/settings/product-access" element={<AdminPage key="product-access" sectionKey="product-access" />} />
       </Routes>
     </MemoryRouter>
   );
@@ -538,8 +546,8 @@ describe("AdminPage - Settings > Product access", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy();
 
     const sections = screen.getByRole("navigation", { name: "Settings sections" });
-    expect(sections.querySelector('a[href="/app/organization/settings"]')?.textContent).toBe("General");
-    expect(sections.querySelector('a[href="/app/organization/settings/product-access"]')?.classList.contains("active")).toBe(true);
+    expect(sections.querySelector('a[href="/organization/settings"]')?.textContent).toBe("General");
+    expect(sections.querySelector('a[href="/organization/settings/product-access"]')?.classList.contains("active")).toBe(true);
 
     expect(screen.getByRole("heading", { name: "Workforce" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Payroll" })).toBeTruthy();
@@ -661,9 +669,10 @@ describe("AdminPage - Settings > Product access", () => {
 
     expect(await screen.findByRole("button", { name: "Save Settings Changes" })).toBeTruthy();
     const sections = screen.getByRole("navigation", { name: "Settings sections" });
-    expect(sections.querySelector('a[href="/app/organization/settings"]')?.classList.contains("active")).toBe(true);
-    expect(sections.querySelector('a[href="/app/organization/settings/product-access"]')?.classList.contains("active")).toBe(false);
+    expect(sections.querySelector('a[href="/organization/settings"]')?.classList.contains("active")).toBe(true);
+    expect(sections.querySelector('a[href="/organization/settings/product-access"]')?.classList.contains("active")).toBe(false);
   });
+
 });
 
 describe("AdminPage - Members & Invitations custom dropdowns", () => {
@@ -744,21 +753,13 @@ describe("AdminPage - save synchronization", () => {
     expect(await screen.findByDisplayValue("Lexorion Renamed")).toBeTruthy();
   });
 
-  it("clears the branding display name and keeps it cleared after a fresh GET", async () => {
+  it("saves regional settings changes successfully", async () => {
     renderSettingsSection("settings");
-    const branding = await screen.findByDisplayValue("Lexorion Portal");
-    fireEvent.change(branding, { target: { value: "   " } });
+    await screen.findByText("Regional & Localization Defaults");
     fireEvent.click(screen.getByRole("button", { name: /save settings changes/i }));
 
     expect(await screen.findByText(/organization settings updated successfully/i)).toBeTruthy();
-    expect(updateSettings).toHaveBeenCalledWith(expect.objectContaining({ brandingDisplayName: "" }));
-    expect(testState.org.settings.brandingDisplayName).toBeNull();
-    expect((document.querySelector('input[name="brandingDisplayName"]') as HTMLInputElement).value).toBe("");
-
-    cleanup();
-    renderSettingsSection("settings");
-    await screen.findByText("Regional & Localization Defaults");
-    expect((document.querySelector('input[name="brandingDisplayName"]') as HTMLInputElement).value).toBe("");
+    expect(updateSettings).toHaveBeenCalled();
   });
 
   it("keeps the user's edits and shows the server error when a save fails", async () => {
@@ -778,6 +779,7 @@ describe("AdminPage - save synchronization", () => {
     renderAdminPage("organization");
     const nameInput = await screen.findByDisplayValue("Lexorion Corp");
     fireEvent.change(nameInput, { target: { value: "Saved Name" } });
+    expect(screen.getByDisplayValue("Saved Name")).toBeTruthy();
     testState.shouldFail = true;
     fireEvent.click(screen.getByRole("button", { name: /save profile changes/i }));
 
@@ -787,3 +789,4 @@ describe("AdminPage - save synchronization", () => {
     expect(mockRefreshOrganizations).toHaveBeenCalledTimes(1);
   });
 });
+

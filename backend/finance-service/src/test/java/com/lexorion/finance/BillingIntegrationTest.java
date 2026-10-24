@@ -87,9 +87,10 @@ class BillingIntegrationTest {
     @Test
     void invoiceLifecycleFromDraftToPaid() throws Exception {
         json(post("/api/finance/clients"), "a", """
-                {"displayName":"Meridian Logistics","email":"ap@meridian.test","currency":"inr","paymentTermsDays":15}""")
+                {"displayName":"Meridian Logistics","email":"ap@meridian.test","taxId":"27aaecm9908q2zp","currency":"inr","paymentTermsDays":15}""")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.clientKey").value("meridian-logistics"))
+                .andExpect(jsonPath("$.taxId").value("27AAECM9908Q2ZP"))
                 .andExpect(jsonPath("$.currency").value("INR"))
                 .andExpect(jsonPath("$.id").doesNotExist());
         json(post("/api/finance/invoices"), "a", """

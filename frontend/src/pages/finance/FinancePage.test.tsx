@@ -89,9 +89,9 @@ describe("Finance billing workspace", () => {
     vi.mocked(financeApi.getTemplates).mockResolvedValue([template]);
     vi.mocked(financeApi.createInvoice).mockResolvedValue(draft);
     vi.mocked(financeApi.getNextNumber).mockResolvedValue({ number: "OH/26-27/0001" });
-    render(<MemoryRouter initialEntries={["/app/finance/invoices/new?client=mastek"]}><CurrentLocation /><Routes>
-      <Route path="/app/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} />
-      <Route path="/app/finance/invoices/:reference" element={<p>opened</p>} />
+    render(<MemoryRouter initialEntries={["/finance/invoices/new?client=mastek"]}><CurrentLocation /><Routes>
+      <Route path="/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} />
+      <Route path="/finance/invoices/:reference" element={<p>opened</p>} />
     </Routes></MemoryRouter>);
     expect(await screen.findByRole("heading", { name: "New invoice for Mastek Limited" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Invoice date"), { target: { value: "2026-05-30" } });
@@ -116,7 +116,7 @@ describe("Finance billing workspace", () => {
     expect(updated.textContent).toContain("REC-001");
     expect(updated.textContent).toContain("Rupees Two Lakh Twelve Thousand Four Hundred Only");
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/app/finance/invoices/REF-00001"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/finance/invoices/REF-00001"));
     expect(financeApi.createInvoice).toHaveBeenCalledWith(expect.objectContaining({
       clientKey: "mastek", templateKey: "recruitment", issueDate: "2026-05-30", customFields: { candidate: "Saksham Jain", joiningDate: "2026-04-10" },
       lines: [{ itemCode: "REC-001", hsnSac: undefined, unit: undefined, description: "Recruitment fee", quantity: 1, unitPrice: 180000, taxRate: 18 }],
@@ -130,9 +130,9 @@ describe("Finance billing workspace", () => {
     vi.mocked(financeApi.createInvoice).mockResolvedValue(draft);
     vi.mocked(financeApi.issueInvoice).mockResolvedValue({ ...draft, status: "ISSUED", invoiceNumber: "OH/26-27/0001" });
     vi.mocked(financeApi.getNextNumber).mockResolvedValue({ number: "OH/26-27/0001" });
-    render(<MemoryRouter initialEntries={["/app/finance/invoices/new?client=mastek"]}><Routes>
-      <Route path="/app/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} />
-      <Route path="/app/finance/invoices/:reference" element={<p>opened</p>} />
+    render(<MemoryRouter initialEntries={["/finance/invoices/new?client=mastek"]}><Routes>
+      <Route path="/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} />
+      <Route path="/finance/invoices/:reference" element={<p>opened</p>} />
     </Routes></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "Continue to line items" }));
     fireEvent.change(screen.getByLabelText("Line 1 description"), { target: { value: "Fee" } });
@@ -157,8 +157,8 @@ describe("Finance billing workspace", () => {
     vi.mocked(financeApi.getNextNumber).mockResolvedValue({ number: "OH/26-27/0001" });
     vi.mocked(financeApi.issueInvoice).mockResolvedValue(issued);
     vi.mocked(financeApi.recordPayment).mockResolvedValue({ receiptNumber: "RCPT-00001", invoiceReference: "REF-00001", invoiceNumber: "OH/26-27/0001", clientKey: "mastek", clientName: "Mastek Limited", amount: 12400, currency: "INR", paymentDate: "2026-06-01", method: "UPI", reference: null, notes: null, createdAt: "" });
-    render(<MemoryRouter initialEntries={["/app/finance/invoices/REF-00001"]}><Routes>
-      <Route path="/app/finance/invoices/:reference" element={<FinancePage sectionKey="invoice" />} />
+    render(<MemoryRouter initialEntries={["/finance/invoices/REF-00001"]}><Routes>
+      <Route path="/finance/invoices/:reference" element={<FinancePage sectionKey="invoice" />} />
     </Routes></MemoryRouter>);
     await screen.findByText(/It will be numbered/);
     fireEvent.click(screen.getByRole("button", { name: "Issue invoice" }));
@@ -168,6 +168,7 @@ describe("Finance billing workspace", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Issue invoice" }));
     await waitFor(() => expect(financeApi.issueInvoice).toHaveBeenCalledWith("REF-00001"));
     fireEvent.click(await screen.findByRole("button", { name: "Record payment" }));
+    expect(screen.getByText(/Horizon does not collect the money/)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Amount (INR)"), { target: { value: "12400" } });
     fireEvent.change(screen.getByLabelText("Payment date"), { target: { value: "2026-06-01" } });
     chooseOption("Method", "Upi");
@@ -184,17 +185,18 @@ describe("Finance billing workspace", () => {
     vi.mocked(financeApi.getInvoices).mockImplementation(async (filter = {}) => ({ content: filter.overdue ? [overdue] : [], page: 0, size: 5, totalElements: filter.overdue ? 1 : 0, totalPages: 1, sort: "createdAt", direction: "desc" }));
     render(<MemoryRouter><FinancePage sectionKey="overview" /></MemoryRouter>);
     expect(await screen.findByText("Needs attention")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "INV-00001" }).getAttribute("href")).toBe("/app/finance/invoices/REF-00001");
+    expect(screen.getByRole("link", { name: "INV-00001" }).getAttribute("href")).toBe("/finance/invoices/REF-00001");
     expect(screen.getByRole("link", { name: "Design your own invoice template" })).toBeTruthy();
   });
+
 });
 
 describe("Invoice templates", () => {
   it("starts from an industry preset, previews edits live and saves the template", async () => {
     vi.mocked(financeApi.createTemplate).mockResolvedValue({ ...template, templateKey: "recruitment-staffing-invoice" });
-    render(<MemoryRouter initialEntries={["/app/finance/templates/new"]}><CurrentLocation /><Routes>
-      <Route path="/app/finance/templates/new" element={<TemplatesPage section="new" />} />
-      <Route path="/app/finance/templates/:templateKey" element={<p>saved</p>} />
+    render(<MemoryRouter initialEntries={["/finance/templates/new"]}><CurrentLocation /><Routes>
+      <Route path="/finance/templates/new" element={<TemplatesPage section="new" />} />
+      <Route path="/finance/templates/:templateKey" element={<p>saved</p>} />
     </Routes></MemoryRouter>);
     fireEvent.click(screen.getByRole("button", { name: /Recruitment & staffing/ }));
     const preview = screen.getByRole("region", { name: "Preview" });
@@ -217,7 +219,7 @@ describe("Invoice templates", () => {
     expect(body.config.tax.mode).toBe("GST");
     expect(body.config.customFields.map((field) => field.key)).toEqual(["candidate", "position", "joiningDate", "offerCtc"]);
     expect(body.config.seller.identifiers).toEqual([]);
-    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/app/finance/templates/recruitment-staffing-invoice"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/finance/templates/recruitment-staffing-invoice"));
   });
 });
 
@@ -227,8 +229,8 @@ describe("Clients", () => {
     const created = { ...client, clientKey: "infosys-limited", displayName: "Infosys Limited", region: "Karnataka", taxId: "29AAACI4798L1ZQ", paymentTermsDays: 45 };
     vi.mocked(financeApi.createClient).mockResolvedValue(created);
     vi.mocked(financeApi.getClient).mockResolvedValue(created);
-    render(<MemoryRouter initialEntries={["/app/finance/clients/new"]}><Routes>
-      <Route path="/app/finance/clients/new" element={<ClientPages section="new" />} />
+    render(<MemoryRouter initialEntries={["/finance/clients/new"]}><Routes>
+      <Route path="/finance/clients/new" element={<ClientPages section="new" />} />
     </Routes></MemoryRouter>);
     fireEvent.change(await screen.findByLabelText("Client name"), { target: { value: "Infosys Limited" } });
     expect((screen.getByLabelText("Client code") as HTMLInputElement).value).toBe("infosys-limited");
@@ -241,13 +243,13 @@ describe("Clients", () => {
       clientKey: "infosys-limited", displayName: "Infosys Limited", taxId: "29AAACI4798L1ZQ", region: "Karnataka", country: "IN", paymentTermsDays: 45, currency: "INR",
     })));
     expect(await screen.findByRole("heading", { name: "Infosys Limited is ready to bill" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Create an invoice for Infosys Limited" }).getAttribute("href")).toBe("/app/finance/invoices/new?client=infosys-limited");
+    expect(screen.getByRole("link", { name: "Create an invoice for Infosys Limited" }).getAttribute("href")).toBe("/finance/invoices/new?client=infosys-limited");
   });
 
   it("flags an invalid GSTIN and a code that is already taken", async () => {
     vi.mocked(financeApi.getClients).mockResolvedValue([client]);
-    render(<MemoryRouter initialEntries={["/app/finance/clients/new"]}><Routes>
-      <Route path="/app/finance/clients/new" element={<ClientPages section="new" />} />
+    render(<MemoryRouter initialEntries={["/finance/clients/new"]}><Routes>
+      <Route path="/finance/clients/new" element={<ClientPages section="new" />} />
     </Routes></MemoryRouter>);
     fireEvent.change(await screen.findByLabelText("Client name"), { target: { value: "Mastek" } });
     await waitFor(() => expect((screen.getByLabelText("Client code") as HTMLInputElement).value).toBe("mastek-2"));
@@ -261,21 +263,21 @@ describe("Clients", () => {
 
   it("lists clients with search and opens a profile with their invoices and an archive confirmation", async () => {
     vi.mocked(financeApi.getClients).mockResolvedValue([client, { ...client, clientKey: "acme", displayName: "Acme Inc", country: "US", region: null, taxId: null, currency: "USD" }]);
-    const view = render(<MemoryRouter initialEntries={["/app/finance/clients"]}><Routes>
-      <Route path="/app/finance/clients" element={<ClientPages section="list" />} />
+    const view = render(<MemoryRouter initialEntries={["/finance/clients"]}><Routes>
+      <Route path="/finance/clients" element={<ClientPages section="list" />} />
     </Routes></MemoryRouter>);
     expect(await screen.findByRole("link", { name: "Acme Inc" })).toBeTruthy();
     expect(screen.getByText("Showing 1–2 of 2")).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Search clients"), { target: { value: "27AAACM" } });
     await waitFor(() => expect(screen.queryByRole("link", { name: "Acme Inc" })).toBeNull());
-    expect(screen.getByRole("link", { name: "Mastek Limited" }).getAttribute("href")).toBe("/app/finance/clients/mastek");
+    expect(screen.getByRole("link", { name: "Mastek Limited" }).getAttribute("href")).toBe("/finance/clients/mastek");
     view.unmount();
 
     vi.mocked(financeApi.getClient).mockResolvedValue({ ...client, outstandingAmount: 8400, openInvoices: 1 });
     vi.mocked(financeApi.getInvoices).mockResolvedValue({ content: [{ ...draft, invoiceNumber: "INV-00001", status: "ISSUED", overdue: true }], page: 0, size: 10, totalElements: 1, totalPages: 1, sort: "createdAt", direction: "desc" });
     vi.mocked(financeApi.updateClient).mockResolvedValue({ ...client, status: "ARCHIVED" });
-    render(<MemoryRouter initialEntries={["/app/finance/clients/mastek"]}><Routes>
-      <Route path="/app/finance/clients/:clientKey" element={<ClientPages section="profile" />} />
+    render(<MemoryRouter initialEntries={["/finance/clients/mastek"]}><Routes>
+      <Route path="/finance/clients/:clientKey" element={<ClientPages section="profile" />} />
     </Routes></MemoryRouter>);
     expect(await screen.findByRole("link", { name: "INV-00001" })).toBeTruthy();
     expect(screen.getByText("₹8,400.00")).toBeTruthy();
@@ -294,21 +296,21 @@ describe("Books, items and templates", () => {
     months[0] = month("2027-04", { invoicesIssued: 1, taxable: 5000, cgst: 450, sgst: 450, invoiced: 5900, closingReceivables: 130100 });
     vi.mocked(financeApi.getYearSummary).mockResolvedValue({ fiscalYear: "2027-28", start: "2027-04-01", end: "2028-03-31", booksLockedUntil: "2027-03-31",
       currencies: [{ currency: "INR", openingReceivables: 124200, months, total: month("total", { invoicesIssued: 1, taxable: 5000, cgst: 450, sgst: 450, invoiced: 5900 }), closingReceivables: 130100 }] });
-    render(<MemoryRouter initialEntries={["/app/finance/books"]}><Routes><Route path="/app/finance/books" element={<BooksPage section="summary" />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/finance/books"]}><Routes><Route path="/finance/books" element={<BooksPage section="summary" />} /></Routes></MemoryRouter>);
     expect(await screen.findByText("FY 2027-28 month by month")).toBeTruthy();
     expect(financeApi.getYearSummary).toHaveBeenCalledWith("2027-28");
     expect(screen.getByText(/Books are locked up to/)).toBeTruthy();
     expect(screen.getAllByText("₹1,24,200.00").length).toBeGreaterThan(0);
-    expect(screen.getByRole("link", { name: "Apr 2027" }).getAttribute("href")).toBe("/app/finance/books/sales-register?fy=2027-28&month=2027-04");
+    expect(screen.getByRole("link", { name: "Apr 2027" }).getAttribute("href")).toBe("/finance/books/sales-register?fy=2027-28&month=2027-04");
     expect(screen.getByText("Total FY 2027-28")).toBeTruthy();
   });
 
   it("suggests the next code for a service line when adding an item", async () => {
     vi.mocked(financeApi.getNextItemCode).mockResolvedValue({ code: "REC-004" });
     vi.mocked(financeApi.createItem).mockResolvedValue({ itemCode: "REC-004", name: "Recruitment fee", description: null, kind: "SERVICE", category: "Recruitment", hsnSac: "998512", unit: "Placement", unitPrice: 180000, taxRate: 18, status: "ACTIVE", createdAt: "", updatedAt: "" });
-    render(<MemoryRouter initialEntries={["/app/finance/items/new"]}><CurrentLocation /><Routes>
-      <Route path="/app/finance/items/new" element={<ItemPages section="new" />} />
-      <Route path="/app/finance/items/:itemCode" element={<p>saved</p>} />
+    render(<MemoryRouter initialEntries={["/finance/items/new"]}><CurrentLocation /><Routes>
+      <Route path="/finance/items/new" element={<ItemPages section="new" />} />
+      <Route path="/finance/items/:itemCode" element={<p>saved</p>} />
     </Routes></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Recruitment fee" } });
     fireEvent.change(screen.getByLabelText(/Service line/), { target: { value: "Recruitment" } });
@@ -319,7 +321,7 @@ describe("Books, items and templates", () => {
     fireEvent.change(screen.getByLabelText(/SAC code/), { target: { value: "998512" } });
     fireEvent.click(screen.getByRole("button", { name: "Save item" }));
     await waitFor(() => expect(financeApi.createItem).toHaveBeenCalledWith(expect.objectContaining({ itemCode: "REC-004", name: "Recruitment fee", category: "Recruitment", hsnSac: "998512", kind: "SERVICE" })));
-    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/app/finance/items/REC-004"));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("/finance/items/REC-004"));
   });
 
   it("fills an invoice line from the items registry", async () => {
@@ -327,7 +329,7 @@ describe("Books, items and templates", () => {
     vi.mocked(financeApi.getTemplates).mockResolvedValue([{ ...template, config: { ...recruitment, columns: { ...recruitment.columns, showHsnSac: true } } }]);
     vi.mocked(financeApi.getItems).mockResolvedValue([{ itemCode: "REC-001", name: "Recruitment fee", description: "Recruitment fee — permanent placement", kind: "SERVICE", category: "Recruitment", hsnSac: "998512", unit: "Placement", unitPrice: 180000, taxRate: 18, status: "ACTIVE", createdAt: "", updatedAt: "" }]);
     vi.mocked(financeApi.getNextNumber).mockResolvedValue({ number: "OH/26-27/0001" });
-    render(<MemoryRouter initialEntries={["/app/finance/invoices/new?client=mastek"]}><Routes><Route path="/app/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/finance/invoices/new?client=mastek"]}><Routes><Route path="/finance/invoices/new" element={<InvoiceWizardPage mode="new" />} /></Routes></MemoryRouter>);
     fireEvent.click(await screen.findByRole("button", { name: "Continue to line items" }));
     chooseOption("Line 1 item or service", /REC-001 · Recruitment fee/);
     expect((screen.getByLabelText("Line 1 description") as HTMLInputElement).value).toBe("Recruitment fee — permanent placement");
@@ -340,7 +342,7 @@ describe("Books, items and templates", () => {
   });
 
   it("switches the industry details section off for a plain bill and back on with its fields", async () => {
-    render(<MemoryRouter initialEntries={["/app/finance/templates/new?preset=recruitment"]}><Routes><Route path="/app/finance/templates/new" element={<TemplatesPage section="new" />} /></Routes></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/finance/templates/new?preset=recruitment"]}><Routes><Route path="/finance/templates/new" element={<TemplatesPage section="new" />} /></Routes></MemoryRouter>);
     const preview = screen.getByRole("region", { name: "Preview" });
     expect(within(preview).queryByLabelText("Recruitment engagement")).toBeTruthy();
     fireEvent.click(screen.getByLabelText("Show an industry details section on this bill"));

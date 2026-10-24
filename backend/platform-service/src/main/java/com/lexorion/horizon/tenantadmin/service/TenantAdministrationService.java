@@ -1,6 +1,11 @@
 package com.lexorion.horizon.tenantadmin.service;
 
+import com.lexorion.core.audit.AuditRecorder;
 import com.lexorion.core.exception.ResourceNotFoundException;
+import com.lexorion.horizon.entitlement.exception.EntitlementDeniedException;
+import com.lexorion.horizon.entitlement.service.EntitlementService;
+import com.lexorion.horizon.invitation.entity.InvitationStatus;
+import com.lexorion.horizon.invitation.repository.OrganizationInvitationRepository;
 import com.lexorion.horizon.membership.entity.MembershipStatus;
 import com.lexorion.horizon.membership.entity.OrganizationMembership;
 import com.lexorion.horizon.membership.entity.OrganizationRole;
@@ -17,10 +22,15 @@ import com.lexorion.horizon.tenantaccess.context.TenantAccessContextHolder;
 import com.lexorion.horizon.tenantadmin.dto.CurrentOrganizationResponse;
 import com.lexorion.horizon.tenantadmin.dto.TenantMemberResponse;
 import com.lexorion.horizon.tenantadmin.exception.TenantAdministrationConflictException;
+import com.lexorion.horizon.workspace.entity.OrganizationWorkspace;
+import com.lexorion.horizon.workspace.entity.WorkspaceStatus;
+import com.lexorion.horizon.workspace.repository.OrganizationWorkspaceRepository;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Currency;
 import java.util.EnumSet;
@@ -41,14 +51,22 @@ public class TenantAdministrationService {
    private final OrganizationRepository organizationRepository;
    private final OrganizationMembershipRepository membershipRepository;
    private final OrganizationSettingsRepository settingsRepository;
+   private final OrganizationWorkspaceRepository workspaceRepository;
+   private final OrganizationInvitationRepository invitationRepository;
+   private final EntitlementService entitlements;
+   private final AuditRecorder audit;
    private static final Set<String> ISO_COUNTRIES = new HashSet<>(Set.of(Locale.getISOCountries()));
    private static final Set<String> AVAILABLE_LOCALES = Arrays.stream(Locale.getAvailableLocales()).map(Locale::toLanguageTag).collect(Collectors.toUnmodifiableSet());
 
-   public TenantAdministrationService(TenantAccessContextHolder tenantContextHolder, OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, OrganizationSettingsRepository settingsRepository) {
+   public TenantAdministrationService(TenantAccessContextHolder tenantContextHolder, OrganizationRepository organizationRepository, OrganizationMembershipRepository membershipRepository, OrganizationSettingsRepository settingsRepository, OrganizationWorkspaceRepository workspaceRepository, OrganizationInvitationRepository invitationRepository, EntitlementService entitlements, AuditRecorder audit) {
       this.tenantContextHolder = tenantContextHolder;
       this.organizationRepository = organizationRepository;
       this.membershipRepository = membershipRepository;
       this.settingsRepository = settingsRepository;
+      this.workspaceRepository = workspaceRepository;
+      this.invitationRepository = invitationRepository;
+      this.entitlements = entitlements;
+      this.audit = audit;
    }
 
    @Transactional(
@@ -179,6 +197,94 @@ public class TenantAdministrationService {
 
       this.settingsRepository.saveAndFlush(settings);
       return CurrentOrganizationResponse.from(organization, settings);
+   }
+
+   /** Records that this organization will continue with its current administrator and no pending invite. */
+   public CurrentOrganizationResponse confirmSoloAccess() {
+      TenantAccessContext context = this.requireTenantAdministrator();
+      Organization organization = this.lockMutableOrganization(context.organizationId());
+      OrganizationSettings settings = this.settings(organization);
+      settings.setOnboardingAccessDecision("SOLO");
+      settings.setOnboardingAccessDecidedAt(Instant.now());
+      this.settingsRepository.saveAndFlush(settings);
+      this.audit.record(context.userId(), organization.getId(), null, "onboarding.access.solo", "ORGANIZATION", organization.getId().toString(), "SUCCESS");
+      return CurrentOrganizationResponse.from(organization, settings);
+   }
+
+   /**
+    * Finishes onboarding only when the organization profile, entitled workspace products, and access
+    * decision are all satisfied. Selecting a workspace is not one of those prerequisites.
+    */
+   public CurrentOrganizationResponse finishOnboarding() {
+      TenantAccessContext context = this.requireTenantAdministrator();
+      Organization organization = this.lockMutableOrganization(context.organizationId());
+      List<String> missing = this.onboardingGaps(organization);
+      if (!missing.isEmpty()) {
+         throw new TenantAdministrationConflictException(String.join(" ", missing));
+      }
+      OrganizationSettings settings = this.settings(organization);
+      settings.setOnboardingFinishedAt(Instant.now());
+      this.settingsRepository.saveAndFlush(settings);
+      this.audit.record(context.userId(), organization.getId(), null, "onboarding.finish", "ORGANIZATION", organization.getId().toString(), "SUCCESS");
+      return CurrentOrganizationResponse.from(organization, settings);
+   }
+
+   private List<String> onboardingGaps(Organization organization) {
+      List<String> missing = new ArrayList<>();
+      if (!profileReady(organization)) {
+         missing.add("Add a phone number, legal name, industry, website, or street address. Country and currency defaults do not complete organization setup.");
+      }
+      Set<String> requiredProducts = this.requiredProducts(organization.getId(), missing);
+      List<OrganizationWorkspace> active = this.workspaceRepository.findTenantWorkspaces(organization.getId()).stream().filter((workspace) -> workspace.getStatus() == WorkspaceStatus.ACTIVE).toList();
+      if (active.isEmpty()) {
+         missing.add("Create an active workspace before finishing setup.");
+      } else if (!requiredProducts.isEmpty() && active.stream().noneMatch((workspace) -> covers(workspace, requiredProducts))) {
+         missing.add("Attach " + String.join(", ", requiredProducts) + " to an active workspace. Those products are included in the organization plan.");
+      } else if (requiredProducts.isEmpty() && missing.stream().noneMatch((item) -> item.startsWith("Assign an active")) && active.stream().allMatch((workspace) -> workspace.availableProducts().isEmpty())) {
+         missing.add("Attach at least one product to an active workspace.");
+      }
+      if (!this.accessReady(organization)) {
+         missing.add("Invite a member, keep a pending invitation, or continue as the only administrator. Accepted, revoked, and expired invitations do not count.");
+      }
+      return missing;
+   }
+
+   private Set<String> requiredProducts(UUID organizationId, List<String> missing) {
+      try {
+         return this.entitlements.enabledProductKeysForOrganization(organizationId);
+      } catch (EntitlementDeniedException ex) {
+         missing.add("Assign an active Starter, Business, or Enterprise plan before finishing setup.");
+         return Set.of();
+      }
+   }
+
+   private boolean accessReady(Organization organization) {
+      long activeMembers = this.membershipRepository.findByOrganizationIdOrderByCreatedAtAsc(organization.getId()).stream().filter((member) -> member.getStatus() == MembershipStatus.ACTIVE).count();
+      if (activeMembers > 1) {
+         return true;
+      }
+      boolean pending = this.invitationRepository.findTenantInvitations(organization.getId()).stream().anyMatch((invitation) -> invitation.getStatus() == InvitationStatus.PENDING && invitation.getExpiresAt().isAfter(Instant.now()));
+      if (pending) {
+         return true;
+      }
+      return this.settingsRepository.findByOrganizationId(organization.getId()).map((settings) -> "SOLO".equals(settings.getOnboardingAccessDecision())).orElse(false);
+   }
+
+   private static boolean covers(OrganizationWorkspace workspace, Set<String> requiredProducts) {
+      Set<String> attached = workspace.availableProducts().stream().map((product) -> product.getKey()).collect(Collectors.toSet());
+      return attached.containsAll(requiredProducts);
+   }
+
+   static boolean profileReady(Organization organization) {
+      return text(organization.getName()) && text(organization.getPrimaryEmail()) && (text(organization.getPrimaryPhone()) || text(organization.getLegalName()) || text(organization.getIndustry()) || text(organization.getWebsite()) || text(organization.getAddressLine1()));
+   }
+
+   private static boolean text(String value) {
+      return value != null && !value.trim().isEmpty();
+   }
+
+   private OrganizationSettings settings(Organization organization) {
+      return (OrganizationSettings)this.settingsRepository.findByOrganizationId(organization.getId()).orElseGet(() -> newSettings(organization));
    }
 
    @Transactional(

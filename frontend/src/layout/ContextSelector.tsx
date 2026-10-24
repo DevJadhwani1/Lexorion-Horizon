@@ -49,13 +49,13 @@ export function ContextSelector() {
   const handleOrgChange = (slug: string) => {
     auth.selectOrganization(slug);
     setOrgOpen(false);
-    navigate(appPath("/app"));
+    navigate(appPath("/overview"));
   };
 
   const handleWsChange = (key: string) => {
     workspace.selectWorkspace(key);
     setWsOpen(false);
-    navigate(appPath("/app"));
+    navigate(appPath("/overview"));
   };
 
   const filteredOrgs = auth.organizations.filter(
@@ -74,7 +74,7 @@ export function ContextSelector() {
         value={auth.organization?.slug ?? ""}
         onChange={(event: ChangeEvent<HTMLSelectElement>) => {
           auth.selectOrganization(event.target.value);
-          navigate(appPath("/app"));
+          navigate(appPath("/overview"));
         }}
       >
         <option value="">Choose organization</option>
@@ -93,7 +93,7 @@ export function ContextSelector() {
         value={workspace.workspace?.key ?? ""}
         onChange={(event: ChangeEvent<HTMLSelectElement>) => {
           workspace.selectWorkspace(event.target.value);
-          navigate(appPath("/app"));
+          navigate(appPath("/overview"));
         }}
       >
         <option value="">Choose workspace</option>
@@ -236,15 +236,6 @@ export function ContextSelector() {
                 : workspace.workspace?.displayName ?? "Choose workspace"}
             </span>
           </div>
-          {workspace.workspace?.products && workspace.workspace.products.length > 0 && (
-            <div className="context-product-chips">
-              {workspace.workspace.products.map((p) => (
-                <span key={p.key} className="product-chip">
-                  {p.displayName}
-                </span>
-              ))}
-            </div>
-          )}
           {wsSwitchable && <span className="context-chevron">
             <Icon name="chevronDown" size={12} />
           </span>}
@@ -290,11 +281,6 @@ export function ContextSelector() {
                         <strong>{item.displayName}</strong>
                         <div className="item-products-row">
                           <code>{item.key}</code>
-                          {item.products.map((p) => (
-                            <span key={p.key} className="item-product-tag">
-                              {p.displayName}
-                            </span>
-                          ))}
                         </div>
                       </div>
                       {isSelected && (

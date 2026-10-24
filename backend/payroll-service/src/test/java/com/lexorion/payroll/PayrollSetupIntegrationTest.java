@@ -75,6 +75,20 @@ class PayrollSetupIntegrationTest {
                 .andExpect(jsonPath("$.readiness.readyForPayroll").value(true))
                 .andExpect(jsonPath("$.readiness.setupComplete").value(false))
                 .andExpect(jsonPath("$.readiness.warnings", hasItem("Payment method: not started")));
+        request(get("/api/payroll/readiness"), "a", "alpha", "owner")
+                .andExpect(jsonPath("$.statutoryDecisionsOpen").value(1))
+                .andExpect(jsonPath("$.detailsAwaitingVerification").value(0));
+    }
+
+    @Test void cashNeedsNoBankVerificationAndAnUnresolvedSchemeIsNotTreatedAsExempt() throws Exception {
+        employee("a", "alpha", "EMP-1", "INR");
+        save("a", "alpha", "EMP-1", "{\"paymentMethod\":\"CASH\",\"pfApplicability\":\"NOT_APPLICABLE\",\"esiApplicability\":\"UNDECIDED\",\"ptApplicability\":\"APPLICABLE\"}")
+                .andExpect(jsonPath("$.sections[?(@.key=='payment')].status").value("COMPLETE"))
+                .andExpect(jsonPath("$.sections[?(@.key=='payment')].note", hasItem(containsString("Cheque and cash"))))
+                .andExpect(jsonPath("$.sections[?(@.key=='epf')].status").value("NOT_APPLICABLE"))
+                .andExpect(jsonPath("$.sections[?(@.key=='esi')].status").value("NOT_STARTED"))
+                .andExpect(jsonPath("$.sections[?(@.key=='pt')].status").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$.readiness.readyForPayroll").value(false));
     }
 
     @Test void sensitiveIdentifiersAreValidatedStoredNormalizedAndOnlyReturnedMasked() throws Exception {
@@ -92,6 +106,8 @@ class PayrollSetupIntegrationTest {
                 .andExpect(jsonPath("$.sections[?(@.key=='tax')].status").value("PENDING_VERIFICATION"))
                 .andExpect(jsonPath("$.sections[?(@.key=='esi')].status").value("NOT_APPLICABLE"))
                 .andExpect(jsonPath("$.sections[?(@.key=='pt')].status").value("COMPLETE"))
+                .andExpect(jsonPath("$.sections[?(@.key=='pt')].note", hasItem(containsString("does not mean the amount was calculated"))))
+                .andExpect(jsonPath("$.sections[?(@.key=='esi')].note", hasItem(containsString("not applicable"))))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         assertThat(response).doesNotContain(PAN, ACCOUNT, UAN, "\"pan\"", "bankAccountNumber\"");
         StatutoryProfile stored = statutory.findAll().getFirst();
@@ -119,7 +135,8 @@ class PayrollSetupIntegrationTest {
         // A blank value clears an identifier, and with it the verification.
         save("a", "alpha", "EMP-1", "{\"uan\":\"\"}")
                 .andExpect(jsonPath("$.statutoryProfile.uanMasked").value(nullValue()))
-                .andExpect(jsonPath("$.sections[?(@.key=='epf')].status").value("IN_PROGRESS"));
+                .andExpect(jsonPath("$.sections[?(@.key=='epf')].status").value("COMPLETE"))
+                .andExpect(jsonPath("$.sections[?(@.key=='epf')].note", hasItem(containsString("optional"))));
     }
 
     @Test void duplicateIdentifiersAreRejectedWithinAWorkspaceOnlyAndAccessIsIsolated() throws Exception {

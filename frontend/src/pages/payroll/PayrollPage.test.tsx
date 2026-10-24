@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chooseOption } from "../../test/dropdown";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { PayrollPage } from "./PayrollPage";
 import * as payrollApi from "../../features/payroll/payrollApi";
@@ -54,7 +54,8 @@ it("retains the selected pay run through processing and finalization reloads", a
   fireEvent.click(screen.getByRole("button", { name: "Finalize" }));
   expect((await screen.findByRole("dialog", { name: "Finalize RUN-1?" })).textContent).toContain("This cannot be undone.");
   fireEvent.click(screen.getByRole("button", { name: "Finalize pay run" }));
-  await screen.findByText(/Finalized payroll is immutable/);
+  const finalized = await screen.findByText(/Finalized payroll is immutable/);
+  expect(finalized.textContent).toContain("No payment has been sent");
   expect(payrollApi.finalizePayRun).toHaveBeenCalledWith("RUN-1");
   vi.restoreAllMocks();
 });
@@ -68,6 +69,9 @@ it("shows the failed-run reason and recovers to draft before retry", async () =>
   fireEvent.click(await screen.findByRole("button", { name: "Open" }));
   await screen.findByText("No effective compensation profile");
   fireEvent.click(screen.getByRole("button", { name: "Recover to draft" }));
+  const dialog = await screen.findByRole("dialog", { name: "Recover this run to Draft?" });
+  expect(payrollApi.recoverPayRun).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Recover to draft" }));
   await waitFor(() => expect(screen.getByRole("button", { name: "Process" }).hasAttribute("disabled")).toBe(false));
   expect(payrollApi.recoverPayRun).toHaveBeenCalledWith("FAILED-1");
 });
@@ -96,7 +100,7 @@ it("links pay-run compensation setup back to the selected run", async () => {
   const link = await screen.findByRole("link", { name: "Review compensation" });
   const params = new URL(link.getAttribute("href")!, "http://localhost").searchParams;
   expect(params.get("employee")).toBe("EMP-001");
-  expect(params.get("returnTo")).toBe("/app/payroll/pay-runs?run=RETURN-1");
+  expect(params.get("returnTo")).toBe("/payroll/runs?run=RETURN-1");
 });
 
 it("creates a monthly pay run from the next month with derived dates and the employees' currency", async () => {

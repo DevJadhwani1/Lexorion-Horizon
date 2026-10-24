@@ -34,7 +34,6 @@ export function OnboardingPage() {
     organization,
     workspaces,
     members,
-    invitations,
     entitlements,
     step1Complete,
     step2Complete,
@@ -53,19 +52,26 @@ export function OnboardingPage() {
     invite,
     confirmAccessSolo,
     finishOnboarding,
+    pendingInvitationCount,
+    steps,
   } = onboardingState;
 
   const [activeModal, setActiveModal] = useState<
     "none" | "edit-details" | "create-ws" | "invite-member" | "help" | "docs"
   >("none");
+  const [finishError, setFinishError] = useState("");
 
   const orgName = organization?.name || auth.organization?.organizationName || "Your organization";
   const firstWorkspace = workspaces.find((w) => w.status === "ACTIVE") || workspaces[0];
 
   const handleFinishAndEnter = () => {
-    finishOnboarding();
-    void workspaceContext.reload();
-    navigate(appPath("/app"));
+    setFinishError("");
+    void finishOnboarding()
+      .then(() => {
+        void workspaceContext.reload();
+        navigate(appPath("/overview"));
+      })
+      .catch((reason) => setFinishError(reason instanceof Error ? reason.message : "Setup could not be finished."));
   };
 
   if (loading) {
@@ -358,10 +364,7 @@ export function OnboardingPage() {
               ) : (
                 <div className="step-callout info">
                   <Icon name="info" size={14} />
-                  <span>
-                    Please complete your organization profile, including contact details and legal
-                    name, to unlock workspace setup.
-                  </span>
+                  <span>{steps.details.explanation}</span>
                 </div>
               )}
             </div>
@@ -438,18 +441,14 @@ export function OnboardingPage() {
                   <div className="data-preview-item">
                     <span>Enabled products</span>
                     <strong>
-                      {firstWorkspace.products.map((p) => p.displayName).join(", ") ||
-                        "Workforce, Payroll"}
+                      {firstWorkspace.products.length ? firstWorkspace.products.map((p) => p.displayName).join(", ") : "No products attached"}
                     </strong>
                   </div>
                 </div>
               ) : (
                 <div className="step-callout ready">
                   <Icon name="panels" size={14} />
-                  <span>
-                    Your organization plan allows workspace provisioning. Click below to create
-                    your primary HR workspace.
-                  </span>
+                  <span>{steps.workspace.explanation}</span>
                 </div>
               )}
             </div>
@@ -515,13 +514,14 @@ export function OnboardingPage() {
                 </div>
               ) : (
                 <div className="step-data-preview">
+                  <p className="snapshot-note">{steps.access.explanation}</p>
                   <div className="data-preview-item">
                     <span>Active members</span>
                     <strong>{members.length} member{members.length === 1 ? "" : "s"}</strong>
                   </div>
                   <div className="data-preview-item">
                     <span>Pending invitations</span>
-                    <strong>{invitations.length} invitation{invitations.length === 1 ? "" : "s"}</strong>
+                    <strong>{pendingInvitationCount} invitation{pendingInvitationCount === 1 ? "" : "s"}</strong>
                   </div>
                   <div className="data-preview-item">
                     <span>Primary administrator</span>
@@ -540,11 +540,11 @@ export function OnboardingPage() {
                 >
                   Invite members
                 </Button>
-                {!step3Complete && !step3Locked && members.length <= 1 && invitations.length === 0 && (
+                {!step3Complete && !step3Locked && members.length <= 1 && pendingInvitationCount === 0 && (
                   <button
                     type="button"
                     className="button secondary sm confirm-access-btn"
-                    onClick={confirmAccessSolo}
+                    onClick={() => { setFinishError(""); void confirmAccessSolo().catch((reason) => setFinishError(reason instanceof Error ? reason.message : "The solo administrator decision could not be saved.")); }}
                   >
                     Continue as solo admin
                   </button>
@@ -613,8 +613,9 @@ export function OnboardingPage() {
                   <div className="data-preview-item">
                     <span>Activated products</span>
                     <strong>
-                      {firstWorkspace?.products.map((p) => p.displayName).join(", ") ||
-                        "Workforce, Payroll"}
+                      {firstWorkspace?.products.length
+                        ? firstWorkspace.products.map((p) => p.displayName).join(", ")
+                        : "No products attached"}
                     </strong>
                   </div>
                 </div>
@@ -622,6 +623,8 @@ export function OnboardingPage() {
             </div>
 
             <div className="step-card-footer">
+              {!step4Complete && <p className="snapshot-note">{steps.finish.explanation}</p>}
+              {finishError && <Notice>{finishError}</Notice>}
               <Button
                 variant="primary"
                 disabled={step4Locked}
@@ -678,6 +681,7 @@ export function OnboardingPage() {
             <Link to={appPath("/organization/settings/product-access")} className="support-card-link">
               View product access →
             </Link>
+
           </div>
 
           <div className="support-card">

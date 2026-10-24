@@ -21,9 +21,9 @@ vi.mock("../../features/platform/platformApi", () => ({
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 it("connects organization creation to activation and plan assignment through existing APIs", async () => {
-  render(<MemoryRouter initialEntries={["/app/platform/organizations"]}><Routes>
-    <Route path="/app/platform/organizations" element={<PlatformOrganizationsPage />} />
-    <Route path="/app/platform/organizations/:organizationId" element={<PlatformOrganizationDetailPage />} />
+  render(<MemoryRouter initialEntries={["/platform/organizations"]}><Routes>
+    <Route path="/platform/organizations" element={<PlatformOrganizationsPage />} />
+    <Route path="/platform/organizations/:organizationId" element={<PlatformOrganizationDetailPage />} />
   </Routes></MemoryRouter>);
   await screen.findByText("owner@example.test");
   fireEvent.click(screen.getByText("Create organization", { selector: "summary" }));

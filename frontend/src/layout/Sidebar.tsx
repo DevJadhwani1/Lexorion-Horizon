@@ -66,11 +66,11 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
         key={`${keyPrefix}${item.to}`}
         to={item.to}
         end={
-          item.to === appPath("/app") ||
-          item.to === appPath("/app/platform") ||
-          item.to === appPath("/organization") ||
-          item.to === "/organization" ||
-          item.to === "/app/organization"
+          item.to === "/overview" ||
+          item.to === appPath("/overview") ||
+          item.to === appPath("/platform") ||
+          item.to === "/" ||
+          item.to === "/organization"
         }
         aria-label={item.label}
         data-tooltip={item.label}
@@ -96,8 +96,8 @@ export function Sidebar({ platform = false, groups, collapsed, drawerOpen, onTog
       if ((collapsed || target?.classList.contains("desktop-control")) && window.innerWidth > 800 && target) { const rect = target.getBoundingClientRect(); setTooltip({ label: target.dataset.tooltip!, top: rect.top + rect.height / 2, left: rect.right + 8 }); }
     }} onBlur={() => setTooltip(null)}>
     <div className="sidebar-header">
-      <NavLink className="brand brand-desktop" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
-      <NavLink className="brand brand-mobile" to={appPath(platform ? "/app/platform" : "/app")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
+      <NavLink className="brand brand-desktop" to={appPath(platform ? "/platform" : "/overview")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
+      <NavLink className="brand brand-mobile" to={appPath(platform ? "/platform" : "/overview")} aria-label="Horizon home"><img src="/favicon.svg" alt="" /><span className="brand-full"><strong>Horizon</strong></span></NavLink>
       <button className="sidebar-control sidebar-search" aria-label="Search navigation" data-tooltip="Search navigation" aria-expanded={searchOpen} onClick={() => { setSearchOpen(!searchOpen); setQuery(""); if (collapsed && window.innerWidth > 800) onToggle(); }}><Icon name="search" /></button>
       <button className="sidebar-control desktop-control" onClick={onToggle} aria-label="Toggle sidebar" data-tooltip="Toggle sidebar" aria-keyshortcuts="Meta+Shift+S Control+Shift+S" aria-expanded={!collapsed} aria-controls="sidebar-content">
         <Icon name="sidebar" />

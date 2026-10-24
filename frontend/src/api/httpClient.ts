@@ -8,6 +8,23 @@ interface TokenResponse { accessToken: string; refreshToken: string | null; }
 let refreshPromise: Promise<boolean> | null = null;
 const authRequest = (path: string) => /^\/api\/(core|platform)\/auth\/(login|refresh|logout)$/.test(path);
 const reportError=(error:ApiError)=>window.dispatchEvent(new CustomEvent("lexorion:api-error",{detail:error.message}));
+const FALLBACK: Record<number, string> = {
+  0: "Horizon could not reach the service. Try again.",
+  400: "The request was invalid.",
+  401: "Your session is no longer valid. Sign in again.",
+  403: "You do not have access to this operation.",
+  404: "The requested record was not found.",
+  409: "This conflicts with the current record. Refresh and try again.",
+  500: "Horizon could not complete that request. Try again.",
+  502: "Horizon could not complete that request. Try again.",
+  503: "Horizon is temporarily unavailable. Try again.",
+};
+const INFRASTRUCTURE = /gateway|eureka|sql|exception|stack trace|x-lexorion|127\.0\.0\.1:\d+|localhost:\d{4}/i;
+function customerMessage(status: number, details?: unknown): string {
+  const fallback = FALLBACK[status] ?? "Horizon could not complete that request. Try again.";
+  const raw = typeof details === "object" && details && "message" in details ? String((details as { message: unknown }).message).trim() : "";
+  return raw && !INFRASTRUCTURE.test(raw) ? raw : fallback;
+}
 
 async function refreshAccess(): Promise<boolean> {
   const accessToken = session.access(), refreshToken = session.refresh(); if (!refreshToken && !usesSharedSessionCookie()) return false;
@@ -46,7 +63,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const requestBody = body === undefined ? undefined : JSON.stringify(body);
   const request = () => fetch(path, { ...init, credentials: usesSharedSessionCookie() ? "include" : init.credentials, headers, body: requestBody });
   try { response = await request(); }
-  catch (error) { if ((error as Error).name === "AbortError") throw error; assertContext(); const apiError=new ApiError(0,"The Lexorion API is unavailable. Check the Gateway and try again.");reportError(apiError);throw apiError; }
+  catch (error) { if ((error as Error).name === "AbortError") throw error; assertContext(); const apiError=new ApiError(0,customerMessage(0));reportError(apiError);throw apiError; }
   assertContext();
   if (response.status === 401 && authenticated && retryOnUnauthorized) {
     refreshPromise ??= refreshAccess().finally(() => { refreshPromise = null; });
@@ -64,8 +81,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     let details: unknown; try { details = await response.json(); } catch { details = undefined; }
     assertContext();
-    const fallback:Record<number,string>={400:"The request was invalid.",401:"Your session is no longer valid.",403:"You do not have access to this operation.",404:"The requested resource was not found.",409:"The request conflicts with the current resource state.",500:"The service encountered an unexpected error.",502:"The Gateway received an invalid response from a service.",503:"The requested service is temporarily unavailable."};
-    const message = typeof details === "object" && details && "message" in details ? String((details as {message: unknown}).message) : fallback[response.status]??`Request failed (${response.status}).`;
+    const message = customerMessage(response.status, details);
     const apiError=new ApiError(response.status,message,details);if(!expectedStatuses.includes(response.status))reportError(apiError);throw apiError;
   }
   if (response.status === 204 || response.headers.get("content-length") === "0") return undefined as T;

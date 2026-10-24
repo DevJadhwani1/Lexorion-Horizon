@@ -129,7 +129,7 @@ it("creates a workspace requesting minimum information and continues to operatio
   // Selection happens inside the provider from the refreshed list (see WorkspaceProvider.test).
   await waitFor(() => expect(mockReload).toHaveBeenCalledWith({ select: "operations" }));
   expect(mockSelectWorkspace).not.toHaveBeenCalled();
-  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/app"));
+  await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/overview"));
 });
 
 it("shows useful list with capabilities and permitted management actions", async () => {

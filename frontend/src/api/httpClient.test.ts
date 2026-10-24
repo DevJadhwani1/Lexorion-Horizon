@@ -2,6 +2,11 @@ import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { apiRequest } from "./httpClient";
 import { session } from "./session";
 
+it("keeps infrastructure details out of customer-facing errors", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json({ message: "The Gateway received an invalid response from PLATFORM-SERVICE at 127.0.0.1:9001" }, 502)));
+  await expect(apiRequest("/api/platform/me")).rejects.toMatchObject({ message: "Horizon could not complete that request. Try again." });
+});
+
 beforeEach(() => { sessionStorage.clear(); session.setOrganization("alpha"); session.setWorkspace("main"); session.setTokens("old", "refresh"); });
 afterEach(() => vi.unstubAllGlobals());
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });

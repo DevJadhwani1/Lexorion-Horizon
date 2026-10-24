@@ -67,6 +67,8 @@ public class ClientUserSeeder implements ApplicationRunner {
          return;
       }
 
+      // An existing account keeps its stored password. The seed provisions a missing
+      // development user only; it is not a password reset or a recovery backdoor.
       User user = this.userRepository.findByEmailIgnoreCase(this.properties.getEmail()).orElseGet(() -> {
          UUID userId = this.userService.create(this.validatedUserRequest()).id();
          return this.userRepository.findById(userId).orElseThrow();

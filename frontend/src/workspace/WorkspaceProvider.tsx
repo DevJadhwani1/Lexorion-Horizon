@@ -113,3 +113,8 @@ export function useWorkspace() {
   if (!value) throw new Error("WorkspaceProvider is required");
   return value;
 }
+
+export function useOptionalWorkspace() {
+  return useContext(Context);
+}
+

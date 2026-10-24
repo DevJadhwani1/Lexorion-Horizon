@@ -33,7 +33,7 @@ export function PayRunPreparation({ run, busy, onProcess, onSaved, nameOf = (cod
   const blockedSelected = report?.employees.filter(e => selected.includes(e.employeeCode) && !e.eligible).length ?? 0;
   const disabled = loading || busy;
   const ready = !!report?.ready && !dirty && !error;
-  const returnTo = `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(run.payRunKey)}`;
+  const returnTo = `${appPath("/payroll/runs")}?run=${encodeURIComponent(run.payRunKey)}`;
   const save = async () => {
     setLoading(true); setError("");
     try {
@@ -62,11 +62,11 @@ export function PayRunPreparation({ run, busy, onProcess, onSaved, nameOf = (cod
             onChange={event => setSelected(values => event.target.checked ? [...values, employee.employeeCode] : values.filter(code => code !== employee.employeeCode))} /></td>
           <td><PersonCell name={nameOf(employee.employeeCode)} code={employee.employeeCode} note={employee.selected ? "saved in this draft" : undefined} /></td>
           <td>{employee.eligible ? <StatusBadge status="ELIGIBLE" /> : <span className="blocked-reason">{employee.blockedReason}</span>}</td>
-          <td><Link to={workflowLink(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`, returnTo)}>Review compensation</Link>{" · "}
-            <Link to={workflowLink(`${appPath("/app/payroll/employees")}?employee=${encodeURIComponent(employee.employeeCode)}`, returnTo)}>Payroll setup</Link></td>
+          <td><Link to={workflowLink(`${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`, returnTo)}>Review compensation</Link>{" · "}
+            <Link to={workflowLink(`${appPath("/payroll/employees")}?employee=${encodeURIComponent(employee.employeeCode)}`, returnTo)}>Payroll setup</Link></td>
         </tr>)}
       </Table> : <Empty>No payroll employees in this workspace. Configure an employee for payroll, then return to prepare this run.</Empty>}
-      <Link to={workflowLink(appPath("/app/payroll/employees"), returnTo)}>Configure payroll employees</Link>
+      <Link to={workflowLink(appPath("/payroll/employees"), returnTo)}>Configure payroll employees</Link>
       <p role="status">{ready ? "Ready to calculate" : dirty ? "Selection changed. Save and validate before calculating." : blockedSelected ? "Remove blocked employees or resolve their setup, then refresh validation." : selected.length ? "This run is blocked. Review the validation messages." : "Select at least one eligible employee to continue."}</p>
       <div className="toolbar">
         <Button disabled={disabled || !dirty || blockedSelected > 0} onClick={() => void save()}>Save selection</Button>

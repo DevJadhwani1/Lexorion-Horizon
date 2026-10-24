@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { Empty, Notice, Page } from "../components/ui/Page";
+import { useConfirm } from "../components/ui/ConfirmDialog";
 import { CoreSessionProvider, useCoreSession } from "./CoreSession";
 import { coreBase } from "./routing";
 import { coreRequest, type CoreOrganization, type CoreUser, type CoreProduct, type CoreGrant, type CoreOperator, type CoreSession, type CoreAudit, type CoreMembership } from "./consoleApi";
@@ -65,7 +66,11 @@ function Table({ headers, rows }: { headers: string[]; rows: ReactNode[][] }) {
 }
 function Action({ children, run, done }: { children: ReactNode; run(): Promise<unknown>; done(): void }) {
   const [error, setError] = useState(""), [busy, setBusy] = useState(false);
-  return <><button disabled={busy} onClick={() => { setBusy(true); setError(""); void run().then(done).catch(e => setError(message(e))).finally(() => setBusy(false)); }}>{busy ? "Saving…" : children}</button>{error && <Notice>{error}</Notice>}</>;
+  return <><button disabled={busy} onClick={() => { setBusy(true); setError(""); void run().then((result) => { if (result !== false) done(); }).catch(e => setError(message(e))).finally(() => setBusy(false)); }}>{busy ? "Saving…" : children}</button>{error && <Notice>{error}</Notice>}</>;
+}
+function GuardedAction({ title, body, confirmLabel, children, run, done }: { title: string; body: string; confirmLabel: string; children: ReactNode; run(): Promise<unknown>; done(): void }) {
+  const [ask, dialog] = useConfirm();
+  return <>{dialog}<Action run={async () => { if (!(await ask({ title, body, confirmLabel, tone: "destructive" }))) return false; await run(); }} done={done}>{children}</Action></>;
 }
 function Editor({ title, children, submit, done }: { title: string; children: ReactNode; submit(data: FormData): Promise<unknown>; done(): void }) {
   const [error, setError] = useState(""), [success, setSuccess] = useState(false), [busy, setBusy] = useState(false);
@@ -94,7 +99,9 @@ function Organizations() {
     <Editor title="Create organization" done={state.reload} submit={d => coreRequest("/organizations", json("POST", { name: text(d,"name"), organizationCode: text(d,"organizationCode"), slug: text(d,"slug") || null, primaryEmail: text(d,"primaryEmail"), initialUserId: text(d,"initialUserId") || null }))}>
       <Field name="name" label="Name" maxLength={150} /><Field name="organizationCode" label="Organization code" maxLength={50} /><Field name="slug" label="Slug" required={false} maxLength={63} /><Field name="primaryEmail" label="Primary email" type="email" /><Dropdown label="Initial member (optional)" name="initialUserId" defaultValue="" options={[{ value: "", label: "None" }, ...(users.data ?? []).map(u => ({ value: u.id, label: u.email }))]} />
     </Editor>
-    <Table headers={["Organization", "Code", "Lifecycle", "Actions"]} rows={(state.data ?? []).map(o => [o.name, o.organizationCode, o.status, <div className="core-actions"><button onClick={() => setSelected(o.id)}>Memberships</button>{lifecycleTargets(o.status).map(status => <Action key={status} run={() => coreRequest(`/organizations/${o.id}/status`, json("PATCH", { status }))} done={state.reload}>{status.toLowerCase()}</Action>)}</div>])} />
+    <Table headers={["Organization", "Code", "Lifecycle", "Actions"]} rows={(state.data ?? []).map(o => [o.name, o.organizationCode, o.status, <div className="core-actions"><button onClick={() => setSelected(o.id)}>Memberships</button>{lifecycleTargets(o.status).map(status => status === "CANCELLED" || status === "SUSPENDED"
+      ? <GuardedAction key={status} title={`${status === "CANCELLED" ? "Cancel" : "Suspend"} ${o.name}?`} body={status === "CANCELLED" ? "The organization lifecycle becomes cancelled. This does not delete its records." : "The organization lifecycle becomes suspended."} confirmLabel={status === "CANCELLED" ? "Cancel organization" : "Suspend organization"} run={() => coreRequest(`/organizations/${o.id}/status`, json("PATCH", { status }))} done={state.reload}>{status.toLowerCase()}</GuardedAction>
+      : <Action key={status} run={() => coreRequest(`/organizations/${o.id}/status`, json("PATCH", { status }))} done={state.reload}>{status.toLowerCase()}</Action>)}</div>])} />
   </Load>{selected && <Memberships organizationId={selected} users={users.data ?? []} />}</Page>;
 }
 function lifecycleTargets(status: string) { return ({ PENDING: ["ACTIVE", "TRIAL", "CANCELLED"], TRIAL: ["ACTIVE", "SUSPENDED", "CANCELLED"], ACTIVE: ["SUSPENDED", "CANCELLED"], SUSPENDED: ["ACTIVE", "CANCELLED"] } as Record<string,string[]>)[status] ?? []; }
@@ -107,13 +114,17 @@ function Memberships({ organizationId, users }: { organizationId: string; users:
 function Users() {
   const state = useData<CoreUser[]>("/users");
   return <Page title="Users" description="One identity across Lexorion products."><Load state={state}><Editor title="Create user" done={state.reload} submit={d => coreRequest("/users", json("POST", Object.fromEntries(d)))}><Field name="email" label="Email" type="email" /><Field name="firstName" label="First name" /><Field name="lastName" label="Last name" /><Field name="password" label="Initial password" type="password" minLength={8} maxLength={100} /></Editor>
-    <Table headers={["Name", "Email", "Status", "Action"]} rows={(state.data ?? []).map(u => [`${u.firstName} ${u.lastName}`, u.email, u.status, <Action run={() => coreRequest(`/users/${u.id}`, json("PATCH", { status: u.status === "ACTIVE" ? "LOCKED" : "ACTIVE" }))} done={state.reload}>{u.status === "ACTIVE" ? "Lock" : "Activate"}</Action>])} /></Load></Page>;
+    <Table headers={["Name", "Email", "Status", "Action"]} rows={(state.data ?? []).map(u => [`${u.firstName} ${u.lastName}`, u.email, u.status, u.status === "ACTIVE"
+      ? <GuardedAction title={`Lock ${u.email}?`} body="They cannot sign in until an operator activates the account." confirmLabel="Lock account" run={() => coreRequest(`/users/${u.id}`, json("PATCH", { status: "LOCKED" }))} done={state.reload}>Lock</GuardedAction>
+      : <Action run={() => coreRequest(`/users/${u.id}`, json("PATCH", { status: "ACTIVE" }))} done={state.reload}>Activate</Action>])} /></Load></Page>;
 }
 function Products() {
   const state = useData<CoreProduct[]>("/products");
   return <Page title="Products" description="Register products without introducing their business domain into Core."><Load state={state}>
     <Editor title="Register product" done={state.reload} submit={d => coreRequest("/products", json("POST", { key: text(d,"key"), displayName: text(d,"displayName"), active: text(d,"active") === "true" }))}><Field name="key" label="Stable product key" maxLength={63} /><Field name="displayName" label="Name" maxLength={150} /><Select name="active" label="Availability" options={[["false","Inactive"],["true","Active"]]} /></Editor>
-    <Table headers={["Product", "Key", "Availability", "Action"]} rows={(state.data ?? []).map(p => [p.displayName, p.key, p.active ? "Active" : "Inactive", <Action run={() => coreRequest(`/products/${p.key}`, json("PATCH", { displayName: p.displayName, active: !p.active }))} done={state.reload}>{p.active ? "Deactivate" : "Activate"}</Action>])} /></Load></Page>;
+    <Table headers={["Product", "Key", "Availability", "Action"]} rows={(state.data ?? []).map(p => [p.displayName, p.key, p.active ? "Active" : "Inactive", p.active
+      ? <GuardedAction title={`Deactivate ${p.displayName}?`} body="New grants cannot use an inactive product. Existing organization access is unchanged until it is updated separately." confirmLabel="Deactivate product" run={() => coreRequest(`/products/${p.key}`, json("PATCH", { displayName: p.displayName, active: false }))} done={state.reload}>Deactivate</GuardedAction>
+      : <Action run={() => coreRequest(`/products/${p.key}`, json("PATCH", { displayName: p.displayName, active: true }))} done={state.reload}>Activate</Action>])} /></Load></Page>;
 }
 function ProductAccess() {
   const state = useData<CoreGrant[]>("/product-access"), orgs = useData<CoreOrganization[]>("/organizations"), products = useData<CoreProduct[]>("/products");
@@ -127,11 +138,16 @@ function Operators() {
   const state = useData<CoreOperator[]>("/operators"), users = useData<CoreUser[]>("/users");
   return <Page title="Platform Operators" description="Global Core authority is separate from product administration."><Load state={users}><Load state={state}>
     <Editor title="Grant global operator access" done={state.reload} submit={d => coreRequest("/operators", json("POST", Object.fromEntries(d)))}><Select name="userId" label="User" options={(users.data ?? []).filter(u => !state.data?.some(o => o.userId === u.id)).map(u => [u.id,u.email])} /><Select name="role" label="Operator role" options={["SUPER_ADMIN","ADMIN","OPERATIONS","SUPPORT"].map(s => [s,s])} /></Editor>
-    <Table headers={["Email", "Role", "Status", "Action"]} rows={(state.data ?? []).map(o => [o.userEmail, o.role, o.status, <Action run={() => coreRequest(`/operators/${o.userId}/status`, json("PATCH", { status: o.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" }))} done={state.reload}>{o.status === "ACTIVE" ? "Suspend" : "Activate"}</Action>])} /></Load></Load></Page>;
+    <Table headers={["Email", "Role", "Status", "Action"]} rows={(state.data ?? []).map(o => [o.userEmail, o.role, o.status, o.status === "ACTIVE"
+      ? <GuardedAction title={`Suspend ${o.userEmail}?`} body="They lose Core operator access until the grant is activated again." confirmLabel="Suspend operator" run={() => coreRequest(`/operators/${o.userId}/status`, json("PATCH", { status: "SUSPENDED" }))} done={state.reload}>Suspend</GuardedAction>
+      : <Action run={() => coreRequest(`/operators/${o.userId}/status`, json("PATCH", { status: "ACTIVE" }))} done={state.reload}>Activate</Action>])} /></Load></Load></Page>;
 }
 function Sessions() {
   const state = useData<CoreSession[]>("/sessions");
-  return <Page title="Sessions" description="Refresh sessions across Core identity. Revocation stops renewal; issued access tokens retain their configured lifetime."><Load state={state}><Table headers={["User", "Session", "Expires", "Status", "Action"]} rows={(state.data ?? []).map(s => [s.email, <code>{s.sessionId}</code>, date(s.expiresAt), s.active ? "Active" : "Expired or revoked", <Action run={() => coreRequest(`/users/${s.userId}/sessions/revoke`, { method: "POST" })} done={state.reload}>Revoke user sessions</Action>])} /></Load></Page>;
+  const sessions = state.data ?? [];
+  const firstForUser = new Map<string, string>();
+  for (const item of sessions) if (!firstForUser.has(item.userId)) firstForUser.set(item.userId, item.sessionId);
+  return <Page title="Sessions" description="Refresh sessions across Core identity. Revocation stops renewal for every session of that person. Issued access tokens retain their configured lifetime."><Load state={state}><Table headers={["User", "Session", "Expires", "Status", "Action"]} rows={sessions.map(s => [s.email, <code>{s.sessionId}</code>, date(s.expiresAt), s.active ? "Active" : "Expired or revoked", firstForUser.get(s.userId) === s.sessionId ? <GuardedAction title={`Revoke all sessions for ${s.email}?`} body="They must sign in again. This does not revoke only the session on this row." confirmLabel="Revoke all sessions" run={() => coreRequest(`/users/${s.userId}/sessions/revoke`, { method: "POST" })} done={state.reload}>Revoke all sessions</GuardedAction> : "—"])} /></Load></Page>;
 }
 function Security() {
   const state = useData<Record<string, string | boolean>>("/security");

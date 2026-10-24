@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, type FormEvent } from "react";
+import { useEffect, useRef, useState, useMemo, type FormEvent } from "react";
 import { NavLink, useParams } from "react-router-dom";
 import { appPath } from "../../app/hostRouting";
 import { ApiError } from "../../api/types";
@@ -335,6 +335,42 @@ export function AdminPage({ sectionKey }: { sectionKey?: string }) {
 // Organization Profile Form Component
 // ============================================================================
 
+interface OrganizationProfileFields {
+  name: string;
+  legalName: string;
+  primaryEmail: string;
+  primaryPhone: string;
+  industry: string;
+  website: string;
+  addressLine1: string;
+  addressLine2: string;
+  addressCountry: string;
+  stateProvince: string;
+  city: string;
+  postalCode: string;
+}
+
+function readOrganizationProfile(organization: Organization): OrganizationProfileFields {
+  return {
+    name: organization.name || "",
+    legalName: organization.legalName || "",
+    primaryEmail: organization.primaryEmail || "",
+    primaryPhone: organization.primaryPhone || "",
+    industry: organization.industry || "",
+    website: organization.website || "",
+    addressLine1: organization.addressLine1 || "",
+    addressLine2: organization.addressLine2 || "",
+    addressCountry: organization.addressCountry || "",
+    stateProvince: organization.stateProvince || "",
+    city: organization.city || "",
+    postalCode: organization.postalCode || "",
+  };
+}
+
+function sameProfile(left: OrganizationProfileFields, right: OrganizationProfileFields) {
+  return (Object.keys(left) as (keyof OrganizationProfileFields)[]).every((key) => left[key] === right[key]);
+}
+
 interface OrganizationProfileFormProps {
   organization: Organization;
   onSaveSuccess: () => Promise<void>;
@@ -357,20 +393,35 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const profile = {
+    name, legalName, primaryEmail, primaryPhone, industry, website,
+    addressLine1, addressLine2, addressCountry, stateProvince, city, postalCode,
+  };
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const appliedProfile = useRef(readOrganizationProfile(organization));
+  const acceptServerProfile = useRef(false);
 
   useEffect(() => {
-    setName(organization.name || "");
-    setLegalName(organization.legalName || "");
-    setPrimaryEmail(organization.primaryEmail || "");
-    setPrimaryPhone(organization.primaryPhone || "");
-    setIndustry(organization.industry || "");
-    setWebsite(organization.website || "");
-    setAddressLine1(organization.addressLine1 || "");
-    setAddressLine2(organization.addressLine2 || "");
-    setAddressCountry(organization.addressCountry || "");
-    setStateProvince(organization.stateProvince || "");
-    setCity(organization.city || "");
-    setPostalCode(organization.postalCode || "");
+    const next = readOrganizationProfile(organization);
+    const previous = appliedProfile.current;
+    if (sameProfile(previous, next)) return;
+    const edited = (Object.keys(next) as (keyof OrganizationProfileFields)[]).some((key) => profileRef.current[key] !== previous[key]);
+    if (edited && !acceptServerProfile.current) return;
+    acceptServerProfile.current = false;
+    appliedProfile.current = next;
+    setName(next.name);
+    setLegalName(next.legalName);
+    setPrimaryEmail(next.primaryEmail);
+    setPrimaryPhone(next.primaryPhone);
+    setIndustry(next.industry);
+    setWebsite(next.website);
+    setAddressLine1(next.addressLine1);
+    setAddressLine2(next.addressLine2);
+    setAddressCountry(next.addressCountry);
+    setStateProvince(next.stateProvince);
+    setCity(next.city);
+    setPostalCode(next.postalCode);
   }, [organization]);
 
   // Industry options including legacy value preservation
@@ -456,10 +507,12 @@ function OrganizationProfileForm({ organization, onSaveSuccess }: OrganizationPr
       return;
     }
     try {
+      acceptServerProfile.current = true;
       await onSaveSuccess();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err) {
+      acceptServerProfile.current = false;
       setError(savedButNotReloaded(err));
     } finally {
       setSaving(false);
@@ -680,8 +733,6 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
   const [currency, setCurrency] = useState(settings.currency || "USD");
   const [timeZone, setTimeZone] = useState(settings.timeZone || "UTC");
   const [dateFormat, setDateFormat] = useState(settings.dateFormat || "YYYY-MM-DD");
-  const [locale, setLocale] = useState(settings.locale || "en-US");
-  const [brandingDisplayName, setBrandingDisplayName] = useState(settings.brandingDisplayName || "");
 
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -693,17 +744,13 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
     setCurrency(settings.currency || "USD");
     setTimeZone(settings.timeZone || "UTC");
     setDateFormat(settings.dateFormat || "YYYY-MM-DD");
-    setLocale(settings.locale || "en-US");
-    setBrandingDisplayName(settings.brandingDisplayName || "");
   }, [settings]);
 
   const isDirty =
     country !== (settings.country || "US") ||
     currency !== (settings.currency || "USD") ||
     timeZone !== (settings.timeZone || "UTC") ||
-    dateFormat !== (settings.dateFormat || "YYYY-MM-DD") ||
-    locale !== (settings.locale || "en-US") ||
-    brandingDisplayName !== (settings.brandingDisplayName || "");
+    dateFormat !== (settings.dateFormat || "YYYY-MM-DD");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -717,9 +764,6 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
         currency: currency.toUpperCase(),
         timeZone: timeZone.trim(),
         dateFormat: dateFormat.trim(),
-        locale: locale.trim(),
-        // Settings PATCH ignores omitted and null fields; an empty string is what clears the branding name.
-        brandingDisplayName: brandingDisplayName.trim(),
       });
       setPreferredDateFormat(dateFormat);
     } catch (err) {
@@ -812,42 +856,6 @@ function OrganizationSettingsForm({ settings, onSaveSuccess }: OrganizationSetti
             searchPlaceholder="Search format or pattern..."
             hint="Applied across administrative screens and timestamps."
           />
-
-          <div className="admin-form-field">
-            <label htmlFor="settings-locale" className="admin-form-field-label">
-              Language / Locale
-            </label>
-            <input
-              id="settings-locale"
-              type="text"
-              name="locale"
-              maxLength={35}
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-              placeholder="e.g. en-US, en-GB, fr-FR"
-            />
-            <span className="admin-form-field-hint">
-              Primary language and regional format tag (BCP 47).
-            </span>
-          </div>
-
-          <div className="admin-form-field">
-            <label htmlFor="settings-branding-display-name" className="admin-form-field-label">
-              Branding Display Name
-            </label>
-            <input
-              id="settings-branding-display-name"
-              type="text"
-              name="brandingDisplayName"
-              maxLength={150}
-              value={brandingDisplayName}
-              onChange={(e) => setBrandingDisplayName(e.target.value)}
-              placeholder="e.g. Acme Corp Portal"
-            />
-            <span className="admin-form-field-hint">
-              Custom organization name displayed across customer-facing portals.
-            </span>
-          </div>
         </div>
       </div>
 
@@ -879,6 +887,7 @@ function SettingsSectionNav() {
     </nav>
   );
 }
+
 
 const savedButNotReloaded = (err: unknown) =>
   `Your changes were saved, but the latest values could not be reloaded${err instanceof Error && err.message ? ` (${err.message})` : ""}. Refresh the page to confirm them.`;

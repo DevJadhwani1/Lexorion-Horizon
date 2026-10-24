@@ -65,7 +65,7 @@ export function AppSwitcher() {
             <span className="app-switcher-section-title">Applications</span>
 
             <Link
-              to={appPath(adminRole ? "/app/workforce/dashboard" : "/app/workforce/me")}
+              to={appPath(adminRole ? "/workforce/employees" : "/workforce/me")}
               className={`app-switcher-item ${workforceEnabled ? "enabled" : "disabled"}`}
               onClick={close}
             >
@@ -82,7 +82,7 @@ export function AppSwitcher() {
             </Link>
 
             <Link
-              to={appPath("/app/payroll/dashboard")}
+              to={appPath("/payroll/runs")}
               className={`app-switcher-item ${payrollEnabled && adminRole ? "enabled" : "disabled"}`}
               onClick={close}
             >
@@ -99,7 +99,7 @@ export function AppSwitcher() {
             </Link>
 
             <Link
-              to={appPath("/app/finance/overview")}
+              to={appPath("/finance/overview")}
               className={`app-switcher-item ${financeEnabled && adminRole ? "enabled" : "disabled"}`}
               onClick={close}
             >
@@ -142,7 +142,7 @@ export function AppSwitcher() {
                     window.location.assign(consoleUrl("platform"));
                   } else {
                     application.enterPlatform();
-                    navigate("/app/platform");
+                    navigate("/platform");
                   }
                 }}
               >
@@ -165,9 +165,9 @@ export function AppSwitcher() {
                 <span>Manage workspace product assignments →</span>
               </Link>
             ) : (
-              <Link to={appPath("/app")} onClick={close}>
+              <Link to={appPath("/overview")} onClick={close}>
                 <Icon name="home" size={14} />
-                <span>Return to Overview</span>
+                <span>Return to Dashboard</span>
               </Link>
             )}
           </div>

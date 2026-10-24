@@ -16,17 +16,17 @@ type NavEntry = readonly [path: string, label: string, icon: IconName];
 const administration: readonly NavEntry[] = [
   ["/organization", "Organization", "building"],
   ["/organization/workspaces", "Workspaces", "panels"],
-  ["/organization/members", "Members", "profile"],
+  ["/people", "Members", "profile"],
   ["/organization/invitations", "Invitations", "admin"],
   ["/organization/settings", "Settings", "settings"],
 ];
 const workforceAdmin: readonly NavEntry[] = [
   ["employees", "Employees", "profile"], ["departments", "Departments", "workforce"],
-  ["designations", "Designations", "workforce"], ["structure", "Reporting structure", "workforce"],
+  ["designations", "Designations", "workforce"],
 ];
 const workforceSelf: readonly NavEntry[] = [["me", "My profile", "profile"], ["team", "My team", "workforce"]];
 const payroll: readonly NavEntry[] = [
-  ["pay-runs", "Pay runs", "payroll"], ["employees", "Payroll employees", "profile"],
+  ["runs", "Pay runs", "payroll"], ["employees", "Payroll employees", "profile"],
   ["compensation", "Compensation", "payroll"], ["components", "Salary components", "payroll"],
   ["salary-templates", "Salary templates", "payroll"], ["payslips", "Payslips", "payroll"],
   ["ledger", "Payroll ledger", "payroll"], ["calculations", "Pay preview", "payroll"],
@@ -59,7 +59,7 @@ export function AppShell() {
 function AppShellInner() {
   const auth = useAuth(), workspace = useWorkspace(), navigate = useNavigate(), location = useLocation();
   // Organization administration reloads workspace access itself. Do not discard its forms during that refresh.
-  const organizationAdministration = /^\/(?:(?:app\/)?(?:admin|organization)(?:\/|$)|(?:app\/)?(?:members|invitations|settings|entitlements|workspaces)(?:\/|$))/.test(location.pathname);
+  const organizationAdministration = /^\/(organization|people|settings)(\/|$)/.test(location.pathname);
   const application = useApplicationContext();
   const onboarding = useOnboardingContext();
   const [apiError, setApiError] = useState(""), [collapsed, setCollapsed] = useState(() => { try { return sessionStorage.getItem("lexorion.sidebar-collapsed") === "true" || (sessionStorage.getItem("lexorion.sidebar-collapsed") === null && window.innerWidth <= 1100); } catch { return false; } }), [drawerOpen, setDrawerOpen] = useState(false);
@@ -92,13 +92,13 @@ function AppShellInner() {
     application.mode === "client" &&
     Boolean(auth.organization) &&
     adminRole &&
-    (workspace.workspaces.length === 0 || location.pathname === appPath("/app/onboarding"));
+    (workspace.workspaces.length === 0 || location.pathname === "/onboarding");
 
   const workforceProduct = Boolean(workspace.workspace?.products.some(product => product.key === "workforce"));
   const workforce = adminRole ? workforceAdmin : role === "MANAGER" ? workforceSelf : workforceSelf.filter(([key]) => key === "me");
   const initials = `${auth.user?.firstName?.[0] ?? ""}${auth.user?.lastName?.[0] ?? ""}` || "L";
   const groups: SidebarGroup[] = [];
-  const addGroup = (label: string, base: string, entries: readonly NavEntry[]) => groups.push({ label, items: entries.map(([path, text, icon]) => ({ to: appPath(`/app/${base}/${path}`.replace(/\/$/, "")), label: text, icon })) });
+  const addGroup = (label: string, base: string, entries: readonly NavEntry[]) => groups.push({ label, items: entries.map(([path, text, icon]) => ({ to: appPath(`/${base}/${path}`.replace(/\/$/, "")), label: text, icon })) });
   if (application.mode === "platform") {
     addGroup("Platform", "platform", platformPrimary);
     addGroup("Catalog", "platform", platformCatalog);
@@ -106,7 +106,7 @@ function AppShellInner() {
     addGroup("System", "platform", platformSystem);
   }
   if (application.mode === "client") {
-    groups.push({ label: "", items: [{ to: appPath("/app"), label: "Overview", icon: "home" }] });
+    groups.push({ label: "", items: [{ to: appPath("/overview"), label: "Dashboard", icon: "home" }] });
     if (adminRole) {
       groups.push({
         label: "Organization",
@@ -121,7 +121,7 @@ function AppShellInner() {
     if (adminRole && workspace.workspace?.products.some(product => product.key === "payroll")) addGroup("Payroll", "payroll", payroll);
     if (adminRole && workspace.workspace?.products.some(product => product.key === "finance")) addGroup("Finance", "finance", finance);
   }
-  const accountLinks = application.mode === "client" && adminRole && workforceProduct ? [{ to: appPath("/app/workforce/me"), label: "My profile" }] : [];
+  const accountLinks = application.mode === "client" && adminRole && workforceProduct ? [{ to: appPath("/workforce/me"), label: "My profile" }] : [];
   const toggleSidebar = () => setCollapsed((value) => {
     try { sessionStorage.setItem("lexorion.sidebar-collapsed", String(!value)); } catch { /* Storage may be unavailable. */ }
     return !value;
@@ -177,7 +177,7 @@ function AppShellInner() {
               )
             ) : (
               <div className="platform-nav-actions">
-                <Button size="sm" variant="secondary" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/app"); } }}>
+                <Button size="sm" variant="secondary" onClick={() => { if (consoleHost() === "platform") window.location.assign(consoleUrl("client")); else { application.enterClient(); navigate("/overview"); } }}>
                   Open client app →
                 </Button>
               </div>

@@ -312,13 +312,13 @@ Below is the verified customer journey executable in Lexorion Horizon today:
 
 ### Phase 1: Platform Provisioning & Onboarding
 1. An operator signs in at `/login` with credentials (e.g., `admin@lexorion.in`).
-2. Navigates to Platform Administration (`/app/platform/organizations`) and creates an organization (e.g., `Test Org`, slug `test-org`).
+2. Navigates to Platform Administration (`/platform/organizations`) and creates an organization (e.g., `Test Org`, slug `test-org`).
 3. Selects the organization, activates it (`ACTIVE`), and assigns a commercial plan (`Starter` or `Business`).
 
 ### Phase 2: Organization Administration & Invitations
-1. The organization administrator enters the organization workspace at `/app/admin/organization`.
+1. The organization administrator enters the organization workspace at `/organization`.
 2. Creates an active workspace (e.g., `main` or `flow-a`) and enables `workforce` and `payroll` products.
-3. Opens `/app/admin/invitations` and issues an invitation for a new employee.
+3. Opens `/organization/invitations` and issues an invitation for a new employee.
 4. The system validates the email, persists the SHA-256 token hash, and submits the email to Mailpit.
 5. In Mailpit (`http://localhost:8025`), the administrator can view the delivered message containing the link `http://localhost/invitations/accept#token=<rawToken>`.
 
@@ -330,18 +330,18 @@ Below is the verified customer journey executable in Lexorion Horizon today:
 5. The recipient is automatically logged in and redirected into their new organization console.
 
 ### Phase 4: Workforce Setup
-1. The administrator navigates to `/app/workforce/departments` and creates departments (e.g., `Engineering`).
-2. Navigates to `/app/workforce/designations` and creates designations (e.g., `Software Engineer`).
-3. Navigates to `/app/workforce/employees` and creates an employee (e.g., `EMP-001`, `Grace Hopper`, joining date `2026-01-01`).
-4. Optionally edits the employee profile to assign a reporting manager and inspects the reporting tree in `/app/workforce/structure`.
+1. The administrator navigates to `/workforce/departments` and creates departments (e.g., `Engineering`).
+2. Navigates to `/workforce/designations` and creates designations (e.g., `Software Engineer`).
+3. Navigates to `/workforce/employees` and creates an employee (e.g., `EMP-001`, `Grace Hopper`, joining date `2026-01-01`).
+4. Optionally edits the employee profile to assign a reporting manager and inspects the reporting tree in `/workforce/structure`.
 
 ### Phase 5: Compensation Setup
-1. Navigates to `/app/payroll/employees` and enrolls `EMP-001` into Payroll (setting pay currency `USD`, frequency `MONTHLY`, effective date `2026-01-01`).
-2. Navigates to `/app/payroll/components` and defines earning/deduction components (e.g., recurring fixed earning `Base Salary`, one-time earning `Performance Bonus`).
-3. Navigates to `/app/payroll/compensation`, selects `EMP-001`, and creates an active compensation profile assigning the components.
+1. Navigates to `/payroll/employees` and enrolls `EMP-001` into Payroll (setting pay currency `USD`, frequency `MONTHLY`, effective date `2026-01-01`).
+2. Navigates to `/payroll/components` and defines earning/deduction components (e.g., recurring fixed earning `Base Salary`, one-time earning `Performance Bonus`).
+3. Navigates to `/payroll/compensation`, selects `EMP-001`, and creates an active compensation profile assigning the components.
 
 ### Phase 6: Pay-Run Preparation, Calculation, and Processing
-1. Navigates to `/app/payroll/pay-runs` and creates a new Draft pay run (e.g., key `RUN-2026-10`, period `2026-10-01` to `2026-10-31`, calculation date `2026-10-31`, currency `USD`).
+1. Navigates to `/payroll/runs` and creates a new Draft pay run (e.g., key `RUN-2026-10`, period `2026-10-01` to `2026-10-31`, calculation date `2026-10-31`, currency `USD`).
 2. Opens the preparation panel: The backend evaluates active Payroll employees against the period. Eligible employees show a green badge; employees with missing compensation or mismatched frequencies display clear blocking explanations.
 3. Selects eligible employees and clicks **Save selection**.
 4. The status updates to **Ready to calculate**. The admin clicks **Process**.
@@ -355,12 +355,12 @@ Below is the verified customer journey executable in Lexorion Horizon today:
 3. The backend transitions the pay run to `FINALIZED` and atomically creates:
    - Balanced double-entry ledger entries in `payroll_ledger_entries`.
    - Immutable employee payslips in `employee_payslips`.
-4. The admin reviews ledger entries under `/app/payroll/ledger` and payslips under `/app/payroll/payslips`.
+4. The admin reviews ledger entries under `/payroll/ledger` and payslips under `/payroll/payslips`.
 
 ### Phase 8: Employee Self-Service & Multi-Tenant Switching
 1. An employee signs in with their account.
-2. Navigating to `/app/workforce/me` displays their profile information.
-3. Navigating to `/app/payroll/payslips` allows them to view and inspect their finalized payslips.
+2. Navigating to `/workforce/me` displays their profile information.
+3. Navigating to `/payroll/payslips` allows them to view and inspect their finalized payslips.
 4. Users with memberships in multiple organizations switch tenants using the top navigation header; the frontend immediately fences and re-verifies access context.
 
 ---
@@ -374,38 +374,38 @@ Below is the verified customer journey executable in Lexorion Horizon today:
 | **Core Auth** | Logout | `AppShell` User Menu | `POST /api/core/auth/logout` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Core Auth** | Self-Service Public Registration | `/register` (`RegisterPage`) | N/A (Disabled) | `NOT IMPLEMENTED` | Source / UI Confirmed |
 | **Core Auth** | Password Recovery / Reset | `/login` ("Forgot password") | N/A (Disabled) | `NOT IMPLEMENTED` | Source / UI Confirmed |
-| **Platform** | Organization Directory & Creation | `/app/platform/organizations` | `GET/POST /api/platform/organizations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Platform** | Plan Assignment & Activation | `/app/platform/organizations/:id` | `PATCH /api/platform/organizations/:id` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workspaces** | Workspace Management | `/app/admin/workspaces` | `GET/POST /api/tenant/workspaces` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workspaces** | Product Attachment & Quotas | `/app/admin/workspaces` | `PATCH /api/tenant/workspaces/:id/products` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Platform** | Organization Directory & Creation | `/platform/organizations` | `GET/POST /api/platform/organizations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Platform** | Plan Assignment & Activation | `/platform/organizations/:id` | `PATCH /api/platform/organizations/:id` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workspaces** | Workspace Management | `/organization/workspaces` | `GET/POST /api/tenant/workspaces` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workspaces** | Product Attachment & Quotas | `/organization/workspaces` | `PATCH /api/tenant/workspaces/:id/products` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Workspaces** | Tenant-Local Workspace Keys | `AdminWorkspaces` | `POST /api/tenant/workspaces` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Invitations**| Organization User Invitations | `/app/admin/invitations` | `POST /api/tenant/invitations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Invitations**| Organization User Invitations | `/organization/invitations` | `POST /api/tenant/invitations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Invitations**| Mailpit Local SMTP Delivery | Mailpit Web UI (`:8025`) | Internal SMTP `:1025` | `IMPLEMENTED AND VERIFIED` | Automated + Live Mailpit |
-| **Invitations**| Delivery Failure & Retry | `/app/admin/invitations` | `POST /api/tenant/invitations/:id/resend` | `IMPLEMENTED AND VERIFIED` | Automated + Live Mailpit |
+| **Invitations**| Delivery Failure & Retry | `/organization/invitations` | `POST /api/tenant/invitations/:id/resend` | `IMPLEMENTED AND VERIFIED` | Automated + Live Mailpit |
 | **Invitations**| Token Rotation & Expiry | `/invitations/accept` | `POST /api/invitations/preview` | `IMPLEMENTED AND VERIFIED` | Automated + Live Mailpit |
 | **Invitations**| New User Register & Accept | `/invitations/accept` | `POST /api/invitations/register` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Invitations**| Existing User Sign-in & Accept | `/invitations/accept` | `POST /api/invitations/accept` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Overview**   | Guided Setup Checklist | `/app` (`HomePage`) | Projections over entities | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Overview**   | Readiness Projections | `/app` (`HomePage`) | `GET /api/payroll/readiness` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Overview**   | Recent Pay Runs & Continuation | `/app` (`HomePage`) | `GET /api/payroll/pay-runs` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workforce**  | Department Master Data | `/app/workforce/departments` | `GET/POST /api/workforce/departments` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workforce**  | Designation Master Data | `/app/workforce/designations` | `GET/POST /api/workforce/designations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workforce**  | Employee Management | `/app/workforce/employees` | `GET/POST/PATCH /api/workforce/employees`| `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workforce**  | Reporting Hierarchy & Structure| `/app/workforce/structure` | `GET /api/workforce/structure` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Workforce**  | Self-Service Profile (`/me`) | `/app/workforce/me` | `GET /api/workforce/me` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Overview**   | Guided Setup Checklist | `/overview` (`HomePage`) | Projections over entities | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Overview**   | Readiness Projections | `/overview` (`HomePage`) | `GET /api/payroll/readiness` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Overview**   | Recent Pay Runs & Continuation | `/overview` (`HomePage`) | `GET /api/payroll/pay-runs` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workforce**  | Department Master Data | `/workforce/departments` | `GET/POST /api/workforce/departments` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workforce**  | Designation Master Data | `/workforce/designations` | `GET/POST /api/workforce/designations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workforce**  | Employee Management | `/workforce/employees` | `GET/POST/PATCH /api/workforce/employees`| `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workforce**  | Reporting Hierarchy & Structure| `/workforce/structure` | `GET /api/workforce/structure` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Workforce**  | Self-Service Profile (`/me`) | `/workforce/me` | `GET /api/workforce/me` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Workforce**  | Leave & Attendance | N/A | N/A | `NOT IMPLEMENTED` | Source Confirmed |
 | **Workforce**  | Performance & Recruitment | N/A | N/A | `NOT IMPLEMENTED` | Source Confirmed |
-| **Payroll**    | Payroll Employee Enrollment | `/app/payroll/employees` | `GET/POST /api/payroll/employees` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Salary Components & Templates | `/app/payroll/components` | `GET/POST /api/payroll/components` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Compensation Profiles | `/app/payroll/compensation` | `GET/POST /api/payroll/compensation-profiles` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Pay-Run Preparation Panel | `/app/payroll/pay-runs` | `GET/PUT /api/payroll/pay-runs/:key/preparation` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Standalone Calculation Preview| `/app/payroll/calculations` | `POST /api/payroll/calculations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Payroll Employee Enrollment | `/payroll/employees` | `GET/POST /api/payroll/employees` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Salary Components & Templates | `/payroll/components` | `GET/POST /api/payroll/components` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Compensation Profiles | `/payroll/compensation` | `GET/POST /api/payroll/compensation-profiles` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Pay-Run Preparation Panel | `/payroll/runs` | `GET/PUT /api/payroll/pay-runs/:key/preparation` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Standalone Calculation Preview| `/payroll/calculations` | `POST /api/payroll/calculations` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Payroll**    | Period Semantics & One-Time Rules| Pay Run Processing | `POST /api/payroll/pay-runs/:key/process` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Processing & Failure Recovery | `/app/payroll/pay-runs` | `POST /api/payroll/pay-runs/:key/recover` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Reset for Recalculation | `/app/payroll/pay-runs` | `POST /api/payroll/pay-runs/:key/reset` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Finalization & Snapshot Freeze| `/app/payroll/pay-runs` | `POST /api/payroll/pay-runs/:key/finalize` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Double-Entry General Ledger | `/app/payroll/ledger` | `GET /api/payroll/ledger` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
-| **Payroll**    | Immutable Payslips | `/app/payroll/payslips` | `GET /api/payroll/payslips` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Processing & Failure Recovery | `/payroll/runs` | `POST /api/payroll/pay-runs/:key/recover` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Reset for Recalculation | `/payroll/runs` | `POST /api/payroll/pay-runs/:key/reset` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Finalization & Snapshot Freeze| `/payroll/runs` | `POST /api/payroll/pay-runs/:key/finalize` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Double-Entry General Ledger | `/payroll/ledger` | `GET /api/payroll/ledger` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
+| **Payroll**    | Immutable Payslips | `/payroll/payslips` | `GET /api/payroll/payslips` | `IMPLEMENTED AND VERIFIED` | Automated + Browser |
 | **Payroll**    | External Bank Disbursements | N/A | N/A | `NOT IMPLEMENTED` | Source Confirmed |
 | **Database**   | Service Database Separation | PostgreSQL Catalog | Separate DBs on shared host | `IMPLEMENTED AND VERIFIED` | Docker / Catalog |
 | **Database**   | Dedicated Database Roles | PostgreSQL Grants | `scripts/db-isolation/manage.py` | `BLOCKED BY OPERATIONAL APPROVAL` | Disposable Cluster |

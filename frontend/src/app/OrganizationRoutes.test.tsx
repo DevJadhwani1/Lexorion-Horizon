@@ -67,30 +67,37 @@ function AppShellLayout() {
 
 describe("appPath canonical and compatibility mappings", () => {
   it("maps canonical organization routes correctly on local host", () => {
-    expect(appPath("/organization")).toBe("/app/organization");
-    expect(appPath("/organization/workspaces")).toBe("/app/organization/workspaces");
-    expect(appPath("/organization/members")).toBe("/app/organization/members");
-    expect(appPath("/organization/invitations")).toBe("/app/organization/invitations");
-    expect(appPath("/organization/settings")).toBe("/app/organization/settings");
-    expect(appPath("/organization/settings/product-access")).toBe("/app/organization/settings/product-access");
-    expect(appPath("/organization/entitlements")).toBe("/app/organization/settings/product-access");
+    expect(appPath("/organization")).toBe("/organization");
+    expect(appPath("/organization/workspaces")).toBe("/organization/workspaces");
+    expect(appPath("/people")).toBe("/people");
+    expect(appPath("/organization/invitations")).toBe("/organization/invitations");
+    expect(appPath("/organization/settings")).toBe("/organization/settings");
+    expect(appPath("/organization/settings/product-access")).toBe("/organization/settings/product-access");
+    expect(appPath("/settings/organization")).toBe("/organization/settings");
+    expect(appPath("/settings/organization/product-access")).toBe("/organization/settings/product-access");
   });
 
   it("maps legacy admin routes to canonical local paths", () => {
-    expect(appPath("/app/admin/organization")).toBe("/app/organization");
-    expect(appPath("/app/admin/workspaces")).toBe("/app/organization/workspaces");
-    expect(appPath("/app/admin/members")).toBe("/app/organization/members");
-    expect(appPath("/app/admin/invitations")).toBe("/app/organization/invitations");
-    expect(appPath("/app/admin/settings")).toBe("/app/organization/settings");
-    expect(appPath("/app/admin/entitlements")).toBe("/app/organization/settings/product-access");
+    expect(appPath("/admin/organization")).toBe("/organization");
+    expect(appPath("/admin/workspaces")).toBe("/organization/workspaces");
+    expect(appPath("/admin/members")).toBe("/people");
+    expect(appPath("/admin/invitations")).toBe("/organization/invitations");
+    expect(appPath("/admin/settings")).toBe("/organization/settings");
+    expect(appPath("/admin/entitlements")).toBe("/organization/settings/product-access");
   });
 
   it("maps legacy top-level customer aliases to canonical local paths", () => {
-    expect(appPath("/workspaces")).toBe("/app/organization/workspaces");
-    expect(appPath("/members")).toBe("/app/organization/members");
-    expect(appPath("/invitations")).toBe("/app/organization/invitations");
-    expect(appPath("/settings")).toBe("/app/organization/settings");
-    expect(appPath("/entitlements")).toBe("/app/organization/settings/product-access");
+    expect(appPath("/workspaces")).toBe("/organization/workspaces");
+    expect(appPath("/members")).toBe("/people");
+    expect(appPath("/invitations")).toBe("/organization/invitations");
+    expect(appPath("/settings")).toBe("/organization/settings");
+    expect(appPath("/entitlements")).toBe("/organization/settings/product-access");
+
+    expect(appPath("/app")).toBe("/overview");
+    expect(appPath("/app/organization/members?role=admin")).toBe("/people?role=admin");
+    expect(appPath("/app/payroll/pay-runs?run=RUN-1")).toBe("/payroll/runs?run=RUN-1");
+    expect(appPath("/app/payroll/employees")).toBe("/payroll/employees");
+    expect(appPath("/organization/departments")).toBe("/workforce/departments");
   });
 });
 
@@ -109,22 +116,22 @@ describe("Client and local route architecture", () => {
     const routes = [
       ...getTopLevelCompatibilityRoutes(local ? "local" : "client"),
       {
-        path: local ? "/app" : "/",
+        path: "/",
         element: <AppShellLayout />,
-        children: clientRoutes(local),
+        children: clientRoutes(),
       },
     ];
     return createMemoryRouter(routes, { initialEntries: [initialPath] });
   }
 
-  it("renders all canonical routes under local development (/app/organization/*)", () => {
+  it("renders all canonical routes under local development (/organization/*)", () => {
     const canonicalPaths = [
-      { path: "/app/organization", testId: "admin-page-organization" },
-      { path: "/app/organization/workspaces", testId: "admin-workspaces-page" },
-      { path: "/app/organization/members", testId: "admin-page-members" },
-      { path: "/app/organization/invitations", testId: "admin-page-invitations" },
-      { path: "/app/organization/settings", testId: "admin-page-settings" },
-      { path: "/app/organization/settings/product-access", testId: "admin-page-product-access" },
+      { path: "/organization", testId: "admin-page-organization" },
+      { path: "/organization/workspaces", testId: "admin-workspaces-page" },
+      { path: "/people", testId: "admin-page-members" },
+      { path: "/organization/invitations", testId: "admin-page-invitations" },
+      { path: "/organization/settings", testId: "admin-page-settings" },
+      { path: "/organization/settings/product-access", testId: "admin-page-product-access" },
     ];
 
     for (const item of canonicalPaths) {
@@ -139,11 +146,12 @@ describe("Client and local route architecture", () => {
     const canonicalPaths = [
       { path: "/organization", testId: "admin-page-organization" },
       { path: "/organization/workspaces", testId: "admin-workspaces-page" },
-      { path: "/organization/members", testId: "admin-page-members" },
+      { path: "/people", testId: "admin-page-members" },
       { path: "/organization/invitations", testId: "admin-page-invitations" },
       { path: "/organization/settings", testId: "admin-page-settings" },
       { path: "/organization/settings/product-access", testId: "admin-page-product-access" },
     ];
+
 
     for (const item of canonicalPaths) {
       const router = createTestRouter(item.path, false);
@@ -153,33 +161,35 @@ describe("Client and local route architecture", () => {
     }
   });
 
-  it("redirects direct URL entry of /organization/* at top-level to /app/organization/* on local", () => {
+  it("redirects legacy /app URLs to canonical routes and keeps the query string", () => {
     const directEntries = [
-      { from: "/organization", testId: "admin-page-organization" },
-      { from: "/organization/workspaces", testId: "admin-workspaces-page" },
-      { from: "/organization/members", testId: "admin-page-members" },
-      { from: "/organization/invitations", testId: "admin-page-invitations" },
-      { from: "/organization/settings", testId: "admin-page-settings" },
-      { from: "/organization/entitlements", testId: "admin-page-product-access" },
+      { from: "/app/organization", testId: "admin-page-organization" },
+      { from: "/app/organization/workspaces", testId: "admin-workspaces-page" },
+      { from: "/app/organization/members?role=admin", testId: "admin-page-members", pathname: "/people", search: "?role=admin" },
+      { from: "/app/organization/invitations", testId: "admin-page-invitations" },
+      { from: "/app/organization/settings", testId: "admin-page-settings" },
+      { from: "/app?tab=home", pathname: "/overview", search: "?tab=home" },
     ];
 
     for (const item of directEntries) {
       const router = createTestRouter(item.from, true);
       const { unmount } = render(<RouterProvider router={router} />);
-      expect(screen.getByTestId(item.testId)).toBeTruthy();
+      if (item.testId) expect(screen.getByTestId(item.testId)).toBeTruthy();
+      if (item.pathname) expect(router.state.location.pathname).toBe(item.pathname);
+      if (item.search) expect(router.state.location.search).toBe(item.search);
       unmount();
     }
   });
 
-  it("redirects legacy /app/admin/* routes to /app/organization/* on local", () => {
+  it("redirects legacy /admin/* routes to /organization/* on local", () => {
     const legacyRedirects = [
-      { from: "/app/admin/organization", testId: "admin-page-organization" },
-      { from: "/app/admin/workspaces", testId: "admin-workspaces-page" },
-      { from: "/app/admin/members", testId: "admin-page-members" },
-      { from: "/app/admin/invitations", testId: "admin-page-invitations" },
-      { from: "/app/admin/settings", testId: "admin-page-settings" },
-      { from: "/app/admin/entitlements", testId: "admin-page-product-access" },
-      { from: "/app/admin", testId: "admin-page-organization" },
+      { from: "/admin/organization", testId: "admin-page-organization" },
+      { from: "/admin/workspaces", testId: "admin-workspaces-page" },
+      { from: "/admin/members", testId: "admin-page-members" },
+      { from: "/admin/invitations", testId: "admin-page-invitations" },
+      { from: "/admin/settings", testId: "admin-page-settings" },
+      { from: "/admin/entitlements", testId: "admin-page-product-access" },
+      { from: "/admin", testId: "admin-page-organization" },
     ];
 
     for (const item of legacyRedirects) {
@@ -190,7 +200,7 @@ describe("Client and local route architecture", () => {
     }
   });
 
-  it("redirects legacy top-level customer aliases to /app/organization/* on local", () => {
+  it("redirects legacy top-level customer aliases to /organization/* on local", () => {
     const aliasRedirects = [
       { from: "/workspaces", testId: "admin-workspaces-page" },
       { from: "/members", testId: "admin-page-members" },
@@ -229,11 +239,11 @@ describe("Client and local route architecture", () => {
 
   it("redirects every legacy Entitlements URL to Settings > Product access", () => {
     const cases: Array<{ from: string; local: boolean; to: string }> = [
-      { from: "/app/organization/entitlements", local: true, to: "/app/organization/settings/product-access" },
-      { from: "/organization/entitlements", local: true, to: "/app/organization/settings/product-access" },
-      { from: "/app/admin/entitlements", local: true, to: "/app/organization/settings/product-access" },
-      { from: "/app/entitlements", local: true, to: "/app/organization/settings/product-access" },
-      { from: "/entitlements", local: true, to: "/app/organization/settings/product-access" },
+      { from: "/app/organization/entitlements", local: true, to: "/organization/settings/product-access" },
+      { from: "/organization/entitlements", local: true, to: "/organization/settings/product-access" },
+      { from: "/app/admin/entitlements", local: true, to: "/organization/settings/product-access" },
+      { from: "/app/entitlements", local: true, to: "/organization/settings/product-access" },
+      { from: "/entitlements", local: true, to: "/organization/settings/product-access" },
       { from: "/organization/entitlements", local: false, to: "/organization/settings/product-access" },
       { from: "/admin/entitlements", local: false, to: "/organization/settings/product-access" },
       { from: "/entitlements", local: false, to: "/organization/settings/product-access" },
@@ -251,27 +261,28 @@ describe("Client and local route architecture", () => {
   });
 
   it("supports back and forward between Settings sections", async () => {
-    const router = createTestRouter("/app/organization/settings", true);
+    const router = createTestRouter("/organization/settings", true);
     render(<RouterProvider router={router} />);
     expect(screen.getByTestId("admin-page-settings")).toBeTruthy();
 
-    await act(() => router.navigate("/app/organization/entitlements"));
-    expect(router.state.location.pathname).toBe("/app/organization/settings/product-access");
+    await act(() => router.navigate("/organization/settings/product-access"));
+    expect(router.state.location.pathname).toBe("/organization/settings/product-access");
     expect(screen.getByTestId("admin-page-product-access")).toBeTruthy();
 
     await act(() => router.navigate(-1));
-    expect(router.state.location.pathname).toBe("/app/organization/settings");
+    expect(router.state.location.pathname).toBe("/organization/settings");
     expect(screen.getByTestId("admin-page-settings")).toBeTruthy();
 
     await act(() => router.navigate(1));
-    expect(router.state.location.pathname).toBe("/app/organization/settings/product-access");
+    expect(router.state.location.pathname).toBe("/organization/settings/product-access");
     expect(screen.getByTestId("admin-page-product-access")).toBeTruthy();
   });
+
 
   it("enforces ADMIN role guard on canonical organization routes", () => {
     authState.organization.membershipRole = "EMPLOYEE";
 
-    const router = createTestRouter("/app/organization", true);
+    const router = createTestRouter("/organization", true);
     render(<RouterProvider router={router} />);
 
     expect(screen.queryByTestId("admin-page-organization")).toBeNull();
@@ -281,7 +292,7 @@ describe("Client and local route architecture", () => {
   it("enforces organization context requirement on canonical organization routes", () => {
     authState.organization = null;
 
-    const router = createTestRouter("/app/organization", true);
+    const router = createTestRouter("/organization", true);
     render(<RouterProvider router={router} />);
 
     expect(screen.queryByTestId("admin-page-organization")).toBeNull();

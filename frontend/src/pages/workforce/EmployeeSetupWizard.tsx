@@ -144,7 +144,7 @@ function Review({ employee, setup, payrollEnabled, onEdit }: { employee: Employe
   const heading = !payrollEnabled ? "Employee created"
     : ready ? "Ready for payroll"
       : setup?.salaryConfigured ? "Salary configured · payroll setup incomplete" : "Employee created · payroll setup incomplete";
-  const profile = appPath(`/app/workforce/employees/${encodeURIComponent(employee.employeeCode)}`);
+  const profile = appPath(`/workforce/employees/${encodeURIComponent(employee.employeeCode)}`);
   return <div aria-label="Setup review">
     <h2>{name}: {heading}</h2>
     <ul className="setup-summary review-list">
@@ -154,13 +154,13 @@ function Review({ employee, setup, payrollEnabled, onEdit }: { employee: Employe
       </li>
       {payrollEnabled && !setup && <li className="todo"><span><strong>Payroll</strong> · Not set up — {employee.firstName} cannot be paid yet.</span><Button size="sm" onClick={() => onEdit("payroll")}>Set up payroll</Button></li>}
       {setup && setup.sections.filter((section) => section.key !== "salary").map((section) => <li key={section.key} className={section.status === "COMPLETE" || section.status === "NOT_APPLICABLE" ? "done" : "todo"}>
-        <span><strong>{section.title}</strong> <SectionStatusBadge status={section.status} />{section.missing.length > 0 && section.status !== "NOT_STARTED" && <small> Still needed: {section.missing.join(", ")}</small>}</span>
+        <span><strong>{section.title}</strong> <SectionStatusBadge status={section.status} />{section.missing.length > 0 && section.status !== "NOT_STARTED" && <small> Still needed: {section.missing.join(", ")}</small>}{section.note && <small> {section.note}</small>}</span>
         <Button size="sm" aria-label={`Edit ${section.title}`} onClick={() => onEdit("payroll")}>Edit</Button>
       </li>)}
       {setup && <li className={setup.salaryConfigured ? "done" : "todo"}>
         <span><strong>Salary</strong> <SectionStatusBadge status={setup.salaryConfigured ? "COMPLETE" : "NOT_STARTED"} />{!setup.salaryConfigured && <small> Blocks pay runs until added.</small>}</span>
         {setup.salaryConfigured
-          ? <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>View salary</Link>
+          ? <Link to={`${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`}>View salary</Link>
           : <Button size="sm" onClick={() => onEdit("salary")}>Add salary</Button>}
       </li>}
     </ul>
@@ -168,8 +168,8 @@ function Review({ employee, setup, payrollEnabled, onEdit }: { employee: Employe
     {setup && setup.readiness.readyForPayroll && !setup.readiness.setupComplete && <p className="snapshot-note">{employee.firstName} can be included in pay runs, but the payroll details marked above are still incomplete or unverified.</p>}
     <div className="form-actions">
       <Link className="button secondary" to={profile}>View profile</Link>
-      <Link className="button secondary" to={appPath("/app/workforce/employees/new")}>Add another employee</Link>
-      {setup?.readiness.readyForPayroll && <Link className="button primary" to={appPath("/app/payroll/pay-runs")}>Go to pay runs</Link>}
+      <Link className="button secondary" to={appPath("/workforce/employees/new")}>Add another employee</Link>
+      {setup?.readiness.readyForPayroll && <Link className="button primary" to={appPath("/payroll/runs")}>Go to pay runs</Link>}
     </div>
   </div>;
 }

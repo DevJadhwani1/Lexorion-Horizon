@@ -93,7 +93,7 @@ export function AccountMenu() {
           </div>
 
           <div className="account-popover-links">
-            <Link to={appPath("/app/workforce/me")} className="account-popover-link" onClick={close} role="menuitem">
+            <Link to={appPath("/workforce/me")} className="account-popover-link" onClick={close} role="menuitem">
               <span className="account-popover-icon">
                 <Icon name="user" size={16} />
               </span>
@@ -118,10 +118,10 @@ export function AccountMenu() {
                   close();
                   if (application.mode === "platform") {
                     if (consoleHost() === "platform") window.location.assign(consoleUrl("client"));
-                    else { application.enterClient(); navigate("/app"); }
+                    else { application.enterClient(); navigate("/overview"); }
                   } else {
                     if (consoleHost() === "client") window.location.assign(consoleUrl("platform"));
-                    else { application.enterPlatform(); navigate("/app/platform"); }
+                    else { application.enterPlatform(); navigate("/platform"); }
                   }
                 }}
               >

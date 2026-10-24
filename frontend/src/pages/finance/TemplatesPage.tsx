@@ -20,7 +20,7 @@ import { Table } from "../admin/AdminPage";
 import { InvoiceDocument, type DocumentData } from "./InvoiceDocument";
 import { localToday } from "./FinancePage";
 
-const templatesPath = (path = "") => appPath(`/app/finance/templates${path}`);
+const templatesPath = (path = "") => appPath(`/finance/templates${path}`);
 const message = (reason: unknown, fallback: string) => reason instanceof ApiError || reason instanceof Error ? reason.message : fallback;
 const layouts: { value: TemplateLayout; label: string; note: string }[] = [
   { value: "MODERN", label: "Modern", note: "Colour bands" }, { value: "CLASSIC", label: "Classic", note: "Framed, formal" }, { value: "MINIMAL", label: "Minimal", note: "Light, airy" },

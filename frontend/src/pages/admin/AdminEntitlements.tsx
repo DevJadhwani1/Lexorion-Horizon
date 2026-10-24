@@ -1,6 +1,7 @@
 import { Badge } from "../../components/ui/Badge";
 import { Empty } from "../../components/ui/Page";
 import { Icon, type IconName } from "../../layout/SidebarIcon";
+import { useOptionalWorkspace } from "../../workspace/WorkspaceProvider";
 import {
   type EffectiveEntitlements,
   hasEntitlement,
@@ -67,17 +68,37 @@ export function AdminEntitlements({ entitlements }: { entitlements: EffectiveEnt
     },
   ];
 
-  // Dynamically include any additional product present in the backend response (e.g., finance)
+  // Determine Finance presence and availability
+  const workspaceContext = useOptionalWorkspace();
+  const hasFinanceWorkspace = Boolean(
+    workspaceContext?.workspaces?.some((ws) => ws.products?.some((p) => p.key === "finance")) ||
+    workspaceContext?.workspace?.products?.some((p) => p.key === "finance")
+  );
+
+  const isFinanceExplicitlyDisabled =
+    entitlements.some((p) =>
+      p.entitlements?.some(
+        (e) => (e.key === "finance.enabled" || e.key === "finance.invoicing") && e.booleanValue === false
+      )
+    );
+
+  const financeAvailable =
+    hasEntitlement(entitlements, "finance.enabled") ||
+    isProductAvailable(entitlements, "finance") ||
+    hasFinanceWorkspace;
+
   const isFinancePresent =
+    financeAvailable ||
+    isFinanceExplicitlyDisabled ||
     hasEntitlement(entitlements, "finance.enabled") ||
     entitlements.some((p) => p.productKey === "finance");
+
   if (isFinancePresent) {
-    const financeAvailable = isProductAvailable(entitlements, "finance");
     products.push({
       key: "finance",
       name: "Finance",
       icon: "card",
-      iconClass: "generic",
+      iconClass: "finance",
       description:
         "Client billing with invoices, payment collection, and receivables tracking.",
       available: financeAvailable,

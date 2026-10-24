@@ -39,7 +39,7 @@ vi.mock("../features/admin/adminApi", () => ({
   updateOrganization: vi.fn(async () => ({})),
 }));
 vi.mock("../features/admin/workspaceApi", () => ({ getOrganizationWorkspaces: vi.fn(async () => [{ status: "ACTIVE" }]) }));
-vi.mock("../features/entitlements/entitlementApi", () => ({ getEffectiveEntitlements: vi.fn(async () => []), getEntitlementLimit: () => null }));
+vi.mock("../features/entitlements/entitlementApi", () => ({ getEffectiveEntitlements: vi.fn(async () => []), getEntitlementLimit: () => null, deriveProductKeysFromEntitlements: () => ["workforce", "payroll"] }));
 vi.mock("../features/workforce/workforceApi", () => ({ getEmployees: vi.fn(async () => ({ content: [], totalElements: 0, totalPages: 1 })), getDepartments: vi.fn(async () => []), getDesignations: vi.fn(async () => []), getMe: vi.fn(async () => ({ employeeCode: "ME", status: "ACTIVE" })), getTeam: vi.fn() }));
 vi.mock("../features/payroll/payrollApi", () => ({ getPayrollEmployees: vi.fn(async () => []), getPayrollReadiness: vi.fn(), getPayRuns: vi.fn() }));
 const renderHome = () => render(<MemoryRouter><HomePage /></MemoryRouter>);
@@ -68,7 +68,7 @@ it("identifies missing compensation without claiming a period is ready", async (
   vi.mocked(payroll.getPayrollReadiness).mockResolvedValue({ activeEmployees: 2, employeesWithCompensation: 1, nextEmployeeCode: "EMP-2" });
   vi.mocked(workforce.getEmployees).mockResolvedValue({ content: [{ employeeCode: "EMP-2", firstName: "Grace", lastName: "Hopper", status: "ACTIVE" }], totalElements: 1, totalPages: 1 } as never);
   renderHome(); await screen.findByRole("heading", { name: "Add a salary for Grace Hopper" });
-  expect(screen.getByRole("link", { name: "Set up compensation" }).getAttribute("href")).toBe("/app/workforce/employees/new?employee=EMP-2");
+  expect(screen.getByRole("link", { name: "Set up compensation" }).getAttribute("href")).toBe("/workforce/employees/new?employee=EMP-2");
   expect(screen.getByText(/Configuration counts are not a pay-period approval/)).toBeTruthy();
 });
 it("resumes a failed run and links to the latest finalized result", async () => {
@@ -80,7 +80,7 @@ it("resumes a failed run and links to the latest finalized result", async () => 
 });
 it("offers retry after a service failure", async () => {
   vi.mocked(payroll.getPayrollReadiness).mockRejectedValueOnce(new Error("Temporarily unavailable"));
-  renderHome(); fireEvent.click(await screen.findByRole("button", { name: "Retry overview" }));
+  renderHome(); fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
   await screen.findByRole("heading", { name: "Workspace setup" });
 });
 it("ignores delayed overview data from the previous workspace", async () => {
@@ -142,6 +142,18 @@ it("presents an interactive workspace selection grid when workspaces exist but n
   const openBtn = screen.getByRole("button", { name: "Open workspace →" });
   fireEvent.click(openBtn);
   expect(state.selectWorkspace).toHaveBeenCalledWith("ops");
+});
+it("lists a draft pay run separately from the featured failure and keeps departments optional", async () => {
+  const base = { currency: "USD", netTotal: 100, periodStart: "2026-01-01", periodEnd: "2026-01-31", employeeCount: 1 };
+  vi.mocked(payroll.getPayRuns).mockResolvedValue({ content: [{ ...base, payRunKey: "RUN-FAIL", status: "FAILED", failureMessage: "Missing compensation profile" }, { ...base, payRunKey: "RUN-DRAFT", status: "DRAFT" }] } as never);
+  vi.mocked(payroll.getPayrollReadiness).mockResolvedValue({ activeEmployees: 1, employeesWithCompensation: 1, nextEmployeeCode: null, statutoryDecisionsOpen: 1, detailsAwaitingVerification: 0 });
+  vi.mocked(workforce.getEmployees).mockResolvedValue({ content: [{ employeeCode: "EMP-1", firstName: "Ada", lastName: "Lovelace", status: "ACTIVE" }], totalElements: 1, totalPages: 1 } as never);
+  renderHome();
+  await screen.findByRole("link", { name: "Review failed run" });
+  expect(screen.getByText(/Pay run RUN-DRAFT is DRAFT/)).toBeTruthy();
+  expect(screen.getAllByText(/Pay run RUN-FAIL failed/).length).toBe(1);
+  expect(screen.getAllByText("Optional").length).toBeGreaterThan(0);
+  expect(screen.getByText(/unresolved statutory decision/)).toBeTruthy();
 });
 it("renders operational attention items when pay run failures occur", async () => {
   const base = { currency: "USD", netTotal: 100, periodStart: "2026-01-01", periodEnd: "2026-01-31", employeeCount: 1 };

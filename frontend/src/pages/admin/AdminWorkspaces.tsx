@@ -80,7 +80,7 @@ export function AdminWorkspaces() {
       setKey("");
       setDisplayName("");
       setKeyTouched(false);
-      navigate(appPath("/app"));
+      navigate(appPath("/overview"));
     } catch (reason) {
       // Retain form input on failure for user recovery/retry
       setError(reason instanceof Error ? reason.message : "Unable to create workspace");

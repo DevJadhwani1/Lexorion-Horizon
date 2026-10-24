@@ -1,6 +1,7 @@
 package com.lexorion.platform.tenantadmin;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -353,5 +354,30 @@ class TenantOrganizationAdministrationIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"name\":\"Test\",\"userId\":\"00000000-0000-0000-0000-000000000000\"}"))
             .andExpect(status().isBadRequest());
+
+        mvc.perform(post("/api/tenant/organization/onboarding/finish")
+            .header("X-Lexorion-Organization", org.getSlug()))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void soloAccessIsPersistedAndFinishRejectsDefaultsWorkspaceSelectionAndClosedInvitations() throws Exception {
+        tenant(get("/api/tenant/organization"))
+            .andExpect(jsonPath("$.settings.onboardingAccessDecision").value(nullValue()));
+        // Legal name is already stored, but there is no plan, workspace, or access decision.
+        tenant(post("/api/tenant/organization/onboarding/finish"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value(containsString("plan")))
+            .andExpect(jsonPath("$.message").value(containsString("workspace")))
+            .andExpect(jsonPath("$.message").value(containsString("only administrator")));
+        tenant(post("/api/tenant/organization/onboarding/solo"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.settings.onboardingAccessDecision").value("SOLO"))
+            .andExpect(jsonPath("$.settings.onboardingFinishedAt").value(nullValue()));
+        tenant(get("/api/tenant/organization"))
+            .andExpect(jsonPath("$.settings.onboardingAccessDecision").value("SOLO"));
+        tenant(post("/api/tenant/organization/onboarding/finish"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value(containsString("plan")));
     }
 }

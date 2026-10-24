@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { apiRequest } from "../api/httpClient";
 import { useAuth } from "../auth/AuthProvider";
 import { session } from "../api/session";
-import { consoleHost } from "../app/hostRouting";
+import { homePath } from "../app/hostRouting";
 import { Page, Notice } from "../components/ui/Page";
 
 interface Preview { email: string; organizationSlug: string; organizationName: string; accountExists: boolean }
@@ -46,7 +46,7 @@ export function InvitationPage() {
       await auth.reloadOrganizations();
       session.setOrganization(preview.organizationSlug);
       session.setWorkspace(null); session.setMode("client");
-      window.location.replace(consoleHost() === "local" ? "/app" : "/");
+      window.location.replace(homePath());
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to accept invitation. Try again."); }
     finally { setBusy(false); }
   }

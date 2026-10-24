@@ -36,12 +36,14 @@ public final class PayrollSetupDtos {
 
     public enum SectionStatus { NOT_STARTED, IN_PROGRESS, COMPLETE, NOT_APPLICABLE, PENDING_VERIFICATION }
 
-    public record Section(String key, String title, SectionStatus status, List<String> missing) {}
+    /** note explains the status. It is not a missing field and does not by itself change pay-run eligibility. */
+    public record Section(String key, String title, SectionStatus status, List<String> missing, String note) {}
 
     /**
-     * readyForPayroll reflects the existing pay-run rules only (active enrollment and an active salary).
-     * setupComplete additionally needs every section complete or not applicable; it is advisory and never
-     * changes pay-run eligibility.
+     * readyForPayroll is the pay-run rule: an active enrollment and an active salary.
+     * setupComplete also needs every section complete or explicitly not applicable.
+     * Pending verification, an optional blank identifier, and an unresolved applicability decision
+     * do not change pay-run eligibility. An unresolved decision is not treated as not applicable.
      */
     public record Readiness(boolean readyForPayroll, boolean setupComplete, List<String> blockers, List<String> warnings) {}
 

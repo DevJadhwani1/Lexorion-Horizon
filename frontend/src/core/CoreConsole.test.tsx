@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { chooseOption } from "../test/dropdown";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { CoreRoutes } from "./CoreConsole";
 import { CoreSessionProvider } from "./CoreSession";
@@ -79,6 +79,19 @@ describe("Core Console", () => {
     expect(await screen.findByRole("heading", { name: "Sign in to Core Console" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Retry identity check" })).toBeTruthy();
     expect(session.access()).toBe("access");
+  });
+  it("asks before revoking every session for a person", async () => {
+    session.setTokens("access", "refresh");
+    const sessions = [{ userId: "user-1", email: "ada@example.com", sessionId: "sess-a", expiresAt: "2026-12-01T00:00:00Z", active: true }, { userId: "user-1", email: "ada@example.com", sessionId: "sess-b", expiresAt: "2026-12-01T00:00:00Z", active: true }];
+    const fetcher = vi.fn((path: string, init?: RequestInit) => Promise.resolve(path === "/api/core/sessions" ? response(sessions) : path.endsWith("/sessions/revoke") && init?.method === "POST" ? response(null, 204) : defaultResponse(path)));
+    vi.stubGlobal("fetch", fetcher); mount("/sessions");
+    expect(await screen.findAllByRole("button", { name: "Revoke all sessions" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Revoke all sessions" }));
+    const dialog = await screen.findByRole("dialog", { name: "Revoke all sessions for ada@example.com?" });
+    expect(dialog.textContent).toContain("does not revoke only the session on this row");
+    expect(fetcher.mock.calls.some(([path]) => String(path).endsWith("/sessions/revoke"))).toBe(false);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Revoke all sessions" }));
+    await waitFor(() => expect(fetcher.mock.calls.some(([path, init]) => String(path) === "/api/core/users/user-1/sessions/revoke" && (init as RequestInit | undefined)?.method === "POST")).toBe(true));
   });
   it("registers a product using the generic API and reloads persisted rows", async () => {
     session.setTokens("access", "refresh"); let products: unknown[] = [];

@@ -120,15 +120,7 @@ public class PayrollSetupService {
 
     SetupResponse response(PayrollEmployee employee, StatutoryProfile p) {
         boolean salary = compensation.findConfiguredEmployeeCodes(employee.getWorkspace().getId()).contains(employee.getEmployeeCode());
-        List<Section> sections = new ArrayList<>();
-        sections.add(enrollment(employee));
-        sections.add(payment(p));
-        sections.add(tax(p));
-        sections.add(scheme("epf", "Provident fund (EPF)", p == null ? null : p.getPfApplicability(), p != null && p.getUan() != null, p != null && p.isPfVerified(), "UAN"));
-        sections.add(scheme("esi", "Employees’ State Insurance (ESI)", p == null ? null : p.getEsiApplicability(), p != null && p.getEsiIpNumber() != null, p != null && p.isEsiVerified(), "ESI IP number"));
-        sections.add(state("pt", "Professional tax", p == null ? null : p.getPtApplicability(), p == null ? null : p.getPtState()));
-        sections.add(state("lwf", "Labour welfare fund", p == null ? null : p.getLwfApplicability(), p == null ? null : p.getLwfState()));
-        sections.add(new Section("salary", "Salary", salary ? SectionStatus.COMPLETE : SectionStatus.NOT_STARTED, salary ? List.of() : List.of("Active salary with at least one pay component")));
+        List<Section> sections = sectionsFor(employee, p, salary);
 
         List<String> blockers = new ArrayList<>(), warnings = new ArrayList<>();
         if (employee.getStatus() != PayrollStatus.ACTIVE) blockers.add("Payroll enrollment is inactive");
@@ -147,42 +139,61 @@ public class PayrollSetupService {
                 new Readiness(blockers.isEmpty(), complete && blockers.isEmpty(), blockers, warnings));
     }
 
+    static List<Section> sectionsFor(PayrollEmployee employee, StatutoryProfile profile, boolean salary) {
+        List<Section> sections = new ArrayList<>();
+        sections.add(enrollment(employee));
+        sections.add(payment(profile));
+        sections.add(tax(profile));
+        sections.add(scheme("epf", "Provident fund (EPF)", profile == null ? null : profile.getPfApplicability(), profile != null && profile.getUan() != null, profile != null && profile.isPfVerified(), "UAN"));
+        sections.add(scheme("esi", "Employees’ State Insurance (ESI)", profile == null ? null : profile.getEsiApplicability(), profile != null && profile.getEsiIpNumber() != null, profile != null && profile.isEsiVerified(), "ESI IP number"));
+        sections.add(stateScheme("pt", "Professional tax", profile == null ? null : profile.getPtApplicability(), profile == null ? null : profile.getPtState()));
+        sections.add(stateScheme("lwf", "Labour welfare fund", profile == null ? null : profile.getLwfApplicability(), profile == null ? null : profile.getLwfState()));
+        sections.add(section("salary", "Salary", salary ? SectionStatus.COMPLETE : SectionStatus.NOT_STARTED, salary ? List.of() : List.of("Active salary with at least one pay component"), salary ? null : "A salary blocks inclusion in a pay run. The other sections do not."));
+        return sections;
+    }
+
+    private static Section section(String key, String title, SectionStatus status, List<String> missing, String note) {
+        return new Section(key, title, status, missing, note);
+    }
+
     private static Section enrollment(PayrollEmployee e) {
-        return new Section("enrollment", "Payroll enrollment", e.getStatus() == PayrollStatus.ACTIVE ? SectionStatus.COMPLETE : SectionStatus.IN_PROGRESS,
-                e.getStatus() == PayrollStatus.ACTIVE ? List.of() : List.of("Active payroll status"));
+        return section("enrollment", "Payroll enrollment", e.getStatus() == PayrollStatus.ACTIVE ? SectionStatus.COMPLETE : SectionStatus.IN_PROGRESS,
+                e.getStatus() == PayrollStatus.ACTIVE ? List.of() : List.of("Active payroll status"),
+                e.getStatus() == PayrollStatus.ACTIVE ? null : "Inactive enrollment blocks inclusion in a pay run.");
     }
 
     private static Section payment(StatutoryProfile p) {
-        if (p == null || p.getPaymentMethod() == null) return new Section("payment", "Payment method", SectionStatus.NOT_STARTED, List.of("Payment method"));
-        if (p.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) return new Section("payment", "Payment method", SectionStatus.COMPLETE, List.of());
+        if (p == null || p.getPaymentMethod() == null) return section("payment", "Payment method", SectionStatus.NOT_STARTED, List.of("Payment method"), "Choose how this employee is paid. This does not block pay-run calculation.");
+        if (p.getPaymentMethod() != PaymentMethod.BANK_TRANSFER) return section("payment", "Payment method", SectionStatus.COMPLETE, List.of(), "Cheque and cash do not require bank details or bank verification.");
         List<String> missing = new ArrayList<>();
         if (p.getBankAccountHolder() == null) missing.add("Account holder name");
         if (p.getBankAccountNumber() == null) missing.add("Account number");
         if (p.getBankIfsc() == null) missing.add("IFSC");
-        if (!missing.isEmpty()) return new Section("payment", "Payment method", SectionStatus.IN_PROGRESS, missing);
-        return new Section("payment", "Payment method", p.isBankVerified() ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of());
+        if (!missing.isEmpty()) return section("payment", "Payment method", SectionStatus.IN_PROGRESS, missing, "Bank transfer needs an account holder, account number, and IFSC before payment. Calculation does not check them.");
+        return section("payment", "Payment method", p.isBankVerified() ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of(), p.isBankVerified() ? "Bank details are saved and marked verified." : "Bank details are saved and not verified. Verify them before paying by bank transfer. Calculation and finalization do not check the account.");
     }
 
     private static Section tax(StatutoryProfile p) {
         boolean pan = p != null && p.getPan() != null, regime = p != null && p.getTaxRegime() != null;
-        if (!pan && !regime) return new Section("tax", "PAN and tax regime", SectionStatus.NOT_STARTED, List.of("PAN", "Tax regime"));
-        if (!pan || !regime) return new Section("tax", "PAN and tax regime", SectionStatus.IN_PROGRESS, List.of(pan ? "Tax regime" : "PAN"));
-        return new Section("tax", "PAN and tax regime", p.isPanVerified() ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of());
+        if (!pan && !regime) return section("tax", "PAN and tax regime", SectionStatus.NOT_STARTED, List.of("PAN", "Tax regime"), "PAN and regime are part of setup. Horizon does not calculate income tax, and a blank PAN does not block a pay run.");
+        if (!pan || !regime) return section("tax", "PAN and tax regime", SectionStatus.IN_PROGRESS, List.of(pan ? "Tax regime" : "PAN"), "Finish the tax record that was started. This does not block a pay run.");
+        return section("tax", "PAN and tax regime", p.isPanVerified() ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of(), p.isPanVerified() ? null : "PAN is saved and not verified. Verification does not block a pay run, and tax is not calculated.");
     }
 
     private static Section scheme(String key, String title, StatutoryApplicability applicability, boolean identifier, boolean verified, String identifierLabel) {
         if (applicability == null || applicability == StatutoryApplicability.UNDECIDED)
-            return new Section(key, title, SectionStatus.NOT_STARTED, List.of("Decide whether it applies"));
-        if (applicability == StatutoryApplicability.NOT_APPLICABLE) return new Section(key, title, SectionStatus.NOT_APPLICABLE, List.of());
-        if (!identifier) return new Section(key, title, SectionStatus.IN_PROGRESS, List.of(identifierLabel));
-        return new Section(key, title, verified ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of());
+            return section(key, title, SectionStatus.NOT_STARTED, List.of("Decide whether it applies"), "Applicability is unresolved. Horizon does not treat that as not applicable, and it does not block a pay run.");
+        if (applicability == StatutoryApplicability.NOT_APPLICABLE) return section(key, title, SectionStatus.NOT_APPLICABLE, List.of(), "Recorded as not applicable. That is an employer decision, not a calculated exemption.");
+        if (!identifier) return section(key, title, SectionStatus.COMPLETE, List.of(), identifierLabel + " was not recorded. It is optional, so this section is not left in progress, and it does not block a pay run or an estimate.");
+        return section(key, title, verified ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of(), verified ? null : identifierLabel + " is saved and not verified. Verification does not block a pay run.");
     }
 
-    private static Section state(String key, String title, StatutoryApplicability applicability, String state) {
+    private static Section stateScheme(String key, String title, StatutoryApplicability applicability, String state) {
         if (applicability == null || applicability == StatutoryApplicability.UNDECIDED)
-            return new Section(key, title, SectionStatus.NOT_STARTED, List.of("Decide whether it applies"));
-        if (applicability == StatutoryApplicability.NOT_APPLICABLE) return new Section(key, title, SectionStatus.NOT_APPLICABLE, List.of());
-        return state == null ? new Section(key, title, SectionStatus.IN_PROGRESS, List.of("State")) : new Section(key, title, SectionStatus.COMPLETE, List.of());
+            return section(key, title, SectionStatus.NOT_STARTED, List.of("Decide whether it applies"), "Applicability is unresolved. Horizon does not treat that as not applicable, does not calculate this amount, and does not block a pay run.");
+        if (applicability == StatutoryApplicability.NOT_APPLICABLE) return section(key, title, SectionStatus.NOT_APPLICABLE, List.of(), "Recorded as not applicable. A missing state is expected and is not a compliance determination.");
+        if (state == null) return section(key, title, SectionStatus.IN_PROGRESS, List.of("State"), "Record the state this decision refers to. A state code is not a calculation, and this does not block a pay run.");
+        return section(key, title, SectionStatus.COMPLETE, List.of(), "The state is recorded. That does not mean the amount was calculated or that the state levies it.");
     }
 
     static StatutoryProfileResponse masked(StatutoryProfile p) {

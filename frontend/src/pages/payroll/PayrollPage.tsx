@@ -153,7 +153,7 @@ function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[];
         <ul className="pending-list">
           {pending.slice(0, 10).map((employee) => <li key={employee.employeeCode}>
             <span><strong>{personName(employee)}</strong> <small>{employee.employeeCode}</small></span>
-            <Link to={`${appPath("/app/workforce/employees/new")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Set up payroll →</Link>
+            <Link to={`${appPath("/workforce/employees/new")}?employee=${encodeURIComponent(employee.employeeCode)}`}>Set up payroll →</Link>
           </li>)}
         </ul>
         {pending.length > 10 && <p className="snapshot-note">And {pending.length - 10} more. Open each employee’s profile to continue.</p>}
@@ -168,8 +168,8 @@ function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[];
               <td>{formatDate(e.effectiveFrom)}</td>
               <td><StatusBadge status={e.status} /></td>
               <td className="row-actions">
-                <Link to={`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`}>Salary</Link>
-                <Link to={`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`}>Payslips</Link>
+                <Link to={`${appPath("/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`}>Salary</Link>
+                <Link to={`${appPath("/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`}>Payslips</Link>
                 <Button size="sm" onClick={async () =>
                   await ask({ title: `${e.status === "ACTIVE" ? "Stop paying" : "Resume paying"} ${directory.nameOf(e.employeeCode)}?`,
                     body: e.status === "ACTIVE" ? "They will not be eligible for new pay runs until payroll is resumed. Finalized history is kept." : "They become eligible for new pay runs again.",
@@ -184,7 +184,7 @@ function PayrollEmployees({ employees, reload }: { employees: PayrollEmployee[];
           ))}
         </Table>
       ) : (
-        <Empty><strong>Nobody is set up for payroll yet.</strong><br />{pending.length ? "Choose someone above to add their payroll settings and salary." : <>Add an employee first. <Link to={appPath("/app/workforce/employees/new")}>Add employee</Link></>}</Empty>
+        <Empty><strong>Nobody is set up for payroll yet.</strong><br />{pending.length ? "Choose someone above to add their payroll settings and salary." : <>Add an employee first. <Link to={appPath("/workforce/employees/new")}>Add employee</Link></>}</Empty>
       )}
     </Page>
   );
@@ -208,7 +208,7 @@ function EmployeeForm({ reload }: { reload(): Promise<void> }) {
           );
           void createPayrollEmployee({ ...b, currency: String(b.currency).toUpperCase(), status: "ACTIVE" }).then(async () => {
             await reload();
-            const next = `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`;
+            const next = `${appPath("/payroll/compensation")}?employee=${encodeURIComponent(String(b.employeeCode))}`;
             const back = workflowReturn(searchParams.toString());
             navigate(back ? workflowLink(next, back) : next);
           }).catch((x) => setError(x instanceof ApiError ? x.message : "Unable to set up payroll")).finally(() => setBusy(false));
@@ -829,8 +829,8 @@ function EmployeeDetail({ section }: { section: string }) {
           ]} />
         {loading && <span role="status">Loading…</span>}
       </div>
-      {error && <Notice>{error}<p><Link to={workflowLink(`${appPath("/app/payroll/employees")}?employee=${encodeURIComponent(code)}`, `${appPath(`/app/payroll/${section}`)}?employee=${encodeURIComponent(code)}`)}>Review payroll employee configuration</Link></p></Notice>}
-      {!code && <Notice tone="info">{roster.length ? "Choose an employee to continue." : <>Nobody is set up for payroll yet. <Link to={appPath("/app/payroll/employees")}>Set up payroll employees</Link></>}</Notice>}
+      {error && <Notice>{error}<p><Link to={workflowLink(`${appPath("/payroll/employees")}?employee=${encodeURIComponent(code)}`, `${appPath(`/payroll/${section}`)}?employee=${encodeURIComponent(code)}`)}>Review payroll employee configuration</Link></p></Notice>}
+      {!code && <Notice tone="info">{roster.length ? "Choose an employee to continue." : <>Nobody is set up for payroll yet. <Link to={appPath("/payroll/employees")}>Set up payroll employees</Link></>}</Notice>}
       {employee && (
         <div className="employee-context">
           <strong>{directory.nameOf(employee.employeeCode)}</strong>
@@ -887,7 +887,7 @@ function EmployeeDetail({ section }: { section: string }) {
         </form>
       )}
       {data && data.length === 0 && section !== "compensation" && <Empty>{section === "calculations" ? "No previews yet. Choose a date above to see what this employee would be paid." : "Nothing here yet. Results appear after a pay run including this employee is finalized."}</Empty>}
-      {section === "compensation" && employee && <p className="snapshot-note">Need another pay component? <Link to={workflowLink(appPath("/app/payroll/components"), `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Manage salary components</Link>, then return here.</p>}
+      {section === "compensation" && employee && <p className="snapshot-note">Need another pay component? <Link to={workflowLink(appPath("/payroll/components"), `${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employee.employeeCode)}`)}>Manage salary components</Link>, then return here.</p>}
       {data &&
         section === "compensation" &&
         (data as Profile[]).map((p) => (
@@ -1018,6 +1018,7 @@ function EmployeeDetail({ section }: { section: string }) {
               </div>
               <StatusBadge status="FINALIZED" />
             </header>
+            <p className="snapshot-note">This payslip records the finalized calculation. It is not confirmation that money was sent. EPF and ESI estimates are not deductions unless they were added as salary components. Professional tax, labour welfare fund, and income-tax are not calculated.</p>
             <dl>
               <div>
                 <dt>Pay period</dt>
@@ -1203,7 +1204,7 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
   mutate(action: () => Promise<PayRun>): Promise<void>; onPrepared(): Promise<void>; onClose(): void;
 }) {
   const [ask, confirmDialog] = useConfirm();
-  const returnTo = `${appPath("/app/payroll/pay-runs")}?run=${encodeURIComponent(run.payRunKey)}`;
+  const returnTo = `${appPath("/payroll/runs")}?run=${encodeURIComponent(run.payRunKey)}`;
   const steps = ["Choose employees", "Calculate", "Review & finalize"];
   const position = run.status === "DRAFT" || run.status === "FAILED" ? 0 : run.status === "PROCESSING" ? 1 : run.status === "CALCULATED" ? 2 : 3;
   return (
@@ -1242,9 +1243,9 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
                 <td>{money(e.deductionAmount, e.currency)}</td>
                 <td><strong>{money(e.netAmount, e.currency)}</strong></td>
                 <td className="row-actions">{run.status === "FINALIZED" ? <>
-                  <Link to={workflowLink(`${appPath("/app/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Payslip</Link>
-                  <Link to={workflowLink(`${appPath("/app/payroll/ledger")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Ledger</Link>
-                </> : <Link to={workflowLink(`${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Review compensation</Link>}</td>
+                  <Link to={workflowLink(`${appPath("/payroll/payslips")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Payslip</Link>
+                  <Link to={workflowLink(`${appPath("/payroll/ledger")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Ledger</Link>
+                </> : <Link to={workflowLink(`${appPath("/payroll/compensation")}?employee=${encodeURIComponent(e.employeeCode)}`, returnTo)}>Review compensation</Link>}</td>
               </tr>
             ))}
           </Table>
@@ -1256,14 +1257,14 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
         {run.status === "CALCULATED" && (
           <Button variant="primary" disabled={busy}
             onClick={async () => await ask({ title: `Finalize ${run.payRunKey}?`, tone: "destructive", confirmLabel: "Finalize pay run",
-              body: `Net pay of ${money(run.netTotal, run.currency)} for ${run.employeeCount} employee${run.employeeCount === 1 ? "" : "s"} will be locked and payslips issued. This cannot be undone.` }) && void mutate(() => finalizePayRun(run.payRunKey))}>
+              body: `Calculated net pay of ${money(run.netTotal, run.currency)} for ${run.employeeCount} employee${run.employeeCount === 1 ? "" : "s"} will be locked and payslips issued. This does not send a bank, cheque, or cash payment, and it does not approve unresolved EPF, ESI, professional tax, or labour welfare fund decisions. Professional tax, labour welfare fund, and income-tax are not calculated. This cannot be undone.` }) && void mutate(() => finalizePayRun(run.payRunKey))}>
             Finalize
           </Button>
         )}
         {run.status === "CALCULATED" && <Button disabled={busy} onClick={async () => await ask({ title: "Return this run to Draft?", body: "Previous calculation snapshots remain in history. Calculate again before finalizing.", confirmLabel: "Return to Draft" }) && void mutate(() => recoverPayRun(run.payRunKey))}>Reset for recalculation</Button>}
         {run.status === "FINALIZED" && (
           <Notice tone="success">
-            Finalized payroll is immutable. Open each employee’s payslip or ledger above to review the results.
+            Finalized payroll is immutable. No payment has been sent. Open each employee’s payslip or ledger above to review the calculated results.
           </Notice>
         )}
         {run.status === "PROCESSING" && (
@@ -1271,7 +1272,7 @@ function PayRunDetail({ run, employees, busy, nameOf, mutate, onPrepared, onClos
         )}
         {(run.status === "FAILED" || run.status === "PROCESSING") && <>
           <Notice>{run.failureMessage || (run.status === "FAILED" ? "Processing failed. Correct compensation or service availability, recover to draft, then process again. For incorrect immutable period dates, create a new run." : "Refresh before recovery. Abandoned processing can be recovered after five minutes; an active transaction must finish first.")}</Notice>
-          <Button disabled={busy} onClick={() => void mutate(() => recoverPayRun(run.payRunKey))}>Recover to draft</Button>
+          <Button disabled={busy} onClick={async () => await ask({ title: "Recover this run to Draft?", body: "The failure is cleared so the inputs can be corrected and calculated again. Finalized history is not changed.", confirmLabel: "Recover to draft" }) && void mutate(() => recoverPayRun(run.payRunKey))}>Recover to draft</Button>
         </>}
       </div>
     </article>
@@ -1330,7 +1331,7 @@ function NewPayRun({ runs, onCreated, onCancel }: { runs: PayRun[]; onCreated(ru
         {onCancel && <Button size="sm" type="button" onClick={onCancel}>Cancel</Button>}
       </div>
       {error && <Notice>{error}</Notice>}
-      {roster !== null && active.length === 0 && <Notice tone="info">Nobody is set up for payroll yet. <Link to={appPath("/app/payroll/employees")}>Set up payroll employees</Link> first — you can still create a draft now.</Notice>}
+      {roster !== null && active.length === 0 && <Notice tone="info">Nobody is set up for payroll yet. <Link to={appPath("/payroll/employees")}>Set up payroll employees</Link> first — you can still create a draft now.</Notice>}
       {!custom ? <form onSubmit={(event: FormEvent) => {
         event.preventDefault();
         submit({ payRunKey: key, periodStart: period.start, periodEnd: period.end, calculationDate: period.end, currency });

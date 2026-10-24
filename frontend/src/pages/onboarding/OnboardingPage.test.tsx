@@ -67,6 +67,11 @@ vi.mock("../../features/admin/adminApi", () => ({
   }),
   getMembers: vi.fn(async () => testState.members),
   getInvitations: vi.fn(async () => testState.invitations),
+  confirmSoloAccess: vi.fn(async () => {
+    testState.orgDetails = { ...testState.orgDetails, settings: { ...(testState.orgDetails.settings ?? {}), onboardingAccessDecision: "SOLO" } };
+    return testState.orgDetails;
+  }),
+  finishOnboarding: vi.fn(async () => testState.orgDetails),
   createInvitation: vi.fn(async (input) => {
     const inv = { id: "inv-" + Date.now(), email: input.email, role: input.role, status: "PENDING" };
     testState.invitations.push(inv);
@@ -116,9 +121,9 @@ afterEach(() => {
 
 const renderOnboarding = () =>
   render(
-    <MemoryRouter initialEntries={["/app/onboarding"]}>
+    <MemoryRouter initialEntries={["/onboarding"]}>
       <Routes>
-        <Route path="/app/onboarding" element={<OnboardingPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
       </Routes>
     </MemoryRouter>
   );
@@ -249,7 +254,7 @@ it("supports inviting members and marks access step ready", async () => {
     primaryPhone: "+1-555-0100",
   };
   testState.workspaces = [
-    { key: "main", displayName: "Main HR", status: "ACTIVE", products: [{ key: "workforce", displayName: "Workforce" }] },
+    { key: "main", displayName: "Main HR", status: "ACTIVE", products: [{ key: "workforce", displayName: "Workforce" }, { key: "payroll", displayName: "Payroll" }] },
   ];
 
   renderOnboarding();
@@ -313,10 +318,10 @@ it("renders OnboardingTopBar with progress count during onboarding", async () =>
 
   render(
     <ThemeProvider>
-      <MemoryRouter initialEntries={["/app/onboarding"]}>
+      <MemoryRouter initialEntries={["/onboarding"]}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/app/onboarding" element={<OnboardingPage />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -339,10 +344,10 @@ it("renders operational ContextSelector when organization is configured", async 
 
   render(
     <ThemeProvider>
-      <MemoryRouter initialEntries={["/app"]}>
+      <MemoryRouter initialEntries={["/overview"]}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/app" element={<div>Operational Overview</div>} />
+            <Route path="/overview" element={<div>Operational Overview</div>} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -352,4 +357,33 @@ it("renders operational ContextSelector when organization is configured", async 
   await screen.findByText("Operational Overview");
   expect(screen.getByLabelText(/Current organization:/)).toBeTruthy();
   expect(screen.getByLabelText(/Current workspace:/)).toBeTruthy();
+});
+
+it("keeps a new organization incomplete when only country and currency defaults exist", async () => {
+  testState.orgDetails = { ...testState.orgDetails, name: "Acme", primaryEmail: "admin@acme.test", settings: { country: "US", currency: "USD", timeZone: "UTC" } };
+  renderOnboarding();
+  await screen.findByRole("heading", { name: "Set up your organization" });
+  expect(screen.getByRole("button", { name: /Complete details/ })).toBeTruthy();
+  expect(screen.getByText(/Country and currency defaults do not complete this step/)).toBeTruthy();
+});
+
+it("does not count accepted invitations or a selected workspace as finished setup", async () => {
+  testState.orgDetails = { ...testState.orgDetails, name: "Acme", primaryEmail: "admin@acme.test", primaryPhone: "+1-555-0100" };
+  testState.workspaces = [{ key: "main", displayName: "Main", status: "ACTIVE", products: [{ key: "workforce", displayName: "Workforce" }, { key: "payroll", displayName: "Payroll" }] }];
+  testState.workspace = testState.workspaces[0];
+  testState.invitations = [{ invitationId: "inv-1", email: "old@acme.test", role: "EMPLOYEE", status: "ACCEPTED" }];
+  renderOnboarding();
+  await screen.findByRole("heading", { name: "Set up your organization" });
+  expect(screen.getByText("0 invitations")).toBeTruthy();
+  expect(screen.getByText(/Opening a workspace does not finish setup/)).toBeTruthy();
+  expect(screen.getByRole("button", { name: /Finish setup/ }).hasAttribute("disabled")).toBe(true);
+});
+
+it("saves solo continuation through the organization API", async () => {
+  testState.orgDetails = { ...testState.orgDetails, name: "Acme", primaryEmail: "admin@acme.test", primaryPhone: "+1-555-0100" };
+  testState.workspaces = [{ key: "main", displayName: "Main", status: "ACTIVE", products: [{ key: "workforce", displayName: "Workforce" }, { key: "payroll", displayName: "Payroll" }] }];
+  renderOnboarding();
+  fireEvent.click(await screen.findByRole("button", { name: "Continue as solo admin" }));
+  await waitFor(() => expect(adminApi.confirmSoloAccess).toHaveBeenCalledOnce());
+  expect(await screen.findByText(/saved the decision to continue/)).toBeTruthy();
 });

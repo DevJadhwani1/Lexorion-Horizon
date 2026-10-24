@@ -53,18 +53,18 @@ function AdminTestRoute({ section, title }: { section: string; title: string }) 
   );
 }
 
-function renderAdminApp(initialRoute = "/app/organization") {
+function renderAdminApp(initialRoute = "/organization") {
   return render(
     <ThemeProvider>
       <MemoryRouter initialEntries={[initialRoute]}>
         <Routes>
           <Route element={<AppShell />}>
-            <Route path="/app/organization" element={<AdminTestRoute section="organization" title="Organization" />} />
-            <Route path="/app/organization/workspaces" element={<AdminTestRoute section="workspaces" title="Workspaces" />} />
-            <Route path="/app/organization/members" element={<AdminTestRoute section="members" title="Members" />} />
-            <Route path="/app/organization/invitations" element={<AdminTestRoute section="invitations" title="Invitations" />} />
-            <Route path="/app/organization/settings" element={<AdminTestRoute section="settings" title="Settings" />} />
-            <Route path="/app/organization/settings/product-access" element={<AdminTestRoute section="product-access" title="Settings" />} />
+            <Route path="/organization" element={<AdminTestRoute section="organization" title="Organization" />} />
+            <Route path="/organization/workspaces" element={<AdminTestRoute section="workspaces" title="Workspaces" />} />
+            <Route path="/people" element={<AdminTestRoute section="members" title="Members" />} />
+            <Route path="/organization/invitations" element={<AdminTestRoute section="invitations" title="Invitations" />} />
+            <Route path="/organization/settings" element={<AdminTestRoute section="settings" title="Settings" />} />
+            <Route path="/organization/settings/product-access" element={<AdminTestRoute section="product-access" title="Settings" />} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -92,17 +92,18 @@ describe("Organization Administration Sidebar Navigation", () => {
   });
 
   it("contains the five administration destinations under the Organization sidebar group", () => {
-    renderAdminApp("/app/organization");
+    renderAdminApp("/organization");
 
     const sidebar = screen.getByRole("complementary", { name: "Application navigation" });
+    expect(within(sidebar).getByRole("link", { name: "Dashboard" }).getAttribute("href")).toBe("/overview");
     const orgGroup = within(sidebar).getByRole("region", { name: "Organization" });
 
     const expectedLinks = [
-      { label: "Organization", href: "/app/organization" },
-      { label: "Workspaces", href: "/app/organization/workspaces" },
-      { label: "Members", href: "/app/organization/members" },
-      { label: "Invitations", href: "/app/organization/invitations" },
-      { label: "Settings", href: "/app/organization/settings" },
+      { label: "Organization", href: "/organization" },
+      { label: "Workspaces", href: "/organization/workspaces" },
+      { label: "Members", href: "/people" },
+      { label: "Invitations", href: "/organization/invitations" },
+      { label: "Settings", href: "/organization/settings" },
     ];
 
     const links = within(orgGroup).getAllByRole("link");
@@ -116,7 +117,7 @@ describe("Organization Administration Sidebar Navigation", () => {
   });
 
   it("keeps Workspaces under Organization alongside the WORKFORCE and PAYROLL sidebar groups", () => {
-    renderAdminApp("/app/organization");
+    renderAdminApp("/organization");
 
     const sidebar = screen.getByRole("complementary", { name: "Application navigation" });
 
@@ -128,25 +129,25 @@ describe("Organization Administration Sidebar Navigation", () => {
   });
 
   it("removes horizontal nav.admin-tabs row from all administration screens", () => {
-    const { container, unmount } = renderAdminApp("/app/organization");
+    const { container, unmount } = renderAdminApp("/organization");
     expect(container.querySelector("nav.admin-tabs")).toBeNull();
     unmount();
 
-    const sections = ["workspaces", "members", "invitations", "settings", "settings/product-access"];
+    const sections = ["/organization/workspaces", "/people", "/organization/invitations", "/organization/settings", "/organization/settings/product-access"];
     for (const section of sections) {
-      const view = renderAdminApp(`/app/organization/${section}`);
+      const view = renderAdminApp(section);
       expect(view.container.querySelector("nav.admin-tabs")).toBeNull();
       view.unmount();
     }
   });
 
   it("navigates to each page on click and highlights the active route while keeping sidebar expanded", () => {
-    const { container } = renderAdminApp("/app/organization");
+    const { container } = renderAdminApp("/organization");
 
     const sidebar = screen.getByRole("complementary", { name: "Application navigation" });
     const orgGroup = within(sidebar).getByRole("region", { name: "Organization" });
 
-    // Verify initial active state on /app/admin/organization
+    // Verify initial active state on /admin/organization
     const orgLink = within(orgGroup).getByRole("link", { name: "Organization" });
     expect(orgLink.classList.contains("active")).toBe(true);
     expect(screen.getByTestId("content-organization")).toBeDefined();
@@ -183,7 +184,7 @@ describe("Organization Administration Sidebar Navigation", () => {
   });
 
   it("keeps Settings active on the Product access section", () => {
-    renderAdminApp("/app/organization/settings/product-access");
+    renderAdminApp("/organization/settings/product-access");
 
     const sidebar = screen.getByRole("complementary", { name: "Application navigation" });
     const orgGroup = within(sidebar).getByRole("region", { name: "Organization" });

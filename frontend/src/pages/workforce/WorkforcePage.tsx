@@ -10,7 +10,6 @@ import {
   getEmployeeHistory,
   getEmployees,
   getMe,
-  getStructure,
   getTeam,
   mapEmployeeUser,
   transitionEmployee,
@@ -21,7 +20,6 @@ import {
   type EmploymentStatus,
   type LifecycleEvent,
   type Reference,
-  type Structure,
   type Team,
 } from "../../features/workforce/workforceApi";
 import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
@@ -38,6 +36,7 @@ import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { formatDate, humanize, keyFromName, personName } from "../../lib/format";
 import { EmployeeFields } from "./EmployeeFields";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
+import { DepartmentsPage } from "./DepartmentsPage";
 
 export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   const { section: routeSection, employeeCode } = useParams(),
@@ -59,11 +58,9 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
             ? getDepartments()
             : section === "designations"
               ? getDesignations()
-              : section === "structure"
-                ? getStructure()
-                : section === "team"
-                  ? getTeam()
-                  : getMe()),
+              : section === "team"
+                ? getTeam()
+                : getMe()),
       );
     } catch (x) {
       setError(x instanceof ApiError ? x.message : "Unable to load Workforce");
@@ -78,9 +75,10 @@ export function WorkforcePage({ sectionKey }: { sectionKey?: string }) {
   if (loading) return <Page title="Workforce"><p>Loading…</p></Page>;
   if (error) return <Page title="Workforce"><Notice>{error}</Notice></Page>;
   if (employeeCode) return <EmployeeProfile employee={data as Employee} reload={load} />;
-  if (section === "departments" || section === "designations")
+  if (section === "departments")
+    return <DepartmentsPage items={data as Reference[]} reload={load} />;
+  if (section === "designations")
     return <References title={section} items={data as Reference[]} reload={load} />;
-  if (section === "structure") return <StructurePage value={data as Structure} />;
   if (section === "me") return <EmployeeProfile employee={data as Employee} reload={load} self />;
   return <TeamPage team={data as Team} />;
 }
@@ -92,7 +90,7 @@ function TeamPage({ team }: { team: Team }) {
       <Table headers={["Employee", "Department", "Designation", "Status"]}>
         {team.employees.map((e) => (
           <tr key={e.employeeCode}>
-            <td><Link to={appPath(`/app/workforce/employees/${e.employeeCode}`)}>{e.name}</Link><small className="cell-note">{e.employeeCode}</small></td>
+            <td><Link to={appPath(`/workforce/employees/${e.employeeCode}`)}>{e.name}</Link><small className="cell-note">{e.employeeCode}</small></td>
             <td>{directory.departmentName(e.departmentKey)}</td>
             <td>{directory.designationName(e.designationKey)}</td>
             <td><StatusBadge status={e.status} /></td>
@@ -148,7 +146,7 @@ function EmployeeDirectory() {
   const employees = result?.content ?? [];
   return (
     <Page title="Employees" description="Everyone in this workspace. Open an employee to update their details, status or payroll setup."
-      actions={<Link className="button primary" to={appPath("/app/workforce/employees/new")}>Add employee</Link>}>
+      actions={<Link className="button primary" to={appPath("/workforce/employees/new")}>Add employee</Link>}>
       <form className="toolbar filter-bar directory-filters" role="search" onSubmit={(event) => { event.preventDefault(); update({ q: draft.trim() }); }}>
         <label>Search employees<input type="search" placeholder="Name, email or employee code" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
         <Dropdown label="Status" value={status} onChange={(next) => update({ status: next })}
@@ -169,7 +167,7 @@ function EmployeeDirectory() {
         <Table headers={["Employee", "Email", "Department", "Designation", "Joined", "Status"]}>
           {employees.map((e) => (
             <tr key={e.employeeCode}>
-              <td><Link to={appPath(`/app/workforce/employees/${e.employeeCode}`)}>{personName(e)}</Link><small className="cell-note">{e.employeeCode}</small></td>
+              <td><Link to={appPath(`/workforce/employees/${e.employeeCode}`)}>{personName(e)}</Link><small className="cell-note">{e.employeeCode}</small></td>
               <td>{e.workEmail}</td>
               <td>{directory.departmentName(e.departmentKey)}</td>
               <td>{directory.designationName(e.designationKey)}</td>
@@ -181,7 +179,7 @@ function EmployeeDirectory() {
         <Pagination page={page} totalPages={result?.totalPages ?? 1} total={result?.totalElements ?? employees.length} size={PAGE_SIZE} busy={loading} onPage={(next) => update({ page: next ? String(next) : "" })} />
       </> : filtered
         ? <Empty>No employees match these filters. <button type="button" className="link-button" onClick={() => { setDraft(""); setParams(new URLSearchParams(), { replace: true }); }}>Clear filters</button></Empty>
-        : <Empty><strong>No employees yet.</strong><br />Add your first employee to start building your team and payroll. <Link to={appPath("/app/workforce/employees/new")}>Add employee</Link></Empty>}
+        : <Empty><strong>No employees yet.</strong><br />Add your first employee to start building your team and payroll. <Link to={appPath("/workforce/employees/new")}>Add employee</Link></Empty>}
     </Page>
   );
 }
@@ -268,7 +266,7 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
           <dl className="detail-list">
             <div><dt>Department</dt><dd>{directory.departmentName(employee.departmentKey)}</dd></div>
             <div><dt>Designation</dt><dd>{directory.designationName(employee.designationKey)}</dd></div>
-            <div><dt>Reporting manager</dt><dd>{manager ? (admin ? <Link to={appPath(`/app/workforce/employees/${manager}`)}>{directory.nameOf(manager)}</Link> : directory.nameOf(manager)) : "—"}</dd></div>
+            <div><dt>Reporting manager</dt><dd>{manager ? (admin ? <Link to={appPath(`/workforce/employees/${manager}`)}>{directory.nameOf(manager)}</Link> : directory.nameOf(manager)) : "—"}</dd></div>
           </dl>
         </article>
         {payrollEnabled && <PayrollSetupCard employeeCode={employee.employeeCode} />}
@@ -339,8 +337,8 @@ function PayrollSetupCard({ employeeCode }: { employeeCode: string }) {
       .catch((reason) => { if (current) setState(reason instanceof ApiError && reason.status === 404 ? "missing" : "error"); });
     return () => { current = false; };
   }, [employeeCode]);
-  const setup = `${appPath("/app/workforce/employees/new")}?employee=${encodeURIComponent(employeeCode)}`;
-  const compensation = `${appPath("/app/payroll/compensation")}?employee=${encodeURIComponent(employeeCode)}`;
+  const setup = `${appPath("/workforce/employees/new")}?employee=${encodeURIComponent(employeeCode)}`;
+  const compensation = `${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employeeCode)}`;
   return <article>
     <h3>Payroll</h3>
     {state === "loading" && <p>Checking payroll setup…</p>}
@@ -401,32 +399,6 @@ function References({ title, items, reload }: { title: "departments" | "designat
       ) : (
         <Empty>No {title} yet. Add one above, or skip this — {title} are optional and can be added later.</Empty>
       )}
-    </Page>
-  );
-}
-
-function StructurePage({ value }: { value: Structure }) {
-  const departments = new Map(value.departments.map((d) => [d.departmentKey, d.name]));
-  const people = new Map(value.employees.map((e) => [e.employeeCode, e.name]));
-  return (
-    <Page title="Reporting structure" description="Departments and who reports to whom. Assign managers from each employee’s profile.">
-      <div className="cards">
-        <article>
-          <h3>Departments</h3>
-          {value.departments.length ? value.departments.map((d) => (
-            <p key={d.departmentKey}>{d.name}{d.parentDepartmentKey && <small className="cell-note">within {departments.get(d.parentDepartmentKey) ?? d.parentDepartmentKey}</small>}</p>
-          )) : <p className="snapshot-note">No departments yet. <Link to={appPath("/app/workforce/departments")}>Add departments</Link></p>}
-        </article>
-        <article>
-          <h3>Reporting lines</h3>
-          {value.employees.length ? value.employees.map((e) => (
-            <p key={e.employeeCode}>
-              <Link to={appPath(`/app/workforce/employees/${e.employeeCode}`)}>{e.name}</Link>
-              {e.reportingManagerEmployeeCode && <small className="cell-note">reports to {people.get(e.reportingManagerEmployeeCode) ?? e.reportingManagerEmployeeCode}</small>}
-            </p>
-          )) : <p className="snapshot-note">No employees yet. <Link to={appPath("/app/workforce/employees/new")}>Add an employee</Link></p>}
-        </article>
-      </div>
     </Page>
   );
 }
