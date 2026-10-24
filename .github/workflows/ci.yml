@@ -13,44 +13,33 @@ permissions:
   contents: read
 
 jobs:
-  service:
-    name: ${{ matrix.service }}
+  test:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - service: eureka
-            module: eureka-server
-            context: backend/eureka-server
-            kind: maven
-          - service: platform
-            module: platform-service
-            context: backend/platform-service
-            kind: maven
-          - service: workforce
-            module: workforce-service
-            context: backend/workforce-service
-            kind: maven
-          - service: payroll
-            module: payroll-service
-            context: backend/payroll-service
-            kind: maven
-          - service: finance
-            module: finance-service
-            context: backend/finance-service
-            kind: maven
-          - service: gateway
-            module: api-gateway
-            context: backend/api-gateway
-            kind: maven
-          - service: frontend
-            module: frontend
-            context: frontend
+          - name: Frontend
             kind: npm
-    permissions:
-      contents: read
-      packages: write
+          - name: Test eureka-server
+            kind: maven
+            module: eureka-server
+          - name: Test platform-service
+            kind: maven
+            module: platform-service
+          - name: Test workforce-service
+            kind: maven
+            module: workforce-service
+          - name: Test payroll-service
+            kind: maven
+            module: payroll-service
+          - name: Test finance-service
+            kind: maven
+            module: finance-service
+          - name: Test api-gateway
+            kind: maven
+            module: api-gateway
     steps:
       - uses: actions/checkout@v4
 
@@ -83,21 +72,45 @@ jobs:
           npm test
           npm run build
 
+  publish:
+    name: Publish ${{ matrix.service }}
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: eureka
+            context: backend/eureka-server
+          - service: platform
+            context: backend/platform-service
+          - service: workforce
+            context: backend/workforce-service
+          - service: payroll
+            context: backend/payroll-service
+          - service: finance
+            context: backend/finance-service
+          - service: gateway
+            context: backend/api-gateway
+          - service: frontend
+            context: frontend
+    steps:
+      - uses: actions/checkout@v4
       - id: image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "name=ghcr.io/${owner}/horizon-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       - uses: docker/login-action@v3
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           context: ${{ matrix.context }}
           push: true
@@ -108,9 +121,9 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
-  cd:
-    name: CD
-    needs: service
+  deploy:
+    name: Deploy and verify
+    needs: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production

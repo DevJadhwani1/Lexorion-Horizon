@@ -1,10 +1,10 @@
 # Continuous integration
 
-GitHub Actions (`.github/workflows/ci.yml`) is one pipeline for every pull request and for `main`. Each microservice has one job that tests that service and, on a push to `main`, publishes its image. Image builds skip the tests already run in that job and reuse cached dependency layers. Tags are `ghcr.io/<owner>/horizon-<service>:<commit>` and `:main`.
+GitHub Actions (`.github/workflows/ci.yml`) is one pipeline with three stages. Every push and pull request runs the frontend checks and the six backend test jobs in parallel. A push to `main` publishes the seven images only after those tests pass. Image builds skip tests and reuse cached dependency layers. Tags are `ghcr.io/<owner>/horizon-<service>:<commit>` and `:main`.
 
 The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
 
-After every service job succeeds, the CD job in the same workflow pulls the `:main` images and brings up an ephemeral stack with `compose.cd.yml`. That stack uses its own Postgres volume, checks that the services become healthy, and then removes itself. It does not read the host `.env` and does not replace the database on this machine.
+After image publishing succeeds, the deploy job runs `scripts/cd-deploy.sh`. It pulls the `:main` images and brings up an ephemeral stack with `compose.cd.yml`. That stack uses its own Postgres volume, checks that the services become healthy, and then removes itself. It does not read the host `.env` and does not replace the database on this machine.
 
 The host stack is still updated with `bash scripts/update-running-stack.sh`.
 
@@ -39,4 +39,4 @@ Any failed command fails its stage and the pipeline. Application containers are 
 
 CI does not modify or depend on a shared PostgreSQL instance. Critical migration tests start disposable PostgreSQL 16 Testcontainers, apply Flyway from an empty schema, and remove the containers after the suite. Other backend tests retain isolated test configuration. Docker images are built without launching the application stack.
 
-No deployment secrets are stored in the repository. Jenkins does not publish images or start the stack. On `main`, each microservice job publishes its image to GHCR, and the CD job in that same workflow deploys those images to an ephemeral stack and removes it after the health check. The database on this machine is not part of that deploy. Rebuild the local containers with `bash scripts/update-running-stack.sh`.
+No deployment secrets are stored in the repository. Jenkins does not publish images or start the stack. On `main`, the publish jobs push images to GHCR, and the deploy job then runs the deployment script and health checks. The database on this machine is not part of that deploy. Rebuild the local containers with `bash scripts/update-running-stack.sh`.

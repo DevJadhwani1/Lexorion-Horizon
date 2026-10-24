@@ -122,7 +122,7 @@ pipeline {
         stage('Verification Summary') {
             steps {
                 echo 'Backend compile/tests, frontend checks, Docker image builds, and Compose validation passed.'
-                echo 'Jenkins does not start containers or publish images. The GitHub Actions pipeline publishes each service and then deploys that release.'
+                echo 'Jenkins does not start containers or publish images. GitHub Actions publishes images after the tests pass, then deploys that release.'
             }
         }
     }
