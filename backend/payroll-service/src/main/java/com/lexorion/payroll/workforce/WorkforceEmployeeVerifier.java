@@ -5,6 +5,9 @@ import com.lexorion.payroll.tenant.TrustedPayrollContext;
 public interface WorkforceEmployeeVerifier {
     Verification verify(String employeeCode, TrustedPayrollContext payrollContext);
 
+    /** The workforce employee mapped to the signed-in user. Never a code supplied by the client. */
+    String currentEmployeeCode(TrustedPayrollContext payrollContext);
+
     record Verification(String employeeCode, boolean exists, WorkforceEmploymentStatus employmentStatus) {
         public Verification {
             if (employeeCode == null || employeeCode.isBlank()) {

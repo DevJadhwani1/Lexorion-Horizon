@@ -48,6 +48,8 @@ class LedgerIntegrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired LedgerEntryRepository ledger;
+    @Autowired AllocationRepository allocations;
+    @Autowired IdempotencyKeyRepository idempotencyKeys;
     @Autowired BillableItemRepository items;
     @Autowired PaymentRepository payments;
     @Autowired InvoiceRepository invoices;
@@ -61,6 +63,8 @@ class LedgerIntegrationTest {
     @BeforeEach
     void setup() {
         ledger.deleteAll();
+        allocations.deleteAll();
+        idempotencyKeys.deleteAll();
         payments.deleteAll();
         invoices.deleteAll();
         items.deleteAll();
@@ -174,6 +178,62 @@ class LedgerIntegrationTest {
                 .andExpect(jsonPath("$.currencies[0].currency").value("USD"))
                 .andExpect(jsonPath("$.currencies[0].months[2].invoiced").value(118.00));
         request(get("/api/finance/books/summary?fy=2026-27")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void oneReceiptCanBeSplitAcrossInvoicesAndAnUnallocatedRemainderDoesNotReduceReceivables() throws Exception {
+        json(post("/api/finance/clients"), "{\"clientKey\":\"mastek\",\"displayName\":\"Mastek\",\"currency\":\"INR\",\"region\":\"Maharashtra\"}");
+        issue("2026-05-30", 100000);
+        issue("2026-06-03", 50000);
+        String receipt = com.jayway.jsonpath.JsonPath.read(json(post("/api/finance/receipts").header("Idempotency-Key", "receipt-1"),
+                "{\"clientKey\":\"mastek\",\"amount\":180000.00,\"paymentDate\":\"2026-06-15\",\"method\":\"BANK_TRANSFER\"}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.unallocatedAmount").value(180000.00))
+                .andExpect(jsonPath("$.receiptNumber").value("RCPT-00001")).andReturn().getResponse().getContentAsString(), "$.receiptNumber");
+        json(post("/api/finance/receipts").header("Idempotency-Key", "receipt-1"),
+                "{\"clientKey\":\"mastek\",\"amount\":1.00,\"paymentDate\":\"2026-06-15\",\"method\":\"CASH\"}")
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.receiptNumber").value(receipt)).andExpect(jsonPath("$.amount").value(180000.00));
+        json(post("/api/finance/receipts/" + receipt + "/allocations"),
+                "{\"invoiceReference\":\"REF-00001\",\"amount\":118000.00}").andExpect(status().isCreated());
+        json(post("/api/finance/receipts/" + receipt + "/allocations"),
+                "{\"invoiceReference\":\"REF-00002\",\"amount\":50000.00}").andExpect(status().isCreated());
+        json(post("/api/finance/receipts/" + receipt + "/allocations"),
+                "{\"invoiceReference\":\"REF-00002\",\"amount\":10000.00}").andExpect(status().isBadRequest());
+        json(post("/api/finance/receipts/" + receipt + "/allocations"),
+                "{\"invoiceReference\":\"REF-00001\",\"amount\":1.00}").andExpect(status().isConflict());
+        request(get("/api/finance/invoices/REF-00001")).andExpect(jsonPath("$.status").value("PAID")).andExpect(jsonPath("$.balanceDue").value(0));
+        request(get("/api/finance/invoices/REF-00002")).andExpect(jsonPath("$.status").value("PARTIALLY_PAID")).andExpect(jsonPath("$.balanceDue").value(9000.00));
+        request(get("/api/finance/books/statements/mastek?fy=2026-27"))
+                .andExpect(jsonPath("$.currencies[0].closingBalance").value(9000.00))
+                .andExpect(jsonPath("$.unallocated[0].unallocated").value(12000.00))
+                .andExpect(jsonPath("$.basis").exists());
+        assertThat(ledger.imbalance(WORKSPACE)).isEqualByComparingTo(BigDecimal.ZERO);
+        String allocationId = com.jayway.jsonpath.JsonPath.read(request(get("/api/finance/invoices/REF-00002/payments")).andReturn().getResponse().getContentAsString(), "$[0].allocationId");
+        json(post("/api/finance/receipts/" + receipt + "/allocations/" + allocationId + "/reverse").header("Idempotency-Key", "reverse-1"), "{}")
+                .andExpect(status().isOk());
+        json(post("/api/finance/receipts/" + receipt + "/allocations/" + allocationId + "/reverse").header("Idempotency-Key", "reverse-1"), "{}")
+                .andExpect(status().isOk());
+        request(get("/api/finance/invoices/REF-00002")).andExpect(jsonPath("$.status").value("ISSUED")).andExpect(jsonPath("$.balanceDue").value(59000.00));
+        request(get("/api/finance/books/statements/mastek?fy=2026-27")).andExpect(jsonPath("$.currencies[0].closingBalance").value(9000.00));
+        request(get("/api/finance/books/statements/mastek?fy=2027-28")).andExpect(jsonPath("$.currencies[0].openingBalance").value(9000.00))
+                .andExpect(jsonPath("$.currencies[0].closingBalance").value(59000.00));
+        assertThat(ledger.imbalance(WORKSPACE)).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void gstRoundingMatchesHalfUpCentsAndInterstateTaxStaysIgst() throws Exception {
+        json(post("/api/finance/templates"), """
+                {"name":"GST","config":{"seller":{"legalName":"Omega Hires","region":"Maharashtra"},"tax":{"mode":"GST"},"numbering":{"pattern":"OH/{FY}/{SEQ}","padding":4}}}""");
+        json(post("/api/finance/clients"), "{\"clientKey\":\"refex\",\"displayName\":\"Refex\",\"currency\":\"INR\",\"region\":\"Tamil Nadu\"}");
+        String reference = com.jayway.jsonpath.JsonPath.read(json(post("/api/finance/invoices"),
+                "{\"clientKey\":\"refex\",\"issueDate\":\"2026-06-03\",\"lines\":[{\"description\":\"IT Infra\",\"quantity\":1,\"unitPrice\":51666.80,\"taxRate\":18}]}")
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.reference");
+        request(post("/api/finance/invoices/" + reference + "/issue").header("Idempotency-Key", "issue-1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.invoiceNumber").value("OH/26-27/0001"))
+                .andExpect(jsonPath("$.total").value(60966.82))
+                .andExpect(jsonPath("$.taxBreakdown[0].label").value("IGST"));
+        request(post("/api/finance/invoices/" + reference + "/issue").header("Idempotency-Key", "issue-1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.invoiceNumber").value("OH/26-27/0001"));
+        assertThat(invoices.count()).isEqualTo(1);
     }
 
     private void issue(String date, int price) throws Exception {

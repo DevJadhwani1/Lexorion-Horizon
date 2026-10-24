@@ -52,6 +52,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     List<Invoice> findByIssuedAtIsNotNull();
 
     @Query("""
+            select i from Invoice i where i.workspace.id = :workspaceId and i.issuedAt is not null and i.issueDate <= :asOf
+            """)
+    List<Invoice> findIssuedOnOrBefore(@Param("workspaceId") UUID workspaceId, @Param("asOf") LocalDate asOf);
+
+    @Query("""
             select i.currency, sum(i.total) from Invoice i
             where i.workspace.id = :workspaceId and i.status <> com.lexorion.finance.domain.InvoiceStatus.DRAFT
               and i.status <> com.lexorion.finance.domain.InvoiceStatus.VOID

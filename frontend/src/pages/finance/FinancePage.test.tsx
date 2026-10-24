@@ -8,7 +8,7 @@ import { InvoiceWizardPage } from "./InvoiceWizard";
 import { BooksPage } from "./BooksPages";
 import { ItemPages } from "./ItemPages";
 import { gstinProblem, gstinState } from "../../features/finance/billingData";
-import { InvoiceDocument, documentDate } from "./InvoiceDocument";
+import { InvoiceDocument, documentDate, invoiceDownloadTitle, printDocument } from "./InvoiceDocument";
 import * as financeApi from "../../features/finance/financeApi";
 import { blankTemplateConfig, fieldKey, templatePresets } from "../../features/finance/templatePresets";
 import { chooseOption } from "../../test/dropdown";
@@ -19,7 +19,7 @@ vi.mock("../../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ wor
 vi.mock("../../features/finance/financeApi", async (load) => {
   const actual = await load<typeof import("../../features/finance/financeApi")>();
   return { ...actual, getClients: vi.fn(), getClient: vi.fn(), getItems: vi.fn(async () => []), getNextItemCode: vi.fn(), createItem: vi.fn(),
-    getFiscalYears: vi.fn(async () => []), getYearSummary: vi.fn(), getStatement: vi.fn(), createClient: vi.fn(), updateClient: vi.fn(), getTemplates: vi.fn(), createTemplate: vi.fn(), createInvoice: vi.fn(), getInvoice: vi.fn(), getInvoicePayments: vi.fn(), getNextNumber: vi.fn(), issueInvoice: vi.fn(), recordPayment: vi.fn(), getBillingSummary: vi.fn(), getInvoices: vi.fn() };
+    getFiscalYears: vi.fn(async () => []), getYearSummary: vi.fn(), getStatement: vi.fn(), createClient: vi.fn(), updateClient: vi.fn(), getTemplates: vi.fn(), createTemplate: vi.fn(), createInvoice: vi.fn(), getInvoice: vi.fn(), getInvoicePayments: vi.fn(), getNextNumber: vi.fn(), issueInvoice: vi.fn(), recordPayment: vi.fn(), getBillingSummary: vi.fn(), getInvoices: vi.fn(), getPayments: vi.fn(), createReceipt: vi.fn(), allocateReceipt: vi.fn() };
 });
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.restoreAllMocks(); });
 
@@ -52,6 +52,8 @@ describe("Finance helpers", () => {
     expect(documentDate("2026-05-30", "ORDINAL")).toBe("30th May 2026");
     expect(documentDate("2026-06-22", "ORDINAL")).toBe("22nd June 2026");
     expect(documentDate("2026-06-11", "NUMERIC")).toBe("11/06/2026");
+    expect(documentDate("2026-09-02", "COMPACT")).toBe("02 Sept 2026");
+    expect(invoiceDownloadTitle("Omega Hires India Private Limited", "Refex Shared Services Private Limited", "OH/26-27/0014")).toBe("Omega Hires · Refex · OH-26-27-0014");
     expect(fieldKey("Joining date")).toBe("joiningDate");
     expect(fieldKey("PO number")).toBe("poNumber");
     expect(gstinState("27AAACM9908Q2ZP")).toBe("Maharashtra");
@@ -80,6 +82,56 @@ describe("Invoice document", () => {
     expect(text).toContain("Rupees Two Lakh Twelve Thousand Four Hundred Only");
     expect(text).toContain("Shumbham Arun Rai");
     expect(text).not.toContain("Draft");
+  });
+
+  it("matches an issued Omega Hires bill: logo, invoice heading, short dates, and no empty HSN column", () => {
+    const config: financeApi.TemplateConfig = {
+      ...recruitment,
+      document: { title: "TAX INVOICE", subtitle: "", copyLabel: "ORIGINAL FOR RECIPIENT", detailsTitle: "RECRUITMENT ENGAGEMENT" },
+      seller: {
+        ...recruitment.seller,
+        phone: "+919898741457",
+        website: "https://www.omegahires.com",
+        identifiers: [
+          { label: "GSTIN", value: "27AAECO6722G1ZF" },
+          { label: "PAN", value: "AAECO6722G" },
+          { label: "CIN", value: "U70200MH2025PTC444379" },
+          { label: "TAN", value: "MUMO09821G" },
+        ],
+      },
+      columns: { showItemCode: true, itemCodeLabel: "CODE", showHsnSac: true },
+    };
+    render(<InvoiceDocument data={{
+      ...draft, number: "OH/26-27/0014", issueDate: "2026-09-02", dueDate: "2026-10-02",
+      lines: [{ ...draft.lines[0], hsnSac: null, description: "T&M Offrole - Mohamed Aashik Ilahi M" }],
+    }} template={{ ...draft.template, config }} />);
+    const bill = screen.getByRole("article", { name: "Invoice OH/26-27/0014" });
+    const text = bill.textContent ?? "";
+    expect(within(bill).getByRole("heading", { level: 2 }).textContent).toBe("Invoice");
+    expect(text).toContain("Tax invoice");
+    expect(text).toContain("02 Sept 2026");
+    expect(text).toContain("02 Oct 2026");
+    expect(text).toContain("10th April 2026");
+    expect(text).toContain("PAN / CIN");
+    expect(text).toContain("AAECO6722G · U70200MH2025PTC444379");
+    expect(text).not.toContain("HSN/SAC");
+    expect(text).toContain("+91 98987 41457");
+    expect(text).toContain("www.omegahires.com");
+    expect(text).not.toContain("https://");
+    expect(bill.querySelector(".invoice-doc-logo")?.getAttribute("src")).toBe("/omega-hires-logo.png");
+  });
+
+  it("sets the print title to the source file name before the browser saves the PDF", () => {
+    vi.useFakeTimers();
+    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    document.title = "OH/26-27/0014 · Horizon";
+    printDocument(invoiceDownloadTitle("Omega Hires India Private Limited", "VEENA CORP", "OH/26-27/0011"));
+    expect(document.title).toBe("Omega Hires · VEENA · OH-26-27-0011");
+    vi.runAllTimers();
+    expect(print).toHaveBeenCalledOnce();
+    window.dispatchEvent(new Event("afterprint"));
+    expect(document.title).toBe("OH/26-27/0014 · Horizon");
+    vi.useRealTimers();
   });
 });
 
@@ -187,6 +239,55 @@ describe("Finance billing workspace", () => {
     expect(await screen.findByText("Needs attention")).toBeTruthy();
     expect(screen.getByRole("link", { name: "INV-00001" }).getAttribute("href")).toBe("/finance/invoices/REF-00001");
     expect(screen.getByRole("link", { name: "Design your own invoice template" })).toBeTruthy();
+  });
+
+  it("shows the summary error instead of zero receivables when the overview request fails", async () => {
+    vi.mocked(financeApi.getBillingSummary).mockRejectedValue(new Error("Billing summary is unavailable"));
+    vi.mocked(financeApi.getTemplates).mockResolvedValue([]);
+    vi.mocked(financeApi.getInvoices).mockResolvedValue({ content: [], page: 0, size: 5, totalElements: 0, totalPages: 0, sort: "createdAt", direction: "desc" });
+    render(<MemoryRouter><FinancePage sectionKey="overview" /></MemoryRouter>);
+    expect(await screen.findByText("Billing summary is unavailable")).toBeTruthy();
+    expect(screen.queryByText("₹0.00")).toBeNull();
+  });
+
+  it("shows allocated and unallocated receipt amounts from the collections response", async () => {
+    vi.mocked(financeApi.getClients).mockResolvedValue([client]);
+    vi.mocked(financeApi.getInvoices).mockResolvedValue({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0, sort: "createdAt", direction: "desc" });
+    vi.mocked(financeApi.getPayments).mockResolvedValue({ content: [{
+      receiptNumber: "RCPT-00001", invoiceReference: null, invoiceNumber: null, clientKey: "mastek", clientName: "Mastek Limited",
+      amount: 180000, currency: "INR", paymentDate: "2026-06-15", method: "BANK_TRANSFER", reference: null, notes: null, createdAt: "",
+      allocatedAmount: 168000, unallocatedAmount: 12000, allocationId: null,
+    }], page: 0, size: 20, totalElements: 1, totalPages: 1, sort: "paymentDate", direction: "desc" });
+    render(<MemoryRouter><FinancePage sectionKey="payments" /></MemoryRouter>);
+    expect(await screen.findByText("RCPT-00001")).toBeTruthy();
+    expect(screen.getByText("Several invoices")).toBeTruthy();
+    expect(screen.getByText("₹1,68,000.00")).toBeTruthy();
+    expect(screen.getByText("₹12,000.00")).toBeTruthy();
+    expect(screen.getByText(/Only the amount allocated to an invoice reduces what that client owes/)).toBeTruthy();
+  });
+
+  it("prints the statement basis and keeps an unallocated receipt out of the closing receivable", async () => {
+    vi.mocked(financeApi.getClient).mockResolvedValue(client);
+    vi.mocked(financeApi.getInvoices).mockResolvedValue({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, sort: "createdAt", direction: "desc" });
+    vi.mocked(financeApi.getFiscalYears).mockResolvedValue([{ label: "2026-27", start: "2026-04-01", end: "2027-03-31", current: true }]);
+    vi.mocked(financeApi.getStatement).mockResolvedValue({
+      fiscalYear: "2026-27", start: "2026-04-01", end: "2027-03-31", clientKey: "mastek", clientName: "Mastek Limited",
+      basis: "Invoiced amounts use the invoice date. Collections use the receipt date.",
+      currencies: [{ currency: "INR", openingBalance: 0, lines: [], totalDebit: 212400, totalCredit: 0, closingBalance: 212400 }],
+      unallocated: [{ receiptNumber: "RCPT-00009", date: "2026-06-15", amount: 12000, unallocated: 12000, currency: "INR" }],
+    });
+    const download = vi.spyOn(financeApi, "downloadCsv").mockImplementation(() => undefined);
+    render(<MemoryRouter initialEntries={["/finance/clients/mastek"]}><Routes>
+      <Route path="/finance/clients/:clientKey" element={<ClientPages section="profile" />} />
+    </Routes></MemoryRouter>);
+    expect(await screen.findByText(/Invoiced amounts use the invoice date/)).toBeTruthy();
+    expect(screen.getByText(/not included in the closing receivable/)).toBeTruthy();
+    expect(screen.getByText("RCPT-00009")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Download CSV" }));
+    expect(download).toHaveBeenCalledWith("statement-mastek-2026-27.csv", expect.any(Array));
+    const rows = download.mock.calls[0][1] as (string | number | null)[][];
+    expect(rows[0]).toEqual(["Basis", "Invoiced amounts use the invoice date. Collections use the receipt date."]);
+    expect(rows.some((row) => row[0] === "RCPT-00009" || row[1] === "RCPT-00009")).toBe(true);
   });
 
 });

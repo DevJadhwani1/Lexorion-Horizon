@@ -13,4 +13,9 @@ public class ProductionWorkforceEmployeeVerifier implements WorkforceEmployeeVer
     public Verification verify(String employeeCode, TrustedPayrollContext payrollContext) {
         return client.verify(employeeCode, payrollContext);
     }
+
+    @Override
+    public String currentEmployeeCode(TrustedPayrollContext payrollContext) {
+        return client.currentEmployeeCode(payrollContext);
+    }
 }

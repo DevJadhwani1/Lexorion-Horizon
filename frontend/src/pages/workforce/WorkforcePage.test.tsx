@@ -16,14 +16,15 @@ vi.mock("../../auth/AuthProvider", () => ({ useAuth: () => ({ organization: { me
 vi.mock("../../workspace/WorkspaceProvider", () => ({ useWorkspace: () => ({ workspace: { key: "main", products: [{ key: "workforce" }, { key: "payroll" }] } }) }));
 vi.mock("../../features/workforce/workforceApi", async (load) => {
   const actual = await load<typeof import("../../features/workforce/workforceApi")>();
-  return { ...actual, getEmployee: vi.fn(async () => employee), getEmployeeHistory: vi.fn(async () => []), updateEmployee: vi.fn(async () => employee),
+  return { ...actual, getEmployee: vi.fn(async () => employee), getEmployeeHistory: vi.fn(async () => ({ events: [], spells: [] })), updateEmployee: vi.fn(async () => employee),
+    getMe: vi.fn(async () => employee),
     getEmployees: vi.fn(async () => ({ content: [employee], page: 0, size: 20, totalElements: 1, totalPages: 1, sort: "firstName", direction: "ASC" })),
     getDepartments: vi.fn(async () => [{ key: "engineering", name: "Engineering", status: "ACTIVE", parentDepartmentKey: null }]),
     createDepartment: vi.fn(async (body: any) => ({ key: body.key, name: body.name, status: "ACTIVE", parentDepartmentKey: body.parentDepartmentKey ?? null })),
     updateDepartment: vi.fn(async (key: string, body: any) => ({ key, name: body.name ?? "Updated", status: body.status ?? "ACTIVE", parentDepartmentKey: body.parentDepartmentKey ?? null })),
     getDesignations: vi.fn(async () => [{ key: "developer", name: "Developer", status: "ACTIVE", parentDepartmentKey: null }]) };
 });
-vi.mock("../../features/payroll/payrollApi", () => ({ getPayrollEmployee: vi.fn(), getProfiles: vi.fn() }));
+vi.mock("../../features/payroll/payrollApi", () => ({ getPayrollEmployee: vi.fn(), getProfiles: vi.fn(), getOwnPayslips: vi.fn(async () => []) }));
 
 beforeEach(() => {
   vi.mocked(workforceApi.getEmployee).mockResolvedValue(employee);
@@ -50,7 +51,34 @@ describe("employee profile", () => {
   it("offers guided payroll setup when the employee is not enrolled", async () => {
     vi.mocked(payrollApi.getPayrollEmployee).mockRejectedValue(new ApiError(404, "Payroll employee not found"));
     profile();
-    expect((await screen.findByRole("link", { name: "Set up payroll" })).getAttribute("href")).toBe("/workforce/employees/new?employee=EMP-001");
+    const setupHref = (await screen.findByRole("link", { name: "Set up payroll" })).getAttribute("href") ?? "";
+    expect(setupHref).toContain("employee=EMP-001");
+    expect(decodeURIComponent(setupHref)).toContain("/workforce/employees/EMP-001");
+  });
+});
+
+describe("own payslips", () => {
+  const me = () => render(<MemoryRouter initialEntries={["/workforce/me"]}><Routes><Route path="/workforce/me" element={<WorkforcePage sectionKey="me" />} /></Routes></MemoryRouter>);
+  it("shows an empty state and no administration when nothing is finalized", async () => {
+    me();
+    expect(await screen.findByText("No finalized payslip yet. A payslip appears here after payroll is finalized. Finalizing does not send a payment.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Edit details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Record resignation" })).toBeNull();
+    expect(payrollApi.getOwnPayslips).toHaveBeenCalledWith();
+  });
+  it("prints the stored payslip for the signed-in employee", async () => {
+    vi.mocked(payrollApi.getOwnPayslips).mockResolvedValueOnce([{
+      employeeCode: "EMP-001", payRunKey: "RUN-1", periodStart: "2026-01-01", periodEnd: "2026-01-31",
+      calculationDate: "2026-01-31", currency: "INR", finalizedAt: "2026-02-01T00:00:00Z",
+      earnings: [{ componentKey: "BASIC", displayName: "Basic", category: "EARNING", amount: 1000 }],
+      deductions: [{ componentKey: "PF", displayName: "Provident fund", category: "DEDUCTION", amount: 100 }],
+      grossAmount: 1000, deductionAmount: 100, netAmount: 900,
+    }]);
+    me();
+    fireEvent.click(await screen.findByRole("button", { name: /1 Jan 2026/ }));
+    expect(await screen.findByText(/Net 900 INR/)).toBeTruthy();
+    expect(screen.getByText(/Basic 1000 INR/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Print" })).toBeTruthy();
   });
 });
 
@@ -72,6 +100,21 @@ describe("employee directory", () => {
     expect(lastQuery().get("search")).toBe("ada");
     expect(lastQuery().get("page")).toBe("0");
     expect(screen.getByText("Engineering", { selector: "td" })).toBeTruthy();
+  });
+
+  it("keeps the search when an employment chip changes the group", async () => {
+    render(<MemoryRouter initialEntries={["/workforce/employees"]}><Routes><Route path="/workforce/employees" element={<WorkforcePage sectionKey="employees" />} /></Routes></MemoryRouter>);
+    await screen.findByRole("link", { name: "Ada Lovelace" });
+    const lastQuery = () => new URLSearchParams(vi.mocked(workforceApi.getEmployees).mock.calls.at(-1)?.[0]);
+    fireEvent.change(screen.getByLabelText("Search employees"), { target: { value: "ada" } });
+    await waitFor(() => expect(lastQuery().get("search")).toBe("ada"), { timeout: 2000 });
+    fireEvent.click(screen.getByRole("button", { name: "Exited" }));
+    await waitFor(() => expect(lastQuery().get("group")).toBe("EXITED"));
+    expect(lastQuery().get("search")).toBe("ada");
+    expect(lastQuery().get("status")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Contractors" }));
+    await waitFor(() => expect(lastQuery().get("group")).toBe("CONTRACT"));
+    expect(lastQuery().get("search")).toBe("ada");
   });
 });
 

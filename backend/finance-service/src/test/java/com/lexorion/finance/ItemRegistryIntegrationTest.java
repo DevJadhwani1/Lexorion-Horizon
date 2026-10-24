@@ -29,6 +29,8 @@ class ItemRegistryIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired BillableItemRepository items;
     @Autowired LedgerEntryRepository ledger;
+    @Autowired AllocationRepository allocations;
+    @Autowired IdempotencyKeyRepository idempotencyKeys;
     @Autowired PaymentRepository payments;
     @Autowired InvoiceRepository invoices;
     @Autowired BillingClientRepository clients;
@@ -38,7 +40,7 @@ class ItemRegistryIntegrationTest {
 
     @BeforeEach
     void setup() {
-        ledger.deleteAll(); payments.deleteAll(); invoices.deleteAll(); items.deleteAll(); sequences.deleteAll(); clients.deleteAll(); workspaces.deleteAll();
+        ledger.deleteAll(); allocations.deleteAll(); idempotencyKeys.deleteAll(); payments.deleteAll(); invoices.deleteAll(); items.deleteAll(); sequences.deleteAll(); clients.deleteAll(); workspaces.deleteAll();
         when(authority.validate(anyString(), anyString(), any(), nullable(String.class))).thenAnswer(call ->
                 new TrustedFinanceContext(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"), call.getArgument(0),
                         UUID.fromString("11111111-1111-1111-1111-111111111111"), "omega", "ADMIN", UUID.fromString("33333333-3333-3333-3333-333333333333")));

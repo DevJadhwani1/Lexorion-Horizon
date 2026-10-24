@@ -28,7 +28,7 @@ class PostgresMigrationTest {
             statement.executeUpdate("INSERT INTO compensation_profiles(id,payroll_employee_id,profile_key,currency,effective_from,profile_status,created_at,updated_at) VALUES ('dddddddd-dddd-dddd-dddd-dddddddddddd','cccccccc-cccc-cccc-cccc-cccccccccccc','LEGACY','USD','2026-01-01','ACTIVE',NOW(),NOW())");
             var after = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                     .locations("classpath:db/migration").load().migrate();
-            assertThat(after.migrationsExecuted).isEqualTo(2);
+            assertThat(after.migrationsExecuted).isEqualTo(3);
             try (var rows = statement.executeQuery("SELECT column_name FROM information_schema.columns WHERE table_name='payroll_pay_runs' AND column_name IN ('processing_attempt','processing_started_at','failure_message')")) {
                 int count=0; while(rows.next()) count++; assertThat(count).isEqualTo(3);
             }

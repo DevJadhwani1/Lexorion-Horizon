@@ -7,23 +7,25 @@ import {
   getDepartments,
   getDesignations,
   getEmployee,
+  exitEmployee,
   getEmployeeHistory,
   getEmployees,
   getMe,
   getTeam,
   mapEmployeeUser,
+  rehireEmployee,
   transitionEmployee,
   updateEmployee,
   updateDepartment,
   updateDesignation,
   type Employee,
+  type EmployeeHistory,
   type EmploymentStatus,
-  type LifecycleEvent,
   type Reference,
   type Team,
 } from "../../features/workforce/workforceApi";
 import { useWorkforceDirectory } from "../../features/workforce/useWorkforceDirectory";
-import { getPayrollEmployee, getProfiles } from "../../features/payroll/payrollApi";
+import { getOwnPayslips, getPayrollEmployee, getPayrollEmployees, getPayrollReadiness, getProfiles, type Payslip } from "../../features/payroll/payrollApi";
 import { StatusBadge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Empty, Notice, Page } from "../../components/ui/Page";
@@ -34,7 +36,8 @@ import { useAuth } from "../../auth/AuthProvider";
 import { appPath } from "../../app/hostRouting";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { formatDate, humanize, keyFromName, personName } from "../../lib/format";
-import { EmployeeFields } from "./EmployeeFields";
+import { EMPLOYMENT_TYPES, EmployeeFields } from "./EmployeeFields";
+import { workflowLink } from "../../components/HorizonWorkflowNav";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
 import { DepartmentsPage } from "./DepartmentsPage";
 
@@ -111,11 +114,16 @@ const PAGE_SIZE = 20;
 function EmployeeDirectory() {
   const [params, setParams] = useSearchParams();
   const directory = useWorkforceDirectory();
+  const workspace = useWorkspace().workspace;
+  const payrollOn = Boolean(workspace?.products.some((product) => product.key === "payroll"));
   const search = params.get("q") ?? "", status = params.get("status") ?? "", department = params.get("department") ?? "",
-    designation = params.get("designation") ?? "", sort = params.get("sort") ?? "firstName", direction = params.get("direction") === "DESC" ? "DESC" : "ASC",
+    designation = params.get("designation") ?? "", group = params.get("group") ?? "", view = params.get("view") ?? "",
+    sort = params.get("sort") ?? "firstName", direction = params.get("direction") === "DESC" ? "DESC" : "ASC",
     page = Math.max(0, Number(params.get("page")) || 0);
   const [draft, setDraft] = useState(search);
   const [result, setResult] = useState<ResultPage<Employee> | null>(null), [error, setError] = useState(""), [loading, setLoading] = useState(true);
+  const [payrollCodes, setPayrollCodes] = useState<Set<string> | null>(null);
+  const [gaps, setGaps] = useState<{ employeeCode: string; reason: string; href: string }[]>([]);
   const update = (changes: Record<string, string>) => setParams((previous) => {
     const next = new URLSearchParams(previous);
     for (const [key, value] of Object.entries(changes)) if (value) next.set(key, value); else next.delete(key);
@@ -132,7 +140,8 @@ function EmployeeDirectory() {
     let current = true;
     const query = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE), sort, direction });
     if (search) query.set("search", search);
-    if (status) query.set("status", status);
+    if (status && view !== "unenrolled" && view !== "setup") query.set("status", status);
+    if (group && view !== "unenrolled" && view !== "setup") query.set("group", group);
     if (department) query.set("departmentKey", department);
     if (designation) query.set("designationKey", designation);
     setLoading(true); setError("");
@@ -141,15 +150,38 @@ function EmployeeDirectory() {
       .catch((reason) => { if (current) setError(reason instanceof ApiError ? reason.message : "Unable to load employees"); })
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [search, status, department, designation, sort, direction, page]);
-  const filtered = Boolean(search || status || department || designation);
-  const employees = result?.content ?? [];
+  }, [search, status, department, designation, group, view, sort, direction, page]);
+  useEffect(() => {
+    if (!payrollOn || (view !== "unenrolled" && view !== "setup")) return;
+    let current = true;
+    const loadPayroll = view === "unenrolled"
+      ? getPayrollEmployees().then((rows) => { if (current) setPayrollCodes(new Set(rows.map((row) => row.employeeCode))); })
+      : getPayrollReadiness().then((value) => { if (current) setGaps(value.gaps ?? []); });
+    loadPayroll.catch(() => { if (current) setError("Unable to load payroll setup"); });
+    return () => { current = false; };
+  }, [payrollOn, view]);
+  const filtered = Boolean(search || status || department || designation || group || view);
+  const applyView = (nextView: string) => {
+    if (nextView === "active") update({ view: nextView, status: "ACTIVE", group: "" });
+    else if (nextView === "leave") update({ view: nextView, status: "ON_LEAVE", group: "" });
+    else if (nextView === "exited") update({ view: nextView, status: "", group: "EXITED" });
+    else if (nextView === "contract") update({ view: nextView, status: "", group: "CONTRACT" });
+    else if (nextView === "unenrolled" || nextView === "setup") update({ view: nextView, status: "", group: "" });
+    else update({ view: "", status: "", group: "" });
+  };
+  const employees = (view === "unenrolled" && payrollCodes ? (result?.content ?? []).filter((person) => !payrollCodes.has(person.employeeCode)) : result?.content ?? []);
+  const gapLabel: Record<string, string> = { INACTIVE_EMPLOYMENT: "Inactive for payroll", MISSING_COMPENSATION: "Salary missing" };
   return (
     <Page title="Employees" description="Everyone in this workspace. Open an employee to update their details, status or payroll setup."
       actions={<Link className="button primary" to={appPath("/workforce/employees/new")}>Add employee</Link>}>
+      <div className="toolbar" role="group" aria-label="Employee views">
+        {([["", "All"], ["active", "Active"], ["leave", "On leave"], ["exited", "Exited"], ["contract", "Contractors"], ...(payrollOn ? [["unenrolled", "Payroll not enrolled"], ["setup", "Setup incomplete"]] as const : [])] as const).map(([value, label]) => (
+          <Button key={label} type="button" size="sm" variant={view === value ? "primary" : "secondary"} aria-pressed={view === value} onClick={() => applyView(value)}>{label}</Button>
+        ))}
+      </div>
       <form className="toolbar filter-bar directory-filters" role="search" onSubmit={(event) => { event.preventDefault(); update({ q: draft.trim() }); }}>
         <label>Search employees<input type="search" placeholder="Name, email or employee code" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
-        <Dropdown label="Status" value={status} onChange={(next) => update({ status: next })}
+        <Dropdown label="Status" value={status} onChange={(next) => update({ status: next, view: "", group: "" })}
           options={[{ value: "", label: "All statuses" }, ...statuses.map((value) => ({ value, label: humanize(value) }))]} />
         {directory.departments.length > 0 && <Dropdown label="Department" value={department} onChange={(next) => update({ department: next })}
           options={[{ value: "", label: "All departments" }, ...directory.departments.map((item) => ({ value: item.key, label: item.name }))]} />}
@@ -163,7 +195,8 @@ function EmployeeDirectory() {
         {filtered && <Button type="button" onClick={() => { setDraft(""); setParams(new URLSearchParams({ sort, direction }), { replace: true }); }}>Clear filters</Button>}
       </form>
       {error && <Notice>{error}</Notice>}
-      {loading && !result ? <p role="status">Loading employees…</p> : employees.length ? <>
+      {view === "setup" ? (gaps.length ? <Table headers={["Employee", "What is missing", ""]}>{gaps.filter((gap) => !search || gap.employeeCode.toLowerCase().includes(search.toLowerCase())).map((gap) => <tr key={gap.employeeCode}><td><Link to={appPath(`/workforce/employees/${gap.employeeCode}`)}>{gap.employeeCode}</Link></td><td>{gapLabel[gap.reason] ?? gap.reason}</td><td><Link to={workflowLink(appPath(gap.href), `${appPath("/workforce/employees")}?view=setup${search ? `&q=${encodeURIComponent(search)}` : ""}`)}>Fix</Link></td></tr>)}</Table> : <Empty>Everyone enrolled in payroll has an active salary.</Empty>) : null}
+      {view !== "setup" && (loading && !result ? <p role="status">Loading employees…</p> : employees.length ? <>
         <Table headers={["Employee", "Email", "Department", "Designation", "Joined", "Status"]}>
           {employees.map((e) => (
             <tr key={e.employeeCode}>
@@ -179,7 +212,7 @@ function EmployeeDirectory() {
         <Pagination page={page} totalPages={result?.totalPages ?? 1} total={result?.totalElements ?? employees.length} size={PAGE_SIZE} busy={loading} onPage={(next) => update({ page: next ? String(next) : "" })} />
       </> : filtered
         ? <Empty>No employees match these filters. <button type="button" className="link-button" onClick={() => { setDraft(""); setParams(new URLSearchParams(), { replace: true }); }}>Clear filters</button></Empty>
-        : <Empty><strong>No employees yet.</strong><br />Add your first employee to start building your team and payroll. <Link to={appPath("/workforce/employees/new")}>Add employee</Link></Empty>}
+        : <Empty><strong>No employees yet.</strong><br />Add your first employee to start building your team and payroll. <Link to={appPath("/workforce/employees/new")}>Add employee</Link></Empty>)}
     </Page>
   );
 }
@@ -213,17 +246,29 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
   const directory = useWorkforceDirectory();
   const payrollEnabled = admin && !self && Boolean(workspace?.products.some((product) => product.key === "payroll"));
   const [error, setError] = useState(""), [saved, setSaved] = useState(""),
-    [history, setHistory] = useState<LifecycleEvent[]>([]),
+    [history, setHistory] = useState<EmployeeHistory>({ events: [], spells: [] }),
     [historyLoading, setHistoryLoading] = useState(admin && !self),
-    [editing, setEditing] = useState(false), [busy, setBusy] = useState(false);
+    [editing, setEditing] = useState(false), [busy, setBusy] = useState(false),
+    [exitAction, setExitAction] = useState<"resign" | "terminate" | null>(null),
+    [rehireOpen, setRehireOpen] = useState(false),
+    [payslips, setPayslips] = useState<Payslip[] | null>(null),
+    [openPayslip, setOpenPayslip] = useState<Payslip | null>(null);
   useEffect(() => {
     if (!admin || self) return;
     setHistoryLoading(true);
     getEmployeeHistory(employee.employeeCode)
-      .then(setHistory)
+      .then((value) => setHistory(value ?? { events: [], spells: [] }))
       .catch((reason) => setError(reason instanceof ApiError ? reason.message : "Unable to load employee history"))
       .finally(() => setHistoryLoading(false));
-  }, [admin, employee.employeeCode, self]);
+  }, [admin, employee.employeeCode, self, employee.status]);
+  useEffect(() => {
+    if (!self) return;
+    let current = true;
+    getOwnPayslips()
+      .then((rows) => { if (current) setPayslips(rows); })
+      .catch((reason) => { if (current) setError(reason instanceof ApiError ? reason.message : "Unable to load payslips"); });
+    return () => { current = false; };
+  }, [self]);
   const [ask, confirmDialog] = useConfirm();
   const name = personName(employee);
   const manager = employee.reportingManagerEmployeeCode;
@@ -256,7 +301,8 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
           <h3>Employment</h3>
           <dl className="detail-list">
             <div><dt>Status</dt><dd><StatusBadge status={employee.status} /></dd></div>
-            <div><dt>Joined</dt><dd>{formatDate(employee.joiningDate)}</dd></div>
+            <div><dt>Original hire date</dt><dd>{formatDate(employee.originalJoiningDate || employee.joiningDate)}</dd></div>
+            <div><dt>Current spell started</dt><dd>{formatDate(employee.joiningDate)}</dd></div>
             <div><dt>Phone</dt><dd>{employee.phone || "—"}</dd></div>
             <div><dt>Employment type</dt><dd>{employee.employmentType ? humanize(employee.employmentType) : "—"}</dd></div>
           </dl>
@@ -273,14 +319,13 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
       </div>}
       {admin && !self && !editing && (
         <>
-          {transitions[employee.status].length > 0 && <section className="card" aria-labelledby="employee-status-heading">
+          {(transitions[employee.status].length > 0 || employee.status === "RESIGNED" || employee.status === "TERMINATED") && <section className="card" aria-labelledby="employee-status-heading">
             <h3 id="employee-status-heading">Employment status</h3>
             <div className="toolbar">
-              {transitions[employee.status].map((action) => (
-                <Button key={action} variant={action === "terminate" ? "destructive" : "secondary"} disabled={busy}
+              {transitions[employee.status].filter((action) => action !== "resign" && action !== "terminate").map((action) => (
+                <Button key={action} variant="secondary" disabled={busy}
                   onClick={async () => {
-                    if (!(await ask({ title: `${transitionLabels[action]} for ${name}?`, confirmLabel: transitionLabels[action], tone: action === "terminate" ? "destructive" : "primary",
-                      body: action === "terminate" || action === "resign" ? "This is recorded in the employee’s history. Their employee code stays reserved and is not reused." : "This is recorded in the employee’s history." }))) return;
+                    if (!(await ask({ title: `${transitionLabels[action]} for ${name}?`, confirmLabel: transitionLabels[action], body: "This is recorded in the employee’s history." }))) return;
                     setBusy(true); setError("");
                     void transitionEmployee(employee.employeeCode, action)
                       .then(async () => { setSaved(`${transitionLabels[action]}: done.`); await reload(); })
@@ -290,7 +335,57 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
                   {transitionLabels[action] ?? humanize(action)}
                 </Button>
               ))}
+              {transitions[employee.status].includes("resign") && <Button type="button" disabled={busy} onClick={() => setExitAction("resign")}>Record resignation</Button>}
+              {transitions[employee.status].includes("terminate") && <Button type="button" variant="destructive" disabled={busy} onClick={() => setExitAction("terminate")}>Terminate</Button>}
+              {(employee.status === "RESIGNED" || employee.status === "TERMINATED") && <Button type="button" variant="primary" disabled={busy} onClick={() => setRehireOpen(true)}>Rehire</Button>}
             </div>
+            {exitAction && <form className="card" aria-label="Exit employment" onSubmit={async (event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const exitDate = String(form.get("exitDate") ?? ""), exitReason = String(form.get("exitReason") ?? "").trim();
+              if (!exitDate || !exitReason) { setError("Exit date and reason are required."); return; }
+              if (!(await ask({ title: `${transitionLabels[exitAction]} for ${name}?`, confirmLabel: transitionLabels[exitAction], tone: "destructive", body: "The current employment spell closes. Finalized payslips stay unchanged, and the employee code is kept." }))) return;
+              setBusy(true); setError("");
+              void exitEmployee(employee.employeeCode, exitAction, { exitDate, exitReason })
+                .then(async () => { setExitAction(null); setSaved("Employment spell closed. Finalized payslips are unchanged."); await reload(); })
+                .catch((x) => setError(x instanceof ApiError ? x.message : "Unable to close employment"))
+                .finally(() => setBusy(false));
+            }}>
+              <Field label="Exit date"><input name="exitDate" type="date" required defaultValue={employee.joiningDate} /></Field>
+              <Field label="Exit reason"><input name="exitReason" required maxLength={500} /></Field>
+              <div className="form-actions">
+                <Button variant="destructive" disabled={busy}>{busy ? "Saving…" : transitionLabels[exitAction]}</Button>
+                <Button type="button" onClick={() => setExitAction(null)}>Cancel</Button>
+              </div>
+            </form>}
+            {rehireOpen && <form className="card" aria-label="Rehire employee" onSubmit={async (event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const joiningDate = String(form.get("joiningDate") ?? "");
+              if (!joiningDate) { setError("Joining date is required."); return; }
+              if (!(await ask({ title: `Rehire ${name}?`, confirmLabel: "Rehire", body: "This opens a new employment spell on the same employee record. Previous spells and finalized payslips stay unchanged. Salary and statutory setup are not copied forward." }))) return;
+              setBusy(true); setError("");
+              void rehireEmployee(employee.employeeCode, {
+                joiningDate,
+                employmentType: String(form.get("employmentType") ?? "") || null,
+                departmentKey: String(form.get("departmentKey") ?? "") || null,
+                designationKey: String(form.get("designationKey") ?? "") || null,
+                reportingManagerEmployeeCode: String(form.get("reportingManagerEmployeeCode") ?? "") || null,
+              }).then(async () => { setRehireOpen(false); setSaved("Rehired. Previous employment and finalized payslips are unchanged."); await reload(); })
+                .catch((x) => setError(x instanceof ApiError ? x.message : "Unable to rehire"))
+                .finally(() => setBusy(false));
+            }}>
+              <p className="snapshot-note">Previous spells and finalized payslips remain unchanged. Confirm the new spell, then set up payroll again.</p>
+              <Field label="Joining date"><input name="joiningDate" type="date" required /></Field>
+              <Dropdown label="Employment type" name="employmentType" defaultValue="FULL_TIME" options={EMPLOYMENT_TYPES} />
+              <Dropdown label="Department" name="departmentKey" defaultValue="" options={[{ value: "", label: "No department" }, ...directory.departments.filter((item) => item.status === "ACTIVE").map((item) => ({ value: item.key, label: item.name }))]} />
+              <Dropdown label="Designation" name="designationKey" defaultValue="" options={[{ value: "", label: "No designation" }, ...directory.designations.filter((item) => item.status === "ACTIVE").map((item) => ({ value: item.key, label: item.name }))]} />
+              <Dropdown label="Reporting manager" name="reportingManagerEmployeeCode" defaultValue="" options={[{ value: "", label: "No manager" }, ...directory.employees.filter((item) => item.employeeCode !== employee.employeeCode && item.status === "ACTIVE").map((item) => ({ value: item.employeeCode, label: personName(item) }))]} />
+              <div className="form-actions">
+                <Button variant="primary" disabled={busy}>{busy ? "Saving…" : "Rehire"}</Button>
+                <Button type="button" onClick={() => setRehireOpen(false)}>Cancel</Button>
+              </div>
+            </form>}
           </section>}
           <section className="card" aria-labelledby="employee-portal-heading">
             <h3 id="employee-portal-heading">Employee portal access</h3>
@@ -309,9 +404,11 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
           </section>
           <section className="card" aria-labelledby="employee-history-heading">
             <h3 id="employee-history-heading">Employment history</h3>
-            {historyLoading ? <p>Loading history…</p> : history.length ? (
+            {historyLoading ? <p>Loading history…</p> : <>
+              {history.spells.length ? <ol className="spell-timeline">{history.spells.map((spell) => <li key={spell.spellNumber}><strong>Spell {spell.spellNumber}</strong> · {humanize(spell.status)} · {formatDate(spell.joiningDate)}{spell.exitDate ? ` to ${formatDate(spell.exitDate)}` : ""}{spell.exitReason ? ` · ${spell.exitReason}` : ""}</li>)}</ol> : null}
+              {history.events.length ? (
               <Table headers={["Change", "From", "To", "Date"]}>
-                {history.map((event) => <tr key={`${event.occurredAt}:${event.action}`}>
+                {history.events.map((event) => <tr key={`${event.occurredAt}:${event.action}`}>
                   <td>{humanize(event.action)}</td>
                   <td>{event.previousStatus ? humanize(event.previousStatus) : "—"}</td>
                   <td>{humanize(event.newStatus)}</td>
@@ -319,9 +416,26 @@ function EmployeeProfile({ employee, reload, self = false }: { employee: Employe
                 </tr>)}
               </Table>
             ) : <Empty>No status changes yet.</Empty>}
+            </>}
           </section>
         </>
       )}
+      {self && <section className="card" aria-labelledby="own-payslips-heading">
+        <h3 id="own-payslips-heading">Payslips</h3>
+        {payslips === null && !error ? <p role="status">Loading payslips…</p> : payslips?.length ? <ul>{payslips.map((slip) => <li key={slip.payRunKey}><button type="button" className="link-button" onClick={() => setOpenPayslip(slip)}>{formatDate(slip.periodStart)} – {formatDate(slip.periodEnd)}</button> · Finalized</li>)}</ul> : <Empty>No finalized payslip yet. A payslip appears here after payroll is finalized. Finalizing does not send a payment.</Empty>}
+        {openPayslip && <>
+          <Button type="button" onClick={() => window.print()}>Print</Button>
+          <article className="payslip-sheet" aria-label={`Payslip ${openPayslip.payRunKey}`}>
+            <h4>{formatDate(openPayslip.periodStart)} – {formatDate(openPayslip.periodEnd)}</h4>
+            <p>Finalized calculation. This is not confirmation that money was sent.</p>
+            <ul>
+              {openPayslip.earnings.map((line) => <li key={`earn-${line.componentKey}`}>{line.displayName} {line.amount} {openPayslip.currency}</li>)}
+              {openPayslip.deductions.map((line) => <li key={`deduct-${line.componentKey}`}>{line.displayName} {line.amount} {openPayslip.currency}</li>)}
+            </ul>
+            <p>Gross {openPayslip.grossAmount} {openPayslip.currency} · Deductions {openPayslip.deductionAmount} {openPayslip.currency} · Net {openPayslip.netAmount} {openPayslip.currency}</p>
+          </article>
+        </>}
+      </section>}
     </Page>
   );
 }
@@ -337,14 +451,15 @@ function PayrollSetupCard({ employeeCode }: { employeeCode: string }) {
       .catch((reason) => { if (current) setState(reason instanceof ApiError && reason.status === 404 ? "missing" : "error"); });
     return () => { current = false; };
   }, [employeeCode]);
-  const setup = `${appPath("/workforce/employees/new")}?employee=${encodeURIComponent(employeeCode)}`;
-  const compensation = `${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employeeCode)}`;
+  const back = appPath(`/workforce/employees/${employeeCode}`);
+  const setup = workflowLink(`${appPath("/workforce/employees/new")}?employee=${encodeURIComponent(employeeCode)}`, back);
+  const compensation = workflowLink(`${appPath("/payroll/compensation")}?employee=${encodeURIComponent(employeeCode)}`, back);
   return <article>
     <h3>Payroll</h3>
     {state === "loading" && <p>Checking payroll setup…</p>}
     {state === "error" && <p>Payroll setup could not be checked. <Link to={compensation}>Open compensation</Link></p>}
     {state === "missing" && <><p>Not set up for payroll yet.</p><Link className="button primary" to={setup}>Set up payroll</Link></>}
-    {state === "no-compensation" && <><p>Enrolled in payroll, but no salary has been set.</p><Link className="button primary" to={setup}>Add salary</Link></>}
+    {state === "no-compensation" && <><p>Enrolled in payroll, but no salary has been set.</p><Link className="button primary" to={compensation}>Add salary</Link></>}
     {state === "ready" && <><p><StatusBadge status="ACTIVE" /> Set up for payroll.</p><Link to={compensation}>View compensation</Link></>}
   </article>;
 }

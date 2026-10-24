@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import type { BillTo, InvoiceStatus, RenderTemplate, TaxLine } from "../../features/finance/financeApi";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import type { BillTo, InvoiceStatus, LabelledValue, RenderTemplate, TaxLine } from "../../features/finance/financeApi";
 import { amountInWords } from "../../lib/amountInWords";
 import { formatMoney } from "../../lib/format";
 
@@ -24,17 +25,64 @@ export interface DocumentData {
 }
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const shortMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
 function ordinal(day: number) {
   const suffix = day % 100 >= 11 && day % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][day % 10] ?? "th";
   return `${day}${suffix}`;
 }
-/** Dates as the template asks: 30th May 2026, 30 May 2026 or 30/05/2026. */
-export function documentDate(value: string | null | undefined, style: RenderTemplate["config"]["dateStyle"]): string {
+/** Dates as the template asks: 30th May 2026, 30 May 2026, 30/05/2026, or 02 Sept 2026. */
+export function documentDate(value: string | null | undefined, style: RenderTemplate["config"]["dateStyle"] | "COMPACT"): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
   if (!match) return value || "—";
   const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
   if (style === "NUMERIC") return `${match[3]}/${match[2]}/${year}`;
+  if (style === "COMPACT") return `${String(day).padStart(2, "0")} ${shortMonths[month - 1]} ${year}`;
   return `${style === "ORDINAL" ? ordinal(day) : day} ${style === "ORDINAL" ? months[month - 1] : months[month - 1].slice(0, 3)} ${year}`;
+}
+
+/** Saved name follows the issued files: brand, client, number with hyphens. The browser adds .pdf. */
+export function invoiceDownloadTitle(sellerLegalName: string, clientName: string, number: string): string {
+  const brand = sellerLegalName.replace(/\s+India Private Limited$/i, "").trim() || sellerLegalName.trim() || "Invoice";
+  const client = clientName.trim().split(/\s+/)[0] || "Client";
+  return `${brand} · ${client} · ${number.replaceAll("/", "-")}`;
+}
+
+export function printDocument(downloadTitle: string) {
+  const previous = document.title;
+  const apply = () => { document.title = downloadTitle; };
+  const restore = () => {
+    document.title = previous;
+    window.removeEventListener("beforeprint", apply);
+    window.removeEventListener("afterprint", restore);
+  };
+  apply();
+  window.addEventListener("beforeprint", apply);
+  window.addEventListener("afterprint", restore);
+  window.setTimeout(() => window.print(), 0);
+}
+
+function displayPhone(value: string | null | undefined): string {
+  if (!value) return "";
+  return parsePhoneNumberFromString(value)?.formatInternational() ?? value;
+}
+
+function displaySite(value: string): string {
+  return value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+}
+
+function sellerIdentifiers(items: LabelledValue[]): LabelledValue[] {
+  const filled = items.filter((item) => item.value);
+  const pan = filled.find((item) => item.label.trim().toUpperCase() === "PAN");
+  const cin = filled.find((item) => item.label.trim().toUpperCase() === "CIN");
+  if (!pan || !cin) return filled;
+  const merged = { label: "PAN / CIN", value: `${pan.value} · ${cin.value}` };
+  let inserted = false;
+  return filled.flatMap((item) => {
+    if (item !== pan && item !== cin) return [item];
+    if (inserted) return [];
+    inserted = true;
+    return [merged];
+  });
 }
 
 export function InvoiceDocument({ data, template, fallbackSellerName, locale }: { data: DocumentData; template: RenderTemplate; fallbackSellerName?: string; locale?: string }) {
@@ -44,34 +92,42 @@ export function InvoiceDocument({ data, template, fallbackSellerName, locale }: 
   const moneyLocale = data.currency === "INR" ? "en-IN" : locale;
   const money = (value: number) => formatMoney(value, data.currency, moneyLocale);
   const date = (value: string | null | undefined) => documentDate(value, c.dateStyle);
+  // Issued Omega Hires bills print ordinal dates through 7 July 2026 and 02 Sept 2026 from 28 July. Joining dates stay on the template style.
+  const compactHeader = /^omega hires\b/i.test(seller.legalName ?? "") && data.issueDate >= "2026-07-28";
+  const headerDate = (value: string | null | undefined) => documentDate(value, compactHeader ? "COMPACT" : c.dateStyle);
+  const taxInvoiceHeading = c.document.title.trim().toUpperCase() === "TAX INVOICE" && !c.document.subtitle;
+  const logo = c.branding.logo || (compactHeader || /^omega hires\b/i.test(seller.legalName ?? "") ? "/omega-hires-logo.png" : null);
   const gst = c.tax.mode === "GST";
   const showTax = c.tax.mode !== "NONE" || data.lines.some((line) => line.taxRate > 0);
+  const showHsn = Boolean(c.columns.showHsnSac && data.lines.some((line) => line.hsnSac));
   const taxHeading = gst ? "GST" : c.tax.label;
   const draft = !data.number && data.status !== "VOID";
   const fieldValues = c.customFields.filter((field) => data.customFields[field.key]);
-  const contact = [seller.phone, seller.email].filter(Boolean).join(" · ");
-  const buyerContact = [data.billTo.email, data.billTo.phone].filter(Boolean).join(" · ");
+  const contact = [displayPhone(seller.phone), seller.email].filter(Boolean).join(" · ");
+  const buyerContact = [data.billTo.email, displayPhone(data.billTo.phone)].filter(Boolean).join(" · ");
+  const identifiers = sellerIdentifiers(seller.identifiers);
   const style = { "--doc-primary": c.branding.primaryColor, "--doc-accent": c.branding.accentColor } as CSSProperties;
-  return <article className={`invoice-doc invoice-doc--${template.layout.toLowerCase()}`} style={style} aria-label={`${c.document.title} ${data.number ?? "draft"}`}>
+  return <article className={`invoice-doc invoice-doc--${template.layout.toLowerCase()}`} style={style} aria-label={`${taxInvoiceHeading ? "Invoice" : c.document.title} ${data.number ?? "draft"}`}>
     {draft && <div className="invoice-doc-watermark" aria-hidden="true">Draft</div>}
     {data.status === "VOID" && <div className="invoice-doc-watermark" aria-hidden="true">Void</div>}
     <div className="invoice-doc-bar" aria-hidden="true" />
     <header className="invoice-doc-header">
       <div className="invoice-doc-brand">
-        {c.branding.logo ? <img className="invoice-doc-logo" src={c.branding.logo} alt={sellerName} /> : <strong className="invoice-doc-wordmark">{sellerName}</strong>}
+        {logo ? <img className="invoice-doc-logo" src={logo} alt="" /> : <strong className="invoice-doc-wordmark">{sellerName}</strong>}
+        {logo && <strong className="invoice-doc-legal">{sellerName}</strong>}
         {seller.tagline && <p className="invoice-doc-tagline">{seller.tagline}</p>}
         {seller.subline && <p className="invoice-doc-subline">{seller.subline}</p>}
       </div>
       <div className="invoice-doc-heading">
-        {c.document.subtitle && <span className="invoice-doc-kicker">{c.document.subtitle}</span>}
-        <h2>{c.document.title}</h2>
+        {taxInvoiceHeading ? <span className="invoice-doc-kicker">Tax invoice</span> : c.document.subtitle && <span className="invoice-doc-kicker">{c.document.subtitle}</span>}
+        <h2>{taxInvoiceHeading ? "Invoice" : c.document.title}</h2>
         <strong className="invoice-doc-number">{data.number ?? "Draft"}</strong>
         {c.document.copyLabel && <span className="invoice-doc-copy">{c.document.copyLabel}</span>}
       </div>
     </header>
     <dl className="invoice-doc-meta">
-      <div><dt>Date issued</dt><dd>{date(data.issueDate)}</dd></div>
-      <div><dt>Due</dt><dd>{date(data.dueDate)}</dd></div>
+      <div><dt>Date issued</dt><dd>{headerDate(data.issueDate)}</dd></div>
+      <div><dt>Due</dt><dd>{headerDate(data.dueDate)}</dd></div>
       {(gst || data.placeOfSupply) && <div><dt>Place of supply</dt><dd>{data.placeOfSupply || "—"}</dd></div>}
     </dl>
     <section className="invoice-doc-parties">
@@ -81,8 +137,8 @@ export function InvoiceDocument({ data, template, fallbackSellerName, locale }: 
         <dl>
           {seller.address && <div><dt>Address</dt><dd>{seller.address}</dd></div>}
           {contact && <div><dt>Contact</dt><dd>{contact}</dd></div>}
-          {seller.website && <div><dt>Web</dt><dd>{seller.website}</dd></div>}
-          {seller.identifiers.filter((item) => item.value).map((item) => <div key={item.label}><dt>{item.label}</dt><dd className="invoice-doc-id">{item.value}</dd></div>)}
+          {seller.website && <div><dt>Web</dt><dd>{displaySite(seller.website)}</dd></div>}
+          {identifiers.map((item) => <div key={item.label}><dt>{item.label}</dt><dd className="invoice-doc-id">{item.value}</dd></div>)}
         </dl>
       </div>
       <div>
@@ -102,12 +158,12 @@ export function InvoiceDocument({ data, template, fallbackSellerName, locale }: 
     </section>}
     <table className="invoice-doc-items">
       <thead><tr>
-        <th>Sr.</th>{c.columns.showItemCode && <th>{c.columns.itemCodeLabel}</th>}<th className="invoice-doc-description">Description</th>{c.columns.showHsnSac && <th>HSN/SAC</th>}
+        <th>Sr.</th>{c.columns.showItemCode && <th>{c.columns.itemCodeLabel}</th>}<th className="invoice-doc-description">Description</th>{showHsn && <th>HSN/SAC</th>}
         <th className="num">Qty</th><th className="num">Rate</th>{showTax && <th className="num">Taxable</th>}{showTax && <th className="num">{taxHeading}</th>}<th className="num">Total</th>
       </tr></thead>
       <tbody>{data.lines.map((line) => <tr key={line.lineNumber}>
         <td className="invoice-doc-sr">{line.lineNumber}</td>{c.columns.showItemCode && <td className="invoice-doc-code">{line.itemCode || "—"}</td>}
-        <td className="invoice-doc-description">{line.description}</td>{c.columns.showHsnSac && <td className="invoice-doc-code">{line.hsnSac || "—"}</td>}
+        <td className="invoice-doc-description">{line.description}</td>{showHsn && <td className="invoice-doc-code">{line.hsnSac || "—"}</td>}
         <td className="num">{line.quantity}{line.unit && <small className="invoice-doc-unit"> {line.unit}</small>}</td><td className="num">{money(line.unitPrice)}</td>
         {showTax && <td className="num">{money(line.subtotal)}</td>}{showTax && <td className="num">{line.taxRate ? `${line.taxRate}%` : "—"}</td>}<td className="num strong">{money(line.total)}</td>
       </tr>)}</tbody>
@@ -126,7 +182,7 @@ export function InvoiceDocument({ data, template, fallbackSellerName, locale }: 
     <footer className="invoice-doc-footer">
       <div>
         {c.paymentDetails.some((item) => item.value) && <><h3>Payment details</h3>
-          <dl>{c.paymentDetails.filter((item) => item.value).map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}</dl></>}
+          <dl>{c.paymentDetails.filter((item) => item.value).map((item) => <div key={item.label}><dt>{item.label.trim().toLowerCase() === "account number" ? "A/C no." : item.label}</dt><dd>{item.value}</dd></div>)}</dl></>}
       </div>
       <div>
         {c.terms.length > 0 && <><h3>Terms &amp; conditions</h3><ul>{c.terms.map((term) => <li key={term}>{term}</li>)}</ul></>}

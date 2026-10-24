@@ -17,7 +17,7 @@ Customer routes, after the `/app` prefix was removed from the router:
 | `/workforce/employees`, `/workforce/employees/new`, `/workforce/employees/:employeeCode` | Employees |
 | `/workforce/departments`, `/workforce/designations`, `/workforce/structure`, `/workforce/team`, `/workforce/me` | Workforce structure and self-service |
 | `/payroll/runs`, `/payroll/employees`, `/payroll/compensation`, `/payroll/components`, `/payroll/salary-templates`, `/payroll/calculations`, `/payroll/ledger`, `/payroll/payslips` | Payroll |
-| `/finance/overview`, `/finance/invoices`, `/finance/invoices/new`, `/finance/invoices/:reference`, `/finance/clients`, `/finance/payments`, `/finance/templates` | Client billing |
+| `/finance/overview`, `/finance/invoices`, `/finance/invoices/new`, `/finance/invoices/:reference`, `/finance/clients`, `/finance/payments`, `/finance/templates`, `/finance/books` | Client billing, collections, and books |
 | `/platform/*` on the local host, and `/` on the platform host | Platform console |
 
 Legacy `/app/...` URLs redirect to these paths and keep the query string. `/api/*` stays on the gateway.
@@ -39,6 +39,9 @@ Core Console, only on `/core`: overview, organizations, users, products, product
 - Finalized payroll copy already states that finalizing locks the ledger and payslips and does not send a payment. EPF and ESI stay estimates. Professional tax, labour welfare fund, and income tax are not calculated. No payroll or finance business rule was changed.
 - Recovering a failed or processing pay run now asks before returning it to Draft. Finalizing a calculated run already required confirmation and still says no bank, cheque, or cash payment is sent.
 - Recording an invoice payment now says Horizon records that the client paid and does not collect the money or send it to a bank. Issuing a draft already required confirmation.
+- Collections (`/finance/payments`) records a client receipt. Applying it to an invoice is separate. The table shows allocated and unallocated amounts from the payments API. Unallocated money is described as not reducing what the client owes. A failed load shows the error.
+- The overview shows collected and unallocated figures from the billing summary. If that request fails, the screen shows the error and does not draw zero receivables.
+- The client statement shows the ledger date basis, lists unallocated receipts outside the closing balance, and downloads a CSV that includes that basis. A failed year or statement request shows the error.
 - Core Console no longer applies lock, suspend, cancel, product deactivation, or session revocation on the first click. Session revocation is one control per person and says it revokes every session, not the row alone.
 - The organization profile form keeps typed changes when a later load of the same screen arrives. A successful save still accepts the reloaded profile.
 
@@ -51,10 +54,10 @@ Core Console, only on `/core`: overview, organizations, users, products, product
 
 | Check | Result |
 |---|---|
-| Frontend `vitest` | 233 passed, 33 files, after the confirmation and profile-form fixes |
-| `tsc -b` and `vite build` | Passed. The production bundle is about 863 kB before gzip |
-| oxlint on the edited screens | Passed |
-| `oxlint src` | Passed, with existing warnings in onboarding only |
+| Frontend `vitest` | 233 passed, 33 files, after the confirmation and profile-form fixes. This later finance pass re-ran `FinancePage.test.tsx` and `EmployeeSetupWizard.test.tsx`: 27 passed. The full suite was not re-run. |
+| `tsc -b` and `vite build` | Passed on 24 October 2026 after the collections and statement changes. The production bundle is about 937 kB before gzip. |
+| oxlint on the edited screens | Passed in the earlier audit. Not re-run for the collections pass. |
+| `oxlint src` | Passed, with existing warnings in onboarding only. Not re-run for the collections pass. |
 | Signed-in browser, earlier in this session | `/overview` showed Dashboard. Sidebar links were `/overview`, `/people`, `/organization`, `/workforce/employees`, `/settings/organization`. `/people` rendered Members. `/payroll` moved to `/payroll/runs`. `/payroll/employees` loaded. |
 | Signed-out browser | The IDE browser session had no token, so payroll, finance, and onboarding could not be clicked through as an administrator after that. Direct `/login` rendered the sign-in form. |
 | Nginx | `/app` returns 302 to `/overview`. `/app/organization/members?role=admin` returns 302 to `/people?role=admin`. `/app/payroll/pay-runs?run=RUN-1` returns 302 to `/payroll/runs?run=RUN-1`. `/overview`, `/people`, `/payroll`, `/login`, and `/onboarding` return the application HTML. `POST /api/core/auth/login` reaches the API. |
@@ -62,9 +65,9 @@ Core Console, only on `/core`: overview, organizations, users, products, product
 ## Not claimed
 
 - The IDE browser is signed out. Payroll enrollment, calculation, finalization, ledger, and payslips were not clicked through against a live organization. No pay run was created or finalized.
-- A finance invoice was not drafted, issued, or paid in the browser. The payment form was checked in the invoice component and its test.
+- The collections, statement, and overview changes were exercised in component tests. They were not clicked through in a signed-in browser. The frontend container that is currently serving port 9000 was started before this source change.
 - Core Console was not opened with an operator session. Organizations, users, product access, and audit were reviewed from the existing `/core` routes and tests.
-- Password reset, open registration, leave, attendance, bank payment, and statutory calculation of professional tax, labour welfare fund, and income tax are absent from the backend and were not added.
+- Password reset, open registration, leave, attendance, bank payment, and statutory calculation of professional tax, labour welfare fund, and income tax are absent from the backend and were not added. Finance GST display is the existing seller-region rule. It is not a statutory GST filing claim.
 - These source fixes are not in the published frontend image until that image is rebuilt.
 
 ## Next work

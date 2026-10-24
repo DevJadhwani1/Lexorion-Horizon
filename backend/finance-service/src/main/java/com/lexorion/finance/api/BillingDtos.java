@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 
 /** Public Finance billing contracts. Internal UUIDs are never exposed; clients, invoices and payments use their keys and numbers. */
@@ -153,13 +154,19 @@ public final class BillingDtos {
             @Size(max = 64) String reference,
             @Size(max = 500) String notes) { }
 
+    /**
+     * {@code amount} is the receipt total on a receipt list, and the amount applied to the invoice when this row is one
+     * allocation. Unallocated money is not part of any invoice balance.
+     */
     public record PaymentResponse(String receiptNumber, String invoiceReference, String invoiceNumber, String clientKey, String clientName,
             BigDecimal amount, String currency, LocalDate paymentDate, PaymentMethod method, String reference,
-            String notes, Instant createdAt) {
-        public static PaymentResponse from(Payment p) {
-            return new PaymentResponse(p.getReceiptNumber(), p.getInvoice().getReference(), p.getInvoice().getInvoiceNumber(),
-                    p.getInvoice().getClient().getClientKey(), p.getInvoice().getClient().getDisplayName(), p.getAmount(),
-                    p.getCurrency(), p.getPaymentDate(), p.getMethod(), p.getReference(), p.getNotes(), p.getCreatedAt());
+            String notes, Instant createdAt, BigDecimal allocatedAmount, BigDecimal unallocatedAmount, UUID allocationId) {
+        public static PaymentResponse of(Payment p, Invoice shownInvoice, BigDecimal shownAmount, BigDecimal allocated, UUID allocationId) {
+            Invoice invoice = shownInvoice != null ? shownInvoice : p.getInvoice();
+            return new PaymentResponse(p.getReceiptNumber(), invoice == null ? null : invoice.getReference(),
+                    invoice == null ? null : invoice.getInvoiceNumber(), p.getClient().getClientKey(), p.getClient().getDisplayName(),
+                    shownAmount, p.getCurrency(), p.getPaymentDate(), p.getMethod(), p.getReference(), p.getNotes(), p.getCreatedAt(),
+                    allocated, p.getAmount().subtract(allocated), allocationId);
         }
     }
 
@@ -170,7 +177,7 @@ public final class BillingDtos {
             BigDecimal over90) { }
 
     public record CurrencyTotals(String currency, BigDecimal outstanding, BigDecimal overdue,
-            BigDecimal invoicedThisMonth, BigDecimal collectedThisMonth, Aging aging) { }
+            BigDecimal invoicedThisMonth, BigDecimal collectedThisMonth, BigDecimal unallocatedThisMonth, Aging aging) { }
 
     public record BillingSummary(LocalDate asOf, long draftInvoices, long openInvoices, long overdueInvoices,
             long paidInvoices, long activeClients, List<CurrencyTotals> totals) { }

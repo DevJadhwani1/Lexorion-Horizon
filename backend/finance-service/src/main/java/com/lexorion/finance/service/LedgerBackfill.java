@@ -2,8 +2,10 @@ package com.lexorion.finance.service;
 
 import com.lexorion.finance.api.BillingDtos.DocumentSnapshot;
 import com.lexorion.finance.api.TemplateConfig;
+import com.lexorion.finance.domain.Allocation;
 import com.lexorion.finance.domain.Invoice;
 import com.lexorion.finance.domain.Payment;
+import com.lexorion.finance.repository.AllocationRepository;
 import com.lexorion.finance.repository.InvoiceRepository;
 import com.lexorion.finance.repository.PaymentRepository;
 import java.time.Clock;
@@ -26,13 +28,15 @@ public class LedgerBackfill implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(LedgerBackfill.class);
     private final InvoiceRepository invoices;
     private final PaymentRepository payments;
+    private final AllocationRepository allocations;
     private final LedgerService ledger;
     private final JsonMapper json;
     private final Clock clock;
 
-    public LedgerBackfill(InvoiceRepository invoices, PaymentRepository payments, LedgerService ledger, JsonMapper json, Clock clock) {
+    public LedgerBackfill(InvoiceRepository invoices, PaymentRepository payments, AllocationRepository allocations, LedgerService ledger, JsonMapper json, Clock clock) {
         this.invoices = invoices;
         this.payments = payments;
+        this.allocations = allocations;
         this.ledger = ledger;
         this.json = json;
         this.clock = clock;
@@ -49,7 +53,10 @@ public class LedgerBackfill implements ApplicationRunner {
             if (invoice.getVoidedAt() != null) ledger.postVoid(invoice, LocalDate.ofInstant(invoice.getVoidedAt(), clock.getZone()));
             posted++;
         }
-        for (Payment payment : payments.findAll()) ledger.postReceipt(payment);
+        for (Payment payment : payments.findAll()) {
+            if (payment.getInvoice() != null && allocations.findByReceiptIdAndReversedAtIsNull(payment.getId()).isEmpty()) ledger.postReceipt(payment);
+            for (Allocation allocation : allocations.findByReceiptIdAndReversedAtIsNull(payment.getId())) ledger.postAllocation(allocation);
+        }
         if (posted > 0) log.info("Ledger checked for {} issued invoices", posted);
     }
 }

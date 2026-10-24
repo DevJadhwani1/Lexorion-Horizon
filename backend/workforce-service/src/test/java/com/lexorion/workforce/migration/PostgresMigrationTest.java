@@ -26,7 +26,7 @@ class PostgresMigrationTest {
             assertThatThrownBy(() -> statement.executeUpdate(second)).isInstanceOf(SQLException.class);
             var after = Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                     .locations("classpath:db/migration").load().migrate();
-            assertThat(after.migrationsExecuted).isEqualTo(1);
+            assertThat(after.migrationsExecuted).isEqualTo(4);
             assertThat(statement.executeUpdate(second)).isEqualTo(1);
             try (var rows = statement.executeQuery("SELECT count(*) FROM workforce_workspaces WHERE workspace_key = 'main'")) {
                 assertThat(rows.next()).isTrue();

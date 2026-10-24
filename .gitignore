@@ -8,5 +8,6 @@ dist/
 *.log
 .env
 .env.*
+.qa-lifecycle-login
 *.pem
 *.key

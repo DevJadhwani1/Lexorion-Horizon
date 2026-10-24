@@ -5,9 +5,10 @@ public interface EmployeeRepository extends JpaRepository<Employee,UUID>{
   + "where e.workspace.id=:workspaceId and (:status is null or e.status=:status) "
   + "and (:departmentKey is null or d.key=:departmentKey) and (:designationKey is null or g.key=:designationKey) "
   + "and (:managerCode is null or m.code=:managerCode) "
+  + "and (:group is null or (:group = 'EXITED' and e.status in (com.lexorion.workforce.domain.EmploymentStatus.RESIGNED, com.lexorion.workforce.domain.EmploymentStatus.TERMINATED)) or (:group = 'CONTRACT' and e.employmentType = com.lexorion.workforce.domain.EmploymentType.CONTRACT)) "
   + "and (:search is null or lower(e.code) like :search or lower(e.firstName) like :search "
   + "or lower(e.lastName) like :search or lower(e.workEmail) like :search or lower(e.phone) like :search)")
- Page<Employee> search(@Param("workspaceId")UUID workspaceId,@Param("status")EmploymentStatus status,@Param("departmentKey")String departmentKey,@Param("designationKey")String designationKey,@Param("managerCode")String managerCode,@Param("search")String search,Pageable pageable);
+ Page<Employee> search(@Param("workspaceId")UUID workspaceId,@Param("status")EmploymentStatus status,@Param("departmentKey")String departmentKey,@Param("designationKey")String designationKey,@Param("managerCode")String managerCode,@Param("group")String group,@Param("search")String search,Pageable pageable);
  @Query("select e from Employee e left join fetch e.department left join fetch e.designation left join fetch e.reportingManager where e.workspace.id=:workspaceId order by e.code")List<Employee> findStructure(@Param("workspaceId")UUID workspaceId);
  List<Employee> findByWorkspaceIdAndReportingManagerPlatformUserIdOrderByCodeAsc(UUID workspaceId,UUID platformUserId);
  Optional<Employee> findByWorkspaceIdAndPlatformUserId(UUID workspaceId,UUID platformUserId);

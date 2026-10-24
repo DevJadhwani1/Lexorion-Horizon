@@ -36,7 +36,7 @@ export function suggestEmployeeCode(existing: string[], prefix = "EMP"): string 
 
 export const EMPLOYMENT_TYPES = [
   { value: "FULL_TIME", label: "Full-time" }, { value: "PART_TIME", label: "Part-time" },
-  { value: "CONTRACT", label: "Contract" }, { value: "INTERN", label: "Intern" },
+  { value: "CONTRACT", label: "Contract" }, { value: "INTERN", label: "Intern" }, { value: "CONSULTANT", label: "Consultant" },
 ];
 
 /** Workforce employee codes: letters and digits, with single hyphens inside, up to 63 characters. */

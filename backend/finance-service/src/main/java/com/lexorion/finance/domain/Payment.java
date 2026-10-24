@@ -30,6 +30,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
         uniqueConstraints = @UniqueConstraint(name = "uk_finance_payment_workspace_receipt", columnNames = {"workspace_id", "receipt_number"}),
         indexes = {
                 @Index(name = "idx_finance_payment_invoice", columnList = "invoice_id"),
+                @Index(name = "idx_finance_payment_client", columnList = "client_id"),
                 @Index(name = "idx_finance_payment_workspace_date", columnList = "workspace_id,payment_date")})
 @Getter
 @Setter
@@ -43,8 +44,14 @@ public class Payment {
     @JoinColumn(name = "workspace_id", nullable = false, updatable = false)
     private FinanceWorkspace workspace;
 
+    /** The client the money came from. Allocations, not this field, decide which invoices it settles. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invoice_id", nullable = false, updatable = false)
+    @JoinColumn(name = "client_id", nullable = false, updatable = false)
+    private BillingClient client;
+
+    /** Set when the receipt was recorded against one invoice. Unallocated receipts leave this empty. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id", updatable = false)
     private Invoice invoice;
 
     @Column(name = "receipt_number", nullable = false, updatable = false, length = 32)

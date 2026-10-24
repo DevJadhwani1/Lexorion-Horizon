@@ -13,6 +13,7 @@ import com.lexorion.finance.domain.InvoiceLine;
 import com.lexorion.finance.domain.InvoiceStatus;
 import com.lexorion.finance.domain.InvoiceTemplate;
 import com.lexorion.finance.domain.Payment;
+import com.lexorion.finance.repository.AllocationRepository;
 import com.lexorion.finance.repository.InvoiceRepository;
 import com.lexorion.finance.repository.PaymentRepository;
 import java.math.BigDecimal;
@@ -51,11 +52,15 @@ public class InvoiceService {
     private final InvoiceTemplateService templates;
     private final InvoiceNumbering numbering;
     private final LedgerService ledger;
+    private final Idempotency idempotency;
+    private final ReceiptService receipts;
+    private final AllocationRepository allocations;
     private final JsonMapper json;
     private final Clock clock;
 
     public InvoiceService(FinanceWorkspaceScope scope, BillingClientService clients, InvoiceRepository invoices,
-            PaymentRepository payments, InvoiceTemplateService templates, InvoiceNumbering numbering, LedgerService ledger, JsonMapper json, Clock clock) {
+            PaymentRepository payments, InvoiceTemplateService templates, InvoiceNumbering numbering, LedgerService ledger,
+            Idempotency idempotency, ReceiptService receipts, AllocationRepository allocations, JsonMapper json, Clock clock) {
         this.scope = scope;
         this.clients = clients;
         this.invoices = invoices;
@@ -63,6 +68,9 @@ public class InvoiceService {
         this.templates = templates;
         this.numbering = numbering;
         this.ledger = ledger;
+        this.idempotency = idempotency;
+        this.receipts = receipts;
+        this.allocations = allocations;
         this.json = json;
         this.clock = clock;
     }
@@ -115,9 +123,18 @@ public class InvoiceService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public InvoiceResponse issue(String reference) {
+    public InvoiceResponse issue(String reference, String idempotencyKey) {
+        String key = Idempotency.normalize(idempotencyKey);
         // Workspace before invoice: the same lock order as every other numbered write.
         FinanceWorkspace workspace = scope.locked();
+        if (key != null) {
+            var prior = idempotency.find(workspace.getId(), "ISSUE", key);
+            if (prior.isPresent()) {
+                Invoice existing = invoices.findById(prior.get()).filter(invoice -> invoice.getWorkspace().getId().equals(workspace.getId()))
+                        .orElseThrow(() -> new FinanceException(404, "Invoice not found"));
+                return response(existing);
+            }
+        }
         Invoice invoice = locked(reference);
         if (invoice.getStatus() != InvoiceStatus.DRAFT) throw new FinanceException(409, "Only draft invoices can be issued");
         if (invoice.getTotal().signum() <= 0) throw new FinanceException(409, "An invoice must have a total above zero to be issued");
@@ -134,6 +151,7 @@ public class InvoiceService {
         invoice.setIssuedAt(Instant.now(clock));
         Invoice issued = invoices.saveAndFlush(invoice);
         ledger.postInvoice(issued, taxBreakdown(issued, template.config()), issued.getIssueDate());
+        idempotency.remember(workspace, "ISSUE", key, issued.getId());
         return response(issued);
     }
 
@@ -142,7 +160,7 @@ public class InvoiceService {
         Invoice invoice = locked(reference);
         if (invoice.getStatus() != InvoiceStatus.DRAFT && invoice.getStatus() != InvoiceStatus.ISSUED)
             throw new FinanceException(409, "Only draft or unpaid issued invoices can be voided");
-        if (invoice.getAmountPaid().signum() != 0 || payments.existsByInvoiceId(invoice.getId()))
+        if (invoice.getAmountPaid().signum() != 0 || allocations.existsByInvoiceIdAndReversedAtIsNull(invoice.getId()))
             throw new FinanceException(409, "Invoices with recorded payments cannot be voided");
         boolean posted = invoice.getStatus() == InvoiceStatus.ISSUED;
         // An issued invoice stays in the period it was issued in; the void is a reversal dated today.
@@ -157,39 +175,15 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public List<PaymentResponse> payments(String reference) {
-        return payments.findByInvoiceIdOrderByPaymentDateAscReceiptNumberAsc(find(reference).getId()).stream()
-                .map(PaymentResponse::from).toList();
+        return allocations.findByInvoiceIdAndReversedAtIsNullOrderByCreatedAtAsc(find(reference).getId()).stream()
+                .map(allocation -> PaymentResponse.of(allocation.getReceipt(), allocation.getInvoice(), allocation.getAmount(),
+                        allocations.activeTotal(allocation.getReceipt().getId()), allocation.getId()))
+                .toList();
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public PaymentResponse recordPayment(String reference, RecordPayment request) {
-        // Workspace before invoice: the same lock order as every other numbered write.
-        FinanceWorkspace workspace = scope.locked();
-        Invoice invoice = locked(reference);
-        if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PARTIALLY_PAID)
-            throw new FinanceException(409, "Payments can only be recorded against issued, unpaid invoices");
-        BigDecimal amount = request.amount().setScale(2, RoundingMode.UNNECESSARY);
-        if (amount.compareTo(invoice.balanceDue()) > 0) throw new FinanceException(400, "Payment exceeds the balance due");
-        if (request.paymentDate().isAfter(today())) throw new FinanceException(400, "Payment date cannot be in the future");
-        if (request.paymentDate().isBefore(invoice.getIssueDate())) throw new FinanceException(400, "Payment date cannot be before the invoice date");
-        LedgerService.requireOpen(workspace, request.paymentDate(), "The payment date");
-        Payment payment = new Payment();
-        payment.setWorkspace(workspace);
-        payment.setInvoice(invoice);
-        payment.setReceiptNumber(String.format(Locale.ROOT, "RCPT-%05d", workspace.getNextReceiptNumber()));
-        workspace.setNextReceiptNumber(workspace.getNextReceiptNumber() + 1);
-        payment.setAmount(amount);
-        payment.setCurrency(invoice.getCurrency());
-        payment.setPaymentDate(request.paymentDate());
-        payment.setMethod(request.method());
-        payment.setReference(blankToNull(request.reference()));
-        payment.setNotes(blankToNull(request.notes()));
-        invoice.setAmountPaid(invoice.getAmountPaid().add(amount));
-        invoice.setStatus(invoice.balanceDue().signum() == 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIALLY_PAID);
-        invoices.save(invoice);
-        Payment saved = payments.saveAndFlush(payment);
-        ledger.postReceipt(saved);
-        return PaymentResponse.from(saved);
+    public PaymentResponse recordPayment(String reference, RecordPayment request, String idempotencyKey) {
+        return receipts.receiveAgainstInvoice(reference, request, idempotencyKey);
     }
 
     private void apply(Invoice invoice, InvoiceRequest request, boolean creating) {

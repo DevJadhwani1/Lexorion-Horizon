@@ -80,6 +80,7 @@ function MonthWise({ fy }: { fy: string }) {
   if (!data.currencies.length) return <Empty><strong>Nothing posted in FY {data.fiscalYear}.</strong><br />Invoices post to the books when they are issued, and payments when they are recorded. <Link to={appPath("/app/finance/invoices/new")}>Create an invoice</Link></Empty>;
   return <>
     {data.booksLockedUntil && <Notice tone="info">Books are locked up to {formatDate(data.booksLockedUntil, defaults.locale)}. Nothing can be issued, received or voided on or before that date.</Notice>}
+    {data.basis && <p className="snapshot-note">{data.basis}</p>}
     {data.currencies.map((currency) => {
       const money = (value: number) => formatBillingMoney(value, currency.currency, defaults.locale);
       const tax = (row: { cgst: number; sgst: number; igst: number; otherTax: number }) => row.cgst + row.sgst + row.igst + row.otherTax;
@@ -99,9 +100,10 @@ function MonthWise({ fy }: { fy: string }) {
           <article><span>Opening receivables</span><strong>{money(currency.openingReceivables)}</strong><small>Brought forward from earlier years</small></article>
           <article><span>Invoiced</span><strong>{money(currency.total.invoiced)}</strong><small>{currency.total.invoicesIssued} invoices{currency.total.invoicesVoided ? `, ${currency.total.invoicesVoided} voided` : ""}</small></article>
           <article><span>{gst ? "GST collected on sales" : "Tax on sales"}</span><strong>{money(tax(currency.total))}</strong><small>Taxable value {money(currency.total.taxable)}</small></article>
-          <article><span>Collected</span><strong>{money(currency.total.collected)}</strong><small>Payments received</small></article>
+          <article><span>Collected</span><strong>{money(currency.total.collected)}</strong><small>Allocated receipts, by receipt date</small></article>
           <article><span>Closing receivables</span><strong>{money(currency.closingReceivables)}</strong><small>Carried forward</small></article>
         </div>
+        {currency.aging && <p className="snapshot-note">Outstanding aging: not yet due {money(currency.aging.current)}, 1–30 days {money(currency.aging.days1To30)}, 31–60 days {money(currency.aging.days31To60)}, 61–90 days {money(currency.aging.days61To90)}, over 90 days {money(currency.aging.over90)}.</p>}
         <Table headers={["Month", "Invoices", "Taxable value", ...(gst ? ["CGST", "SGST", "IGST"] : ["Tax"]), "Invoiced", "Collected", "Receivable at month end"]}>
           <tr className="books-opening"><td>Opening balance</td><td colSpan={gst ? 7 : 5}></td><td className="finance-amount">{money(currency.openingReceivables)}</td></tr>
           {currency.months.map((row) => <tr key={row.month}>
@@ -264,7 +266,11 @@ export function ClientStatement({ clientKey }: { clientKey: string }) {
   const defaults = useOrganizationDefaults();
   const [years, setYears] = useState<FiscalYearOption[]>([]);
   const [fy, setFy] = useState("");
-  useEffect(() => { getFiscalYears().then((list) => { setYears(list); setFy(list.find((year) => year.current)?.label ?? list[0]?.label ?? ""); }).catch(() => undefined); }, []);
+  const [yearError, setYearError] = useState("");
+  useEffect(() => {
+    getFiscalYears().then((list) => { setYears(list); setFy(list.find((year) => year.current)?.label ?? list[0]?.label ?? ""); })
+      .catch((reason) => setYearError(reason instanceof Error ? reason.message : "Unable to load financial years"));
+  }, []);
   const { data, error } = useData<Statement | null>(() => fy ? getStatement(clientKey, fy) : Promise.resolve(null), [clientKey, fy]);
   return <section className="card" aria-labelledby="statement-heading">
     <div className="card-heading">
@@ -272,11 +278,14 @@ export function ClientStatement({ clientKey }: { clientKey: string }) {
       <div className="toolbar">
         {years.length > 0 && <Dropdown label="Financial year" value={fy} onChange={setFy} options={years.map((year) => ({ value: year.label, label: `FY ${year.label}` }))} />}
         <Button size="sm" onClick={() => window.print()}>Print</Button>
+        {data && <Button size="sm" onClick={() => exportStatement(data)}>Download CSV</Button>}
       </div>
     </div>
     {error && <Notice>{error}</Notice>}
-    {!data && !error ? <p role="status">Loading the statement…</p> : data && <div className="statement-print-area">
+    {yearError && <Notice>{yearError}</Notice>}
+    {!data && !error && fy ? <p role="status">Loading the statement…</p> : data && <div className="statement-print-area">
       <p className="snapshot-note">{data.clientName} · FY {data.fiscalYear} · {formatDate(data.start, defaults.locale)} to {formatDate(data.end, defaults.locale)}</p>
+      {data.basis && <p className="snapshot-note">{data.basis}</p>}
       {data.currencies.map((currency) => {
         const money = (value: number) => formatBillingMoney(value, currency.currency, defaults.locale);
         return <Table key={currency.currency} headers={["Date", "Voucher", "Particulars", "Debit", "Credit", "Balance"]}>
@@ -291,7 +300,31 @@ export function ClientStatement({ clientKey }: { clientKey: string }) {
           <tr className="books-total"><td colSpan={3}>Closing balance</td><td className="finance-amount">{money(currency.totalDebit)}</td><td className="finance-amount">{money(currency.totalCredit)}</td><td className="finance-amount">{money(currency.closingBalance)}</td></tr>
         </Table>;
       })}
+      {(data.unallocated ?? []).length > 0 && <Table headers={["Date", "Receipt", "Receipt total", "Still unallocated", "Currency"]}>
+        {data.unallocated!.map((receipt) => <tr key={receipt.receiptNumber}>
+          <td>{formatDate(receipt.date, defaults.locale)}</td>
+          <td>{receipt.receiptNumber}</td>
+          <td className="finance-amount">{formatBillingMoney(receipt.amount, receipt.currency, defaults.locale)}</td>
+          <td className="finance-amount">{formatBillingMoney(receipt.unallocated, receipt.currency, defaults.locale)}</td>
+          <td>{receipt.currency}</td>
+        </tr>)}
+      </Table>}
+      {(data.unallocated ?? []).length > 0 && <p className="snapshot-note">Unallocated receipts are client credit. They are not included in the closing receivable until they are allocated to an invoice.</p>}
       {data.currencies.every((currency) => currency.lines.length === 0) && <p className="snapshot-note">No invoices or receipts for {data.clientName} in FY {data.fiscalYear}.</p>}
     </div>}
   </section>;
+}
+
+function exportStatement(data: Statement) {
+  const rows: (string | number | null)[][] = [["Basis", data.basis ?? ""], ["Client", data.clientName], ["Financial year", data.fiscalYear], ["From", data.start], ["To", data.end], []];
+  for (const currency of data.currencies) {
+    rows.push(["Currency", currency.currency], ["Date", "Voucher", "Type", "Particulars", "Debit", "Credit", "Balance"]);
+    rows.push([data.start, "", "", "Opening balance", "", "", currency.openingBalance]);
+    for (const line of currency.lines) rows.push([line.date, line.voucherNumber, line.voucherType, line.narration, line.debit, line.credit, line.balance]);
+    rows.push(["", "", "", "Closing balance", currency.totalDebit, currency.totalCredit, currency.closingBalance], []);
+  }
+  rows.push(["Unallocated receipts (not part of the receivable)"]);
+  rows.push(["Date", "Receipt", "Amount", "Unallocated", "Currency"]);
+  for (const receipt of data.unallocated ?? []) rows.push([receipt.date, receipt.receiptNumber, receipt.amount, receipt.unallocated, receipt.currency]);
+  downloadCsv(`statement-${data.clientKey}-${data.fiscalYear}.csv`, rows);
 }

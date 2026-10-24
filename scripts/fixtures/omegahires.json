@@ -1,0 +1,888 @@
+{
+  "source": "Issued tax invoices in Documents/OmegaHires/OmegaHires India Private Limited/Bill. Seventeen PDFs, OH/26-27/0001 through OH/26-27/0017.",
+  "seller": {
+    "legalName": "Omega Hires India Private Limited",
+    "tagline": "EXECUTIVE RECRUITMENT \u00b7 WORKFORCE SOLUTIONS",
+    "subline": "Connecting talent. Building futures.",
+    "address": "B Wing 1702/03 - 17th floor Kailash Business Park, Vikhroli, Mumbai, India",
+    "phone": "+919898741457",
+    "email": "shubham@omegahires.com",
+    "website": "https://www.omegahires.com",
+    "region": "Maharashtra",
+    "cin": "U70200MH2025PTC444379",
+    "tan": "MUM011095A",
+    "paymentDetails": [
+      {
+        "label": "Bank",
+        "value": "ICICI Bank"
+      },
+      {
+        "label": "Account number",
+        "value": "074005006247"
+      },
+      {
+        "label": "IFSC",
+        "value": "ICIC0000740"
+      },
+      {
+        "label": "Branch",
+        "value": "MUMBAI SION EAST BRANCH"
+      }
+    ],
+    "terms": [
+      "Payment due within 30 days of invoice date.",
+      "Disputes subject to jurisdiction of Mumbai courts."
+    ],
+    "defaultNotes": "Invoice covers recruitment and advisory services rendered in May 2026. Please reference the invoice number on remittance.",
+    "footerNote": "This is a computer-generated invoice and does not require a physical signature."
+  },
+  "organization": {
+    "name": "OmegaHires",
+    "legalName": "Omega Hires India Private Limited",
+    "organizationCode": "OMEGAHIRES",
+    "slug": "omegahires",
+    "primaryEmail": "admin@omegahires.com",
+    "primaryPhone": "+919898741457",
+    "planKey": "starter",
+    "status": "ACTIVE",
+    "settings": {
+      "timeZone": "Asia/Kolkata",
+      "locale": "en-IN",
+      "country": "IN",
+      "currency": "INR",
+      "dateFormat": "DD/MM/YYYY"
+    },
+    "profile": {
+      "website": "https://www.omegahires.com",
+      "industry": "Recruitment",
+      "addressLine1": "B Wing 1702/03 - 17th floor Kailash Business Park",
+      "city": "Mumbai",
+      "stateProvince": "Maharashtra",
+      "addressCountry": "IN"
+    }
+  },
+  "workspace": {
+    "key": "omegahires",
+    "displayName": "OmegaHires",
+    "productKey": "finance",
+    "productKeys": [
+      "finance",
+      "workforce",
+      "payroll"
+    ]
+  },
+  "items": [
+    {
+      "itemCode": "REC-001",
+      "name": "Recruitment fee",
+      "kind": "SERVICE",
+      "taxRate": "18"
+    },
+    {
+      "itemCode": "SER-001",
+      "name": "Export of Services",
+      "kind": "SERVICE",
+      "taxRate": "0"
+    }
+  ],
+  "clients": [
+    {
+      "clientKey": "mastek",
+      "displayName": "MASTEK LIMITED",
+      "contactName": "Ramya Chandran",
+      "email": "Ramya.Chandran@mastek.com",
+      "phone": "+912267914646",
+      "billingAddress": "A-7, Millennium Business Park, Mahape, Thane Belapur Road 13, Pin Code - 400710, India",
+      "taxId": "27AAACM9908Q2ZP",
+      "region": "Maharashtra",
+      "country": "IN",
+      "currency": "INR",
+      "paymentTermsDays": 30
+    },
+    {
+      "clientKey": "refex",
+      "displayName": "Refex Shared Services Private Limited",
+      "contactName": "Mugesh M",
+      "email": "mugesh.m@refex.co.in",
+      "phone": "+919962990363",
+      "billingAddress": "IIND FLOOR, 313, Valluvarkottam High Road, Sterling Road Bus Stop, Nungambakkam, Chennai, Tamil Nadu, 600034",
+      "taxId": "33AAPCR1150A1ZW",
+      "region": "Tamil Nadu",
+      "country": "IN",
+      "currency": "INR",
+      "paymentTermsDays": 30
+    },
+    {
+      "clientKey": "veena",
+      "displayName": "VEENA CORP",
+      "contactName": "Accounts",
+      "email": "accounts@veena.example",
+      "billingAddress": "18413 SUGAR SNAP LEESBURG 20176 - USA",
+      "region": "Leesburg",
+      "country": "US",
+      "currency": "INR",
+      "paymentTermsDays": 30
+    }
+  ],
+  "invoices": [
+    {
+      "invoiceNumber": "OH/26-27/0001",
+      "clientKey": "mastek",
+      "issueDate": "2026-05-30",
+      "dueDate": "2026-06-29",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Shubham Arun Rai",
+      "sellerGstin": "27AAECO6772G1ZF",
+      "sellerPan": "AAECO6772G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Saksham Jain",
+      "quantity": "1",
+      "unitPrice": "170202.60",
+      "taxRate": "18",
+      "subtotal": "170202.60",
+      "taxTotal": "30636.47",
+      "total": "200839.07",
+      "pdfTax": [
+        {
+          "label": "CGST",
+          "amount": "15318.23"
+        },
+        {
+          "label": "SGST",
+          "amount": "15318.23"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "CGST",
+          "amount": "15318.24"
+        },
+        {
+          "label": "SGST",
+          "amount": "15318.23"
+        }
+      ],
+      "customFields": {
+        "candidate": "Saksham Jain",
+        "joiningDate": "2026-04-10"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0002",
+      "clientKey": "refex",
+      "issueDate": "2026-06-03",
+      "dueDate": "2026-07-03",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6772G1ZF",
+      "sellerPan": "AAECO6772G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee towards services for 12 days - Sakthivel",
+      "quantity": "1",
+      "unitPrice": "51666.80",
+      "taxRate": "18",
+      "subtotal": "51666.80",
+      "taxTotal": "9300.02",
+      "total": "60966.82",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "9300.02"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "9300.02"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sakthivel",
+        "position": "IT Infra Resources",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0003",
+      "clientKey": "refex",
+      "issueDate": "2026-06-03",
+      "dueDate": "2026-07-03",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6772G1ZF",
+      "sellerPan": "AAECO6772G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee towards services for 12 days - Mohamed Aashik Ilahi M",
+      "quantity": "1",
+      "unitPrice": "41360.00",
+      "taxRate": "18",
+      "subtotal": "41360.00",
+      "taxTotal": "7444.80",
+      "total": "48804.80",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "7444.80"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "7444.80"
+        }
+      ],
+      "customFields": {
+        "candidate": "Mohamed Aashik Ilahi M",
+        "position": "Flutter Resource",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0004",
+      "clientKey": "refex",
+      "issueDate": "2026-07-01",
+      "dueDate": "2026-07-31",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6772G1ZF",
+      "sellerPan": "AAECO6772G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Mohamed Aashik Ilahi M",
+      "quantity": "1",
+      "unitPrice": "103400.00",
+      "taxRate": "18",
+      "subtotal": "103400.00",
+      "taxTotal": "18612.00",
+      "total": "122012.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "customFields": {
+        "candidate": "Mohamed Aashik Ilahi M",
+        "position": "Flutter Resource",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0005",
+      "clientKey": "refex",
+      "issueDate": "2026-07-01",
+      "dueDate": "2026-07-31",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6772G1ZF",
+      "sellerPan": "AAECO6772G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Sakthivel",
+      "quantity": "1",
+      "unitPrice": "129167.00",
+      "taxRate": "18",
+      "subtotal": "129167.00",
+      "taxTotal": "23250.06",
+      "total": "152417.06",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sakthivel",
+        "position": "IT Infra team lead",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0006",
+      "clientKey": "mastek",
+      "issueDate": "2026-07-07",
+      "dueDate": "2026-08-06",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Shubham Arun Rai",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Sushmanth Reddy",
+      "quantity": "1",
+      "unitPrice": "118407.84",
+      "taxRate": "18",
+      "subtotal": "118407.84",
+      "taxTotal": "21313.41",
+      "total": "139721.25",
+      "pdfTax": [
+        {
+          "label": "CGST",
+          "amount": "10656.71"
+        },
+        {
+          "label": "SGST",
+          "amount": "10656.71"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "CGST",
+          "amount": "10656.71"
+        },
+        {
+          "label": "SGST",
+          "amount": "10656.70"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sushmanth Reddy",
+        "position": "HCM",
+        "joiningDate": "2026-05-06"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0007",
+      "clientKey": "mastek",
+      "issueDate": "2026-07-28",
+      "dueDate": "2026-08-27",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Deep Mala",
+      "quantity": "1",
+      "unitPrice": "268890.06",
+      "taxRate": "18",
+      "subtotal": "268890.06",
+      "taxTotal": "48400.21",
+      "total": "317290.27",
+      "pdfTax": [
+        {
+          "label": "CGST",
+          "amount": "24200.11"
+        },
+        {
+          "label": "SGST",
+          "amount": "24200.11"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "CGST",
+          "amount": "24200.11"
+        },
+        {
+          "label": "SGST",
+          "amount": "24200.10"
+        }
+      ],
+      "customFields": {
+        "candidate": "Deep Mala",
+        "position": "HCM",
+        "joiningDate": "2026-06-01"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0008",
+      "clientKey": "mastek",
+      "issueDate": "2026-07-28",
+      "dueDate": "2026-08-27",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Vishesh Sharma",
+      "quantity": "1",
+      "unitPrice": "121774.50",
+      "taxRate": "18",
+      "subtotal": "121774.50",
+      "taxTotal": "21919.41",
+      "total": "143693.91",
+      "pdfTax": [
+        {
+          "label": "CGST",
+          "amount": "10959.71"
+        },
+        {
+          "label": "SGST",
+          "amount": "10959.71"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "CGST",
+          "amount": "10959.71"
+        },
+        {
+          "label": "SGST",
+          "amount": "10959.70"
+        }
+      ],
+      "customFields": {
+        "candidate": "Vishesh Sharma",
+        "position": "HCM",
+        "joiningDate": "2026-05-27"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0009",
+      "clientKey": "refex",
+      "issueDate": "2026-08-03",
+      "dueDate": "2026-09-02",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee \u2014 Sakthivel",
+      "quantity": "1",
+      "unitPrice": "129167.00",
+      "taxRate": "18",
+      "subtotal": "129167.00",
+      "taxTotal": "23250.06",
+      "total": "152417.06",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sakthivel",
+        "position": "IT Infra team lead",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0010",
+      "clientKey": "refex",
+      "issueDate": "2026-08-04",
+      "dueDate": "2026-09-03",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "Recruitment fee - Mohamed Aashik Ilahi M",
+      "quantity": "1",
+      "unitPrice": "103400.00",
+      "taxRate": "18",
+      "subtotal": "103400.00",
+      "taxTotal": "18612.00",
+      "total": "122012.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "customFields": {
+        "candidate": "Mohamed Aashik Ilahi M",
+        "position": "T&M Offrole Employee",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0011",
+      "clientKey": "veena",
+      "issueDate": "2026-08-09",
+      "dueDate": "2026-09-08",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "SER-001",
+      "description": "Export of Services",
+      "quantity": "1",
+      "unitPrice": "1856000.00",
+      "taxRate": "0",
+      "subtotal": "1856000.00",
+      "taxTotal": "0.00",
+      "total": "1856000.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "0.00"
+        }
+      ],
+      "expectedTax": [],
+      "customFields": {}
+    },
+    {
+      "invoiceNumber": "OH/26-27/0012",
+      "clientKey": "veena",
+      "issueDate": "2026-08-25",
+      "dueDate": "2026-09-24",
+      "printedPlaceOfSupply": "Maharashtra",
+      "placeOfSupply": "Maharashtra",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "SER-001",
+      "description": "Export of Services",
+      "quantity": "1",
+      "unitPrice": "2181000.00",
+      "taxRate": "0",
+      "subtotal": "2181000.00",
+      "taxTotal": "0.00",
+      "total": "2181000.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "0.00"
+        }
+      ],
+      "expectedTax": [],
+      "customFields": {}
+    },
+    {
+      "invoiceNumber": "OH/26-27/0013",
+      "clientKey": "refex",
+      "issueDate": "2026-09-02",
+      "dueDate": "2026-10-02",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "T&M Offrole - Sakthivel",
+      "quantity": "1",
+      "unitPrice": "129167.00",
+      "taxRate": "18",
+      "subtotal": "129167.00",
+      "taxTotal": "23250.06",
+      "total": "152417.06",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sakthivel",
+        "position": "IT Infra team lead",
+        "joiningDate": "2026-05-20"
+      },
+      "hsnSac": "998311"
+    },
+    {
+      "invoiceNumber": "OH/26-27/0014",
+      "clientKey": "refex",
+      "issueDate": "2026-09-02",
+      "dueDate": "2026-10-02",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "T&M Offrole - Mohamed Aashik Ilahi M",
+      "quantity": "1",
+      "unitPrice": "103400.00",
+      "taxRate": "18",
+      "subtotal": "103400.00",
+      "taxTotal": "18612.00",
+      "total": "122012.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "customFields": {
+        "candidate": "Mohamed Aashik Ilahi M",
+        "position": "T&M Offrole Employee",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0015",
+      "clientKey": "refex",
+      "issueDate": "2026-10-02",
+      "dueDate": "2026-11-01",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "T&M Offrole - Mohamed Aashik Ilahi M",
+      "quantity": "1",
+      "unitPrice": "103400.00",
+      "taxRate": "18",
+      "subtotal": "103400.00",
+      "taxTotal": "18612.00",
+      "total": "122012.00",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "18612.00"
+        }
+      ],
+      "customFields": {
+        "candidate": "Mohamed Aashik Ilahi M",
+        "position": "T&M Offrole Employee",
+        "joiningDate": "2026-05-20"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0016",
+      "clientKey": "refex",
+      "issueDate": "2026-10-02",
+      "dueDate": "2026-11-01",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "T&M Offrole - MONICA.K",
+      "quantity": "1",
+      "unitPrice": "88020.83",
+      "taxRate": "18",
+      "subtotal": "88020.83",
+      "taxTotal": "15843.75",
+      "total": "103864.58",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "15843.75"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "15843.75"
+        }
+      ],
+      "customFields": {
+        "candidate": "MONICA.K",
+        "position": "T&M Power BI Developer"
+      }
+    },
+    {
+      "invoiceNumber": "OH/26-27/0017",
+      "clientKey": "refex",
+      "issueDate": "2026-10-02",
+      "dueDate": "2026-11-01",
+      "printedPlaceOfSupply": "Tamil Nadu",
+      "placeOfSupply": "Tamil Nadu",
+      "signatoryName": "Narendra Kataria",
+      "sellerGstin": "27AAECO6722G1ZF",
+      "sellerPan": "AAECO6722G",
+      "itemCode": "REC-001",
+      "description": "T&M Offrole - Sakthivel",
+      "quantity": "1",
+      "unitPrice": "129167.00",
+      "taxRate": "18",
+      "subtotal": "129167.00",
+      "taxTotal": "23250.06",
+      "total": "152417.06",
+      "pdfTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "expectedTax": [
+        {
+          "label": "IGST",
+          "amount": "23250.06"
+        }
+      ],
+      "customFields": {
+        "candidate": "Sakthivel",
+        "position": "IT Infra team lead",
+        "joiningDate": "2026-05-20"
+      }
+    }
+  ],
+  "departments": [
+    {
+      "key": "mastek",
+      "name": "MASTEK LIMITED"
+    },
+    {
+      "key": "refex",
+      "name": "Refex Shared Services Private Limited"
+    },
+    {
+      "key": "office",
+      "name": "Office"
+    }
+  ],
+  "designations": [
+    {
+      "key": "hcm",
+      "name": "HCM"
+    },
+    {
+      "key": "it-infra-team-lead",
+      "name": "IT Infra team lead"
+    },
+    {
+      "key": "flutter-resource",
+      "name": "Flutter Resource"
+    },
+    {
+      "key": "tm-offrole",
+      "name": "T&M Offrole Employee"
+    },
+    {
+      "key": "power-bi",
+      "name": "T&M Power BI Developer"
+    },
+    {
+      "key": "administrator",
+      "name": "Administrator"
+    }
+  ],
+  "employees": [
+    {
+      "employeeCode": "OH-ADMIN",
+      "firstName": "Admin",
+      "lastName": "User",
+      "workEmail": "admin@omegahires.com",
+      "employmentType": "FULL_TIME",
+      "joiningDate": "2026-04-01",
+      "departmentKey": "office",
+      "designationKey": "administrator"
+    },
+    {
+      "employeeCode": "OH-SAKSHAM",
+      "firstName": "Saksham",
+      "lastName": "Jain",
+      "workEmail": "saksham.jain@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-04-10",
+      "departmentKey": "mastek"
+    },
+    {
+      "employeeCode": "OH-SUSHMANTH",
+      "firstName": "Sushmanth",
+      "lastName": "Reddy",
+      "workEmail": "sushmanth.reddy@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-05-06",
+      "departmentKey": "mastek",
+      "designationKey": "hcm"
+    },
+    {
+      "employeeCode": "OH-DEEPMALA",
+      "firstName": "Deep",
+      "lastName": "Mala",
+      "workEmail": "deep.mala@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-06-01",
+      "departmentKey": "mastek",
+      "designationKey": "hcm"
+    },
+    {
+      "employeeCode": "OH-VISHESH",
+      "firstName": "Vishesh",
+      "lastName": "Sharma",
+      "workEmail": "vishesh.sharma@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-05-27",
+      "departmentKey": "mastek",
+      "designationKey": "hcm"
+    },
+    {
+      "employeeCode": "OH-SAKTHIVEL",
+      "firstName": "Sakthivel",
+      "lastName": "Sakthivel",
+      "workEmail": "sakthivel@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-05-20",
+      "departmentKey": "refex",
+      "designationKey": "it-infra-team-lead"
+    },
+    {
+      "employeeCode": "OH-MOHAMED",
+      "firstName": "Mohamed",
+      "middleName": "Aashik",
+      "lastName": "Ilahi M",
+      "workEmail": "mohamed.aashik@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-05-20",
+      "departmentKey": "refex",
+      "designationKey": "tm-offrole"
+    },
+    {
+      "employeeCode": "OH-MONICA",
+      "firstName": "Monica",
+      "lastName": "K",
+      "workEmail": "monica.k@omegahires.example",
+      "employmentType": "CONSULTANT",
+      "joiningDate": "2026-10-02",
+      "departmentKey": "refex",
+      "designationKey": "power-bi"
+    }
+  ],
+  "payroll": {
+    "monthlyAmount": "10000.00",
+    "component": {
+      "componentKey": "basic",
+      "displayName": "Basic",
+      "category": "EARNING",
+      "amountType": "FIXED_AMOUNT",
+      "occurrenceType": "RECURRING",
+      "taxability": "TAXABLE",
+      "status": "ACTIVE"
+    }
+  }
+}

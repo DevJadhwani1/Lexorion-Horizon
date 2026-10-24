@@ -109,20 +109,20 @@ pipeline {
 
         stage('Docker Image Build') {
             steps {
-                sh 'docker compose build'
+                sh 'docker compose --env-file infrastructure/ci/compose.env build'
             }
         }
 
         stage('Docker Compose Validation') {
             steps {
-                sh 'docker compose config -q'
+                sh 'docker compose --env-file infrastructure/ci/compose.env config -q'
             }
         }
 
         stage('Verification Summary') {
             steps {
                 echo 'Backend compile/tests, frontend checks, Docker image builds, and Compose validation passed.'
-                echo 'No containers were started, no images were pushed, and PostgreSQL was not managed by this pipeline.'
+                echo 'Jenkins does not start containers or publish images. GitHub Actions publishes main images to GHCR.'
             }
         }
     }

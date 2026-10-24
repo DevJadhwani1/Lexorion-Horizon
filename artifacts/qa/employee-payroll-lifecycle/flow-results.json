@@ -1,0 +1,105 @@
+{
+  "auditedAt": "2026-10-24T17:42:00Z",
+  "applicationUrl": "http://127.0.0.1/",
+  "browser": "Cursor embedded Chromium Chrome/148.0.7778.280",
+  "viewport": { "width": 838, "height": 845, "mobileOverride": { "width": 390, "height": 844 } },
+  "commit": "71fc87001e3fbc1258fcff49d1682b4d7c995b50",
+  "servedFrontend": "index-Ct0pOGGn.js",
+  "signedIn": true,
+  "signedInIdentity": "qa-lifecycle@lexorion.test",
+  "workspace": "lexorion-client / main-hr",
+  "role": "ADMIN",
+  "flows": [
+    {
+      "name": "Sign in with the documented local account",
+      "status": "BLOCKED",
+      "evidence": ["screenshots/00-sign-in-rejected.png"],
+      "finding": "dev@lexorion.in is ACTIVE, uses the application bcrypt encoder, and is an ADMIN of lexorion-client. Login still returns 401 because the scratch-script password does not match the stored hash. The client seed does not update an existing password. The stored hash was not changed."
+    },
+    {
+      "name": "Local QA identity sign-in",
+      "status": "PASS",
+      "evidence": ["screenshots/01-workforce-directory-all.png"],
+      "finding": "A development-only identity, qa-lifecycle@lexorion.test, was created with the application password encoder and an ADMIN membership on lexorion-client. The browser signed in and landed on the Dashboard for Lexorion / Main HR. The provisioner is off unless two local settings are both present, refuses production, and does not replace an existing hash. The password is not in the running platform environment."
+    },
+    {
+      "name": "Unauthenticated workforce and payroll reads",
+      "status": "PASS",
+      "evidence": ["network-errors.txt"],
+      "finding": "Signed-out requests to the employee list, readiness, own payslips, and an admin payslip path were rejected with an empty 403. A client employee-code query did not return payslip data."
+    },
+    {
+      "name": "Live workforce V5 spell backfill",
+      "status": "PASS",
+      "evidence": [],
+      "finding": "Before the synthetic employee was added, Flyway was at V5 with 27 employees, 27 spells, 26 open spells, no double-open spell, and no null original joining date. LEX-004 was created afterwards and now has two spells, one of them open."
+    },
+    {
+      "name": "Served frontend matches this lifecycle UI",
+      "status": "PASS",
+      "evidence": [],
+      "finding": "The signed-in page loaded /assets/index-Ct0pOGGn.js. That is the Compose image, which contains the directory chips, original hire date, and rehire copy."
+    },
+    {
+      "name": "Workforce directory chips, search, and filters",
+      "status": "PASS",
+      "evidence": [
+        "screenshots/01-workforce-directory-all.png",
+        "screenshots/02-directory-active-filter.png",
+        "screenshots/03-directory-search-preserved.png",
+        "screenshots/04-directory-on-leave-empty.png",
+        "screenshots/13-directory-contractors-empty.png",
+        "screenshots/11-missing-enrollment-action.png"
+      ],
+      "finding": "All, Active, On leave, Exited, Contractors, Payroll not enrolled, and Setup incomplete were opened. Active hid the terminated row. Exited kept q=LEX-002. On leave and Contractors were honest empty states. Payroll not enrolled kept q=LEX-004 and listed only that synthetic employee."
+    },
+    {
+      "name": "Employee profile and employment history",
+      "status": "PASS",
+      "evidence": ["screenshots/04-employee-profile-overview.png", "screenshots/05-employment-spell-history.png"],
+      "finding": "LEX-004 opened with status Active, original hire date 1 Oct 2026, current spell started 1 Oct 2026, and Spell 1 Active. No attendance or leave module was shown."
+    },
+    {
+      "name": "Exit review and closed spell",
+      "status": "PASS",
+      "evidence": ["screenshots/06-exit-review.png", "screenshots/06b-exit-confirmation.png", "screenshots/07-exited-employee-profile.png"],
+      "finding": "Resignation of LEX-004 required an exit date and reason. The confirmation said the spell closes, finalized payslips stay unchanged, and the code is kept. After submit the status was Resigned, Spell 1 closed on 24 Oct 2026 with the audit reason, and the actions were Terminate and Rehire. Activate was not offered."
+    },
+    {
+      "name": "Rehire review and new spell",
+      "status": "PASS",
+      "evidence": ["screenshots/08-rehire-review.png", "screenshots/08b-rehire-confirmation.png", "screenshots/09-rehired-employee-history.png"],
+      "finding": "The review said previous spells and finalized payslips stay unchanged and salary is not copied. The first UI submit returned HTTP 500 and left the row Resigned. The same payload then returned 200. The profile shows original hire 1 Oct 2026, current spell 24 Oct 2026, Spell 1 closed, and Spell 2 Active. One open spell remains."
+    },
+    {
+      "name": "Payroll readiness gaps and setup links",
+      "status": "PASS",
+      "evidence": ["screenshots/10-payroll-readiness-gaps.png", "screenshots/11-missing-enrollment-action.png", "screenshots/12-missing-salary-action.png"],
+      "finding": "Setup incomplete listed LEX-002 and LEX-003 as Salary missing, with Fix links to compensation and a return path to the directory. LEX-004 was not in that list because payroll was skipped. Compensation for LEX-003 opened and was not saved. No pay run was finalized."
+    },
+    {
+      "name": "Own payslip empty state",
+      "status": "PASS",
+      "evidence": ["screenshots/16-empty-payslips-state.png"],
+      "finding": "The QA identity was linked to LEX-004. /workforce/me shows that employee and the empty copy: no finalized payslip yet, and finalizing does not send a payment. GET /api/payroll/me/payslips returned an empty list."
+    },
+    {
+      "name": "Own payslip detail and print preview",
+      "status": "BLOCKED",
+      "evidence": ["screenshots/16-empty-payslips-state.png"],
+      "finding": "This workspace has no finalized payslip for the signed-in employee or for LEX-001. Detail and print were not opened. No other employee's payslip was displayed."
+    },
+    {
+      "name": "Authenticated cross-employee and cross-workspace access",
+      "status": "PASS",
+      "evidence": ["network-errors.txt"],
+      "finding": "With a foreign organization and workspace header, the employee read and own-payslip read returned an empty 403. Own payslips with ?employeeCode=LEX-001 returned the same empty list as the unscoped own request. LEX-001's admin payslip list was also empty, so a populated foreign slip was not available to compare."
+    },
+    {
+      "name": "Desktop and mobile layout of directory and profile",
+      "status": "PASS",
+      "evidence": ["screenshots/17-mobile-directory.png", "screenshots/18-mobile-employee-profile.png"],
+      "finding": "Desktop captures are the 838×845 browser. At a 390×844 page width the directory chips wrap, filters stack, and the profile cards stack. A separate mobile capture of the payslip empty state was not taken."
+    }
+  ]
+}

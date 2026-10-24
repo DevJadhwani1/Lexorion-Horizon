@@ -8,7 +8,9 @@ import com.lexorion.payroll.entitlement.PayrollProcessingEntitlementGate;
 import com.lexorion.payroll.repository.CompensationProfileRepository;
 import com.lexorion.payroll.repository.PayrollEmployeeRepository;
 import com.lexorion.payroll.repository.StatutoryProfileRepository;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -24,7 +26,12 @@ public class PayrollReadinessService {
      * applicability is still unresolved. detailsAwaitingVerification counts saved details that an administrator
      * has not marked verified. Neither count changes pay-run eligibility.
      */
-    public record Readiness(int activeEmployees, int employeesWithCompensation, String nextEmployeeCode, int statutoryDecisionsOpen, int detailsAwaitingVerification) {}
+    /**
+     * A gap is one person the administrator can fix. reason is a stable code. href is an existing screen.
+     * Statutory and bank warnings are not gaps and do not change pay-run eligibility.
+     */
+    public record EmployeeGap(String employeeCode, String reason, String href) {}
+    public record Readiness(int activeEmployees, int employeesWithCompensation, String nextEmployeeCode, int statutoryDecisionsOpen, int detailsAwaitingVerification, List<EmployeeGap> gaps) {}
     private static final Set<String> APPLICABILITY = Set.of("epf", "esi", "pt", "lwf");
     private final PayrollWorkspaceScope scope;
     private final PayrollEmployeeRepository employees;
@@ -51,7 +58,15 @@ public class PayrollReadinessService {
             if (sections.stream().anyMatch(section -> section.status() == SectionStatus.PENDING_VERIFICATION)) verification++;
         }
         var codes = active.stream().map(PayrollEmployee::getEmployeeCode).toList();
+        List<EmployeeGap> gaps = new ArrayList<>();
+        for (PayrollEmployee employee : employees.findByWorkspaceIdOrderByEmployeeCodeAsc(context.workspaceId())) {
+            if (employee.getStatus() != PayrollStatus.ACTIVE) {
+                gaps.add(new EmployeeGap(employee.getEmployeeCode(), "INACTIVE_EMPLOYMENT", "/payroll/employees?employee=" + employee.getEmployeeCode()));
+            } else if (!configured.contains(employee.getEmployeeCode())) {
+                gaps.add(new EmployeeGap(employee.getEmployeeCode(), "MISSING_COMPENSATION", "/payroll/compensation?employee=" + employee.getEmployeeCode()));
+            }
+        }
         return new Readiness(codes.size(), (int) codes.stream().filter(configured::contains).count(),
-                codes.stream().filter(code -> !configured.contains(code)).findFirst().orElse(null), undecided, verification);
+                codes.stream().filter(code -> !configured.contains(code)).findFirst().orElse(null), undecided, verification, gaps);
     }
 }

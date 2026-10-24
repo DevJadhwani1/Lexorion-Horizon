@@ -1,5 +1,6 @@
 package com.lexorion.finance.api;
 
+import com.lexorion.finance.api.BillingDtos.Aging;
 import com.lexorion.finance.domain.LedgerAccount;
 import com.lexorion.finance.domain.VoucherType;
 import jakarta.validation.constraints.Max;
@@ -25,9 +26,10 @@ public final class LedgerDtos {
             BigDecimal closingReceivables) { }
 
     public record CurrencySummary(String currency, BigDecimal openingReceivables, List<MonthRow> months, MonthRow total,
-            BigDecimal closingReceivables) { }
+            BigDecimal closingReceivables, Aging aging) { }
 
-    public record YearSummary(String fiscalYear, LocalDate start, LocalDate end, LocalDate booksLockedUntil, List<CurrencySummary> currencies) { }
+    public record YearSummary(String fiscalYear, LocalDate start, LocalDate end, LocalDate booksLockedUntil, List<CurrencySummary> currencies,
+            String basis) { }
 
     /** One invoice (or its reversal) in the sales register. Reversals carry negative amounts. */
     public record SalesRegisterRow(LocalDate date, VoucherType voucherType, String invoiceNumber, String reference, String clientKey,
@@ -53,5 +55,9 @@ public final class LedgerDtos {
     public record CurrencyStatement(String currency, BigDecimal openingBalance, List<StatementLine> lines, BigDecimal totalDebit,
             BigDecimal totalCredit, BigDecimal closingBalance) { }
 
-    public record Statement(String fiscalYear, LocalDate start, LocalDate end, String clientKey, String clientName, List<CurrencyStatement> currencies) { }
+    public record Statement(String fiscalYear, LocalDate start, LocalDate end, String clientKey, String clientName,
+            List<CurrencyStatement> currencies, String basis, List<UnallocatedReceipt> unallocated) { }
+
+    /** A receipt that has not been applied to an invoice. It is not part of the receivable balance. */
+    public record UnallocatedReceipt(String receiptNumber, LocalDate date, BigDecimal amount, BigDecimal unallocated, String currency) { }
 }

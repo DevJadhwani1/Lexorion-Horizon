@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { EmployeeSetupWizard } from "./EmployeeSetupWizard";
+import { EMPLOYMENT_TYPES } from "./EmployeeFields";
 import * as workforceApi from "../../features/workforce/workforceApi";
 import * as payrollApi from "../../features/payroll/payrollApi";
 import * as adminApi from "../../features/admin/adminApi";
@@ -187,6 +188,13 @@ it("lets the admin skip payroll and shows what is still missing without claiming
   expect(screen.getByText(/cannot be paid yet/)).toBeTruthy();
   expect(screen.getByRole("button", { name: "Set up payroll" })).toBeTruthy();
   expect(screen.queryByRole("link", { name: "Go to pay runs" })).toBeNull();
+});
+
+it("offers consultant alongside the other employment types", () => {
+  expect(EMPLOYMENT_TYPES).toEqual([
+    { value: "FULL_TIME", label: "Full-time" }, { value: "PART_TIME", label: "Part-time" },
+    { value: "CONTRACT", label: "Contract" }, { value: "INTERN", label: "Intern" }, { value: "CONSULTANT", label: "Consultant" },
+  ]);
 });
 
 it("suggests employee codes with the company prefix", async () => {

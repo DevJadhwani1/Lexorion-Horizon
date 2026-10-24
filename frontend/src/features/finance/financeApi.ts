@@ -99,7 +99,7 @@ export interface InvoiceInput {
 }
 export interface Payment {
   receiptNumber: string;
-  invoiceReference: string;
+  invoiceReference: string | null;
   invoiceNumber: string | null;
   clientKey: string;
   clientName: string;
@@ -110,6 +110,9 @@ export interface Payment {
   reference: string | null;
   notes: string | null;
   createdAt: string;
+  allocatedAmount?: number;
+  unallocatedAmount?: number;
+  allocationId?: string | null;
 }
 export interface PaymentInput { amount: number; paymentDate: string; method: PaymentMethod; reference?: string; notes?: string }
 export interface CurrencyTotals {
@@ -118,6 +121,7 @@ export interface CurrencyTotals {
   overdue: number;
   invoicedThisMonth: number;
   collectedThisMonth: number;
+  unallocatedThisMonth?: number;
   aging: { current: number; days1To30: number; days31To60: number; days61To90: number; over90: number };
 }
 export interface BillingSummary {
@@ -150,10 +154,16 @@ export function getInvoices(filter: InvoiceFilter = {}) {
 export const getInvoice = (number: string) => apiRequest<Invoice>(invoicePath(number));
 export const createInvoice = (body: InvoiceInput) => apiRequest<Invoice>("/api/finance/invoices", { method: "POST", body });
 export const updateInvoice = (number: string, body: InvoiceInput) => apiRequest<Invoice>(invoicePath(number), { method: "PUT", body });
-export const issueInvoice = (number: string) => apiRequest<Invoice>(`${invoicePath(number)}/issue`, { method: "POST" });
+export const issueInvoice = (number: string) => apiRequest<Invoice>(`${invoicePath(number)}/issue`, { method: "POST", headers: { "Idempotency-Key": crypto.randomUUID() } });
 export const voidInvoice = (number: string, reason: string) => apiRequest<Invoice>(`${invoicePath(number)}/void`, { method: "POST", body: { reason } });
 export const getInvoicePayments = (number: string) => apiRequest<Payment[]>(`${invoicePath(number)}/payments`);
-export const recordPayment = (number: string, body: PaymentInput) => apiRequest<Payment>(`${invoicePath(number)}/payments`, { method: "POST", body });
+export const recordPayment = (number: string, body: PaymentInput) => apiRequest<Payment>(`${invoicePath(number)}/payments`, { method: "POST", body, headers: { "Idempotency-Key": crypto.randomUUID() } });
+export const createReceipt = (body: { clientKey: string; amount: number; paymentDate: string; method: PaymentMethod; reference?: string; notes?: string }) =>
+  apiRequest<Payment>("/api/finance/receipts", { method: "POST", body, headers: { "Idempotency-Key": crypto.randomUUID() } });
+export const allocateReceipt = (receiptNumber: string, body: { invoiceReference: string; amount: number }) =>
+  apiRequest<Payment>(`/api/finance/receipts/${encodeURIComponent(receiptNumber)}/allocations`, { method: "POST", body, headers: { "Idempotency-Key": crypto.randomUUID() } });
+export const reverseAllocation = (receiptNumber: string, allocationId: string) =>
+  apiRequest<Payment>(`/api/finance/receipts/${encodeURIComponent(receiptNumber)}/allocations/${allocationId}/reverse`, { method: "POST", headers: { "Idempotency-Key": crypto.randomUUID() } });
 export type TemplateLayout = "MODERN" | "CLASSIC" | "MINIMAL";
 export type TaxMode = "NONE" | "SIMPLE" | "GST";
 export type FieldType = "TEXT" | "DATE" | "NUMBER";
@@ -254,21 +264,21 @@ export const getNextItemCode = (prefix: string) => apiRequest<{ code: string }>(
 // ---------------------------------------------------------------- books
 
 export type LedgerAccount = "RECEIVABLES" | "SALES" | "OUTPUT_CGST" | "OUTPUT_SGST" | "OUTPUT_IGST" | "OUTPUT_TAX" | "BANK" | "CASH";
-export type VoucherType = "INVOICE" | "RECEIPT" | "INVOICE_VOID";
+export type VoucherType = "INVOICE" | "RECEIPT" | "INVOICE_VOID" | "ALLOCATION_REVERSAL";
 export const ledgerAccounts: { value: LedgerAccount; label: string }[] = [
   { value: "RECEIVABLES", label: "Accounts receivable" }, { value: "SALES", label: "Sales" }, { value: "OUTPUT_CGST", label: "Output CGST" },
   { value: "OUTPUT_SGST", label: "Output SGST" }, { value: "OUTPUT_IGST", label: "Output IGST" }, { value: "OUTPUT_TAX", label: "Output tax" },
   { value: "BANK", label: "Bank" }, { value: "CASH", label: "Cash" },
 ];
-export const voucherLabels: Record<VoucherType, string> = { INVOICE: "Invoice", RECEIPT: "Receipt", INVOICE_VOID: "Invoice voided" };
+export const voucherLabels: Record<VoucherType, string> = { INVOICE: "Invoice", RECEIPT: "Receipt", INVOICE_VOID: "Invoice voided", ALLOCATION_REVERSAL: "Allocation reversed" };
 export interface BookSettings { fiscalYearStartMonth: number; booksLockedUntil: string | null; currentFiscalYear: string }
 export interface FiscalYearOption { label: string; start: string; end: string; current: boolean }
 export interface MonthRow {
   month: string; start: string; end: string; invoicesIssued: number; invoicesVoided: number; taxable: number; cgst: number; sgst: number;
   igst: number; otherTax: number; invoiced: number; collected: number; closingReceivables: number;
 }
-export interface CurrencySummary { currency: string; openingReceivables: number; months: MonthRow[]; total: MonthRow; closingReceivables: number }
-export interface YearSummary { fiscalYear: string; start: string; end: string; booksLockedUntil: string | null; currencies: CurrencySummary[] }
+export interface CurrencySummary { currency: string; openingReceivables: number; months: MonthRow[]; total: MonthRow; closingReceivables: number; aging?: { current: number; days1To30: number; days31To60: number; days61To90: number; over90: number } }
+export interface YearSummary { fiscalYear: string; start: string; end: string; booksLockedUntil: string | null; currencies: CurrencySummary[]; basis?: string }
 export interface SalesRegisterRow {
   date: string; voucherType: VoucherType; invoiceNumber: string; reference: string; clientKey: string; clientName: string; clientTaxId: string | null;
   placeOfSupply: string | null; currency: string; taxable: number; cgst: number; sgst: number; igst: number; otherTax: number; total: number;
@@ -282,8 +292,9 @@ export interface JournalLine {
 export interface Journal { fiscalYear: string; month: string | null; content: JournalLine[]; page: number; size: number; totalElements: number; totalPages: number; totals: { currency: string; debit: number; credit: number }[] }
 export interface StatementLine { date: string; voucherType: VoucherType; voucherNumber: string; invoiceReference: string; narration: string; debit: number; credit: number; balance: number }
 export interface Statement {
-  fiscalYear: string; start: string; end: string; clientKey: string; clientName: string;
+  fiscalYear: string; start: string; end: string; clientKey: string; clientName: string; basis?: string;
   currencies: { currency: string; openingBalance: number; lines: StatementLine[]; totalDebit: number; totalCredit: number; closingBalance: number }[];
+  unallocated?: { receiptNumber: string; date: string; amount: number; unallocated: number; currency: string }[];
 }
 const books = (path: string, params: Record<string, string | number | undefined> = {}) => {
   const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== undefined && value !== "").map(([key, value]) => [key, String(value)]));

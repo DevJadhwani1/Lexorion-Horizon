@@ -333,7 +333,8 @@ export const finalizePayRun = (key: string) =>
 
 export const recoverPayRun = (key: string) => apiRequest<PayRun>(`/api/payroll/pay-runs/${key}/recover`, { method: "POST" });
 
-export interface PayrollReadiness { activeEmployees: number; employeesWithCompensation: number; nextEmployeeCode: string | null; statutoryDecisionsOpen?: number; detailsAwaitingVerification?: number; }
+export interface PayrollReadiness { activeEmployees: number; employeesWithCompensation: number; nextEmployeeCode: string | null; statutoryDecisionsOpen?: number; detailsAwaitingVerification?: number; gaps?: { employeeCode: string; reason: string; href: string }[]; }
+export const getOwnPayslips = () => apiRequest<Payslip[]>("/api/payroll/me/payslips");
 export const getPayrollReadiness = () => apiRequest<PayrollReadiness>("/api/payroll/readiness");
 
 export interface PayRunPreparation {

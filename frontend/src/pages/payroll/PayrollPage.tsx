@@ -1009,14 +1009,17 @@ function EmployeeDetail({ section }: { section: string }) {
       {data &&
         section === "payslips" &&
         (data as Payslip[]).map((p) => (
-          <article className="card payslip" key={p.payRunKey}>
+          <article className="card payslip" id={`payslip-${p.payRunKey}`} key={p.payRunKey}>
             <header>
               <div>
                 <small>PAYSLIP · {formatPeriod(p.periodStart, p.periodEnd).toUpperCase()}</small>
                 <h3>{directory.nameOf(p.employeeCode)}</h3>
                 <p>{p.employeeCode} · Pay run {p.payRunKey}</p>
               </div>
-              <StatusBadge status="FINALIZED" />
+              <div className="toolbar payslip-actions">
+                <StatusBadge status="FINALIZED" />
+                <Button type="button" onClick={() => downloadPayslip(p.payRunKey)}>Download PDF</Button>
+              </div>
             </header>
             <p className="snapshot-note">This payslip records the finalized calculation. It is not confirmation that money was sent. EPF and ESI estimates are not deductions unless they were added as salary components. Professional tax, labour welfare fund, and income-tax are not calculated.</p>
             <dl>
@@ -1090,6 +1093,12 @@ function EmployeeDetail({ section }: { section: string }) {
     </Page>
   );
 }
+function downloadPayslip(payRunKey: string) {
+  document.querySelectorAll(".payslip-printing").forEach((node) => node.classList.remove("payslip-printing"));
+  document.getElementById(`payslip-${payRunKey}`)?.classList.add("payslip-printing");
+  window.print();
+}
+
 function ProfileForm({ employee, profiles, locale, reload }: { employee: PayrollEmployee; profiles: Profile[]; locale?: string; reload(): Promise<void> }) {
   const [success, setSuccess] = useState("");
   const hasSalary = profiles.some((profile) => profile.status === "ACTIVE" && profile.components.length > 0);

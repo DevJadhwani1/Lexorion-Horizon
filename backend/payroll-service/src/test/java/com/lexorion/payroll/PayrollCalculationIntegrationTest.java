@@ -34,11 +34,19 @@ class PayrollCalculationIntegrationTest {
         component("a","alpha","owner","BASE","Base","EARNING","FIXED_AMOUNT","RECURRING");
         profile("a","alpha","owner","EMP-1","FUTURE","2027-01-01","2027-06-30","BASE","100");
         profile("a","alpha","owner","EMP-1","LATER","2027-07-01",null,"BASE","100");
-        request(get("/api/payroll/readiness"),"a","alpha","owner").andExpect(status().isOk()).andExpect(jsonPath("$.activeEmployees").value(2)).andExpect(jsonPath("$.employeesWithCompensation").value(1)).andExpect(jsonPath("$.nextEmployeeCode").value("EMP-2"));
+        request(get("/api/payroll/readiness"),"a","alpha","owner").andExpect(status().isOk()).andExpect(jsonPath("$.activeEmployees").value(2)).andExpect(jsonPath("$.employeesWithCompensation").value(1)).andExpect(jsonPath("$.nextEmployeeCode").value("EMP-2")).andExpect(jsonPath("$.gaps.length()").value(1)).andExpect(jsonPath("$.gaps[0].employeeCode").value("EMP-2")).andExpect(jsonPath("$.gaps[0].reason").value("MISSING_COMPENSATION")).andExpect(jsonPath("$.gaps[0].href").value("/payroll/compensation?employee=EMP-2"));
         request(get("/api/payroll/readiness"),"b","beta","owner").andExpect(status().isOk()).andExpect(jsonPath("$.employeesWithCompensation").value(0)).andExpect(jsonPath("$.nextEmployeeCode").value("EMP-1"));
         request(patch("/api/payroll/employees/EMP-1").contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INACTIVE\"}"),"a","alpha","owner").andExpect(status().isOk());
         request(get("/api/payroll/readiness"),"a","alpha","owner").andExpect(jsonPath("$.activeEmployees").value(1)).andExpect(jsonPath("$.employeesWithCompensation").value(0));
         assertThat(calculations.count()).isZero();
+    }
+
+    @Test void ownPayslipsUseTheSignedInEmployeeAndIgnoreAClientCode() throws Exception {
+        when(workforce.currentEmployeeCode(any())).thenReturn(null);
+        request(get("/api/payroll/me/payslips").queryParam("employeeCode","EMP-OTHER"),"a","alpha","member").andExpect(status().isForbidden());
+        when(workforce.currentEmployeeCode(any())).thenReturn("EMP-1");
+        request(get("/api/payroll/me/payslips").queryParam("employeeCode","EMP-OTHER"),"a","alpha","member").andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andExpect(jsonPath("$.length()").value(0));
+        request(get("/api/payroll/me/payslips"),"a","alpha","manager").andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
     }
 
     @Test void readinessEnforcesAuthorityEntitlementAndRevocationOnEveryRequest() throws Exception {

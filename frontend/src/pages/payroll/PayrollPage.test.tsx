@@ -103,6 +103,20 @@ it("links pay-run compensation setup back to the selected run", async () => {
   expect(params.get("returnTo")).toBe("/payroll/runs?run=RETURN-1");
 });
 
+it("offers a PDF download for each finalized payslip", async () => {
+  const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+  vi.mocked(payrollApi.getPayrollEmployees).mockResolvedValue([{ employeeCode: "OH-ADMIN", currency: "INR", payFrequency: "MONTHLY", effectiveFrom: "2026-04-01", status: "ACTIVE" }]);
+  vi.spyOn(payrollApi, "getPayslips").mockResolvedValue([{
+    employeeCode: "OH-ADMIN", payRunKey: "PAY-2026-10", periodStart: "2026-10-01", periodEnd: "2026-10-31", calculationDate: "2026-10-31", currency: "INR",
+    grossAmount: 10000, deductionAmount: 0, netAmount: 10000, finalizedAt: "2026-10-31T00:00:00Z",
+    earnings: [{ componentKey: "BASIC", displayName: "Basic", category: "EARNING", amount: 10000 }], deductions: [],
+  }]);
+  render(<MemoryRouter initialEntries={["/payroll/payslips?employee=OH-ADMIN"]}><PayrollPage sectionKey="payslips" /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Download PDF" }));
+  expect(print).toHaveBeenCalledOnce();
+  expect(document.getElementById("payslip-PAY-2026-10")?.classList.contains("payslip-printing")).toBe(true);
+});
+
 it("creates a monthly pay run from the next month with derived dates and the employees' currency", async () => {
   const finalized = { payRunKey: "PAY-2026-09", periodStart: "2026-09-01", periodEnd: "2026-09-30", calculationDate: "2026-09-30", currency: "INR", status: "FINALIZED", grossTotal: 1000, deductionTotal: 0, netTotal: 1000, employeeCount: 1, createdAt: "2026-09-30", finalizedAt: "2026-09-30" };
   vi.mocked(payrollApi.getPayRuns).mockResolvedValue({ content: [finalized], page: 0, totalPages: 1, size: 20, totalElements: 1, sort: "createdAt", direction: "desc" });

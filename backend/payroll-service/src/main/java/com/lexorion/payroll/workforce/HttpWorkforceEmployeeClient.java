@@ -33,6 +33,38 @@ public class HttpWorkforceEmployeeClient implements WorkforceEmployeeClient {
     }
 
     @Override
+    public String currentEmployeeCode(TrustedPayrollContext context) {
+        AuthorityRequestContext.Credentials credentials = requests.get()
+                .orElseThrow(() -> new PayrollException(503, "Workforce verification authority is unavailable"));
+        try {
+            return client.get()
+                    .uri("/api/workforce/me")
+                    .header(HttpHeaders.AUTHORIZATION, credentials.bearerToken())
+                    .header(HttpHeaders.HOST, credentials.host())
+                    .header("X-Lexorion-Organization", context.organizationSlug())
+                    .header("X-Lexorion-Workspace", context.workspaceKey())
+                    .exchange((request, response) -> {
+                        if (response.getStatusCode().value() == 403 || response.getStatusCode().value() == 404)
+                            throw new PayrollException(403, "No employee record is linked to this sign-in");
+                        if (!response.getStatusCode().is2xxSuccessful())
+                            throw new PayrollException(503, "Workforce verification is unavailable");
+                        var body = response.bodyTo(SelfEmployee.class);
+                        if (body == null || body.employeeCode() == null || body.employeeCode().isBlank())
+                            throw new PayrollException(403, "No employee record is linked to this sign-in");
+                        return body.employeeCode();
+                    });
+        } catch (PayrollException ex) {
+            throw ex;
+        } catch (ResourceAccessException ex) {
+            throw new PayrollException(503, causedByTimeout(ex) ? "Workforce verification timed out" : "Workforce verification is unavailable");
+        } catch (RestClientException | IllegalArgumentException ex) {
+            throw new PayrollException(502, "Workforce returned an invalid verification response");
+        }
+    }
+
+    private record SelfEmployee(String employeeCode) {}
+
+    @Override
     public WorkforceEmployeeVerifier.Verification verify(String employeeCode, TrustedPayrollContext context) {
         AuthorityRequestContext.Credentials credentials = requests.get()
                 .orElseThrow(() -> new PayrollException(503, "Workforce verification authority is unavailable"));

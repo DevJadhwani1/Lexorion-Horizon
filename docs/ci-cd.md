@@ -1,6 +1,16 @@
-# Jenkins CI
+# Continuous integration
 
-The root `Jenkinsfile` defines the Lexorion Horizon continuous-integration pipeline. It validates the application and builds local Docker images; it does not deploy or push images.
+GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every pull request and on `main`. It tests the six backend modules and the frontend. A push to `main` then builds the seven application images and publishes them to GHCR as `ghcr.io/<owner>/horizon-<service>:<commit>` and `:main`.
+
+The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
+
+After a pull, the running containers still serve the previous images until they are rebuilt:
+
+```sh
+sh scripts/update-running-stack.sh
+```
+
+That recreates Eureka, platform, workforce, payroll, finance, gateway, and frontend from the current checkout. It does not remove the Postgres volume.
 
 ## Jenkins agent prerequisites
 
@@ -33,4 +43,4 @@ Any failed command fails its stage and the pipeline. Application containers are 
 
 CI does not modify or depend on a shared PostgreSQL instance. Critical migration tests start disposable PostgreSQL 16 Testcontainers, apply Flyway from an empty schema, and remove the containers after the suite. Other backend tests retain isolated test configuration. Docker images are built without launching the application stack.
 
-No credentials are embedded in the pipeline. Production deployment and registry publication are intentionally not automated in this milestone.
+No deployment credentials are embedded in either pipeline. Jenkins does not publish images. GitHub Actions publishes the `main` images to GHCR with the workflow token. Neither pipeline starts the application stack or replaces the local Postgres volume. The host still runs `scripts/update-running-stack.sh` to pick up a new checkout.

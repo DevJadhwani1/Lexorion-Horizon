@@ -2,9 +2,11 @@ package com.lexorion.finance.service;
 
 import static com.lexorion.finance.api.LedgerDtos.*;
 
+import com.lexorion.finance.api.BillingDtos.Aging;
 import com.lexorion.finance.api.BillingDtos.DocumentSnapshot;
 import com.lexorion.finance.api.BillingDtos.TaxLine;
 import com.lexorion.finance.api.FinanceException;
+import com.lexorion.finance.domain.Allocation;
 import com.lexorion.finance.domain.BillingClient;
 import com.lexorion.finance.domain.FinanceWorkspace;
 import com.lexorion.finance.domain.Invoice;
@@ -13,14 +15,19 @@ import com.lexorion.finance.domain.LedgerEntry;
 import com.lexorion.finance.domain.Payment;
 import com.lexorion.finance.domain.PaymentMethod;
 import com.lexorion.finance.domain.VoucherType;
+import com.lexorion.finance.repository.AllocationRepository;
 import com.lexorion.finance.repository.BillingClientRepository;
 import com.lexorion.finance.repository.FinanceWorkspaceRepository;
+import com.lexorion.finance.repository.InvoiceRepository;
 import com.lexorion.finance.repository.LedgerEntryRepository;
+import com.lexorion.finance.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,20 +52,28 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Service
 public class LedgerService {
+    static final String BASIS = "Invoiced amounts use the invoice date. Collections use the receipt date. Receivables are debit-positive: an issued invoice increases what the client owes and an allocation decreases it. An unallocated receipt is listed separately and does not reduce an invoice balance.";
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private final LedgerEntryRepository entries;
     private final FinanceWorkspaceScope scope;
     private final FinanceWorkspaceRepository workspaces;
     private final BillingClientRepository clients;
+    private final InvoiceRepository invoices;
+    private final AllocationRepository allocations;
+    private final PaymentRepository payments;
     private final JsonMapper json;
     private final Clock clock;
 
     public LedgerService(LedgerEntryRepository entries, FinanceWorkspaceScope scope, FinanceWorkspaceRepository workspaces,
-            BillingClientRepository clients, JsonMapper json, Clock clock) {
+            BillingClientRepository clients, InvoiceRepository invoices, AllocationRepository allocations, PaymentRepository payments,
+            JsonMapper json, Clock clock) {
         this.entries = entries;
         this.scope = scope;
         this.workspaces = workspaces;
         this.clients = clients;
+        this.invoices = invoices;
+        this.allocations = allocations;
+        this.payments = payments;
         this.json = json;
         this.clock = clock;
     }
@@ -87,11 +102,46 @@ public class LedgerService {
 
     void postReceipt(Payment payment) {
         Invoice invoice = payment.getInvoice();
+        if (invoice == null) return;
         if (entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(invoice.getWorkspace().getId(), VoucherType.RECEIPT, payment.getId())) return;
         String narration = "Receipt " + payment.getReceiptNumber() + " against " + invoice.getInvoiceNumber() + " · " + invoice.getClient().getDisplayName();
         LedgerAccount money = payment.getMethod() == PaymentMethod.CASH ? LedgerAccount.CASH : LedgerAccount.BANK;
         post(invoice, VoucherType.RECEIPT, payment.getId(), payment.getReceiptNumber(), payment.getPaymentDate(), money, payment.getAmount(), BigDecimal.ZERO, narration);
         post(invoice, VoucherType.RECEIPT, payment.getId(), payment.getReceiptNumber(), payment.getPaymentDate(), LedgerAccount.RECEIVABLES, BigDecimal.ZERO, payment.getAmount(), narration);
+    }
+
+    /** Posts one allocation. Skipped when this allocation is already posted, or when the receipt was posted in full and that posting still stands. */
+    void postAllocation(Allocation allocation) {
+        Payment receipt = allocation.getReceipt();
+        Invoice invoice = allocation.getInvoice();
+        UUID workspaceId = invoice.getWorkspace().getId();
+        if (entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.RECEIPT, allocation.getId())) return;
+        if (wholeReceiptStillStanding(receipt)) return;
+        String narration = "Receipt " + receipt.getReceiptNumber() + " allocated to " + invoice.getInvoiceNumber() + " · " + invoice.getClient().getDisplayName();
+        LedgerAccount money = receipt.getMethod() == PaymentMethod.CASH ? LedgerAccount.CASH : LedgerAccount.BANK;
+        post(invoice, VoucherType.RECEIPT, allocation.getId(), receipt.getReceiptNumber(), receipt.getPaymentDate(), money, allocation.getAmount(), BigDecimal.ZERO, narration);
+        post(invoice, VoucherType.RECEIPT, allocation.getId(), receipt.getReceiptNumber(), receipt.getPaymentDate(), LedgerAccount.RECEIVABLES, BigDecimal.ZERO, allocation.getAmount(), narration);
+    }
+
+    private boolean wholeReceiptStillStanding(Payment receipt) {
+        UUID workspaceId = receipt.getWorkspace().getId();
+        if (!entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.RECEIPT, receipt.getId())) return false;
+        for (Allocation existing : allocations.findByReceiptId(receipt.getId()))
+            if (entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.ALLOCATION_REVERSAL, existing.getId())) return false;
+        return true;
+    }
+
+    /** Reverses the ledger lines of one allocation. The original receipt entries stay. */
+    void postReversal(Allocation allocation, LocalDate date) {
+        Invoice invoice = allocation.getInvoice();
+        UUID workspaceId = invoice.getWorkspace().getId();
+        if (entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.ALLOCATION_REVERSAL, allocation.getId())) return;
+        UUID source = entries.existsByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.RECEIPT, allocation.getId())
+                ? allocation.getId() : allocation.getReceipt().getId();
+        String narration = "Reversal of receipt " + allocation.getReceipt().getReceiptNumber() + " · " + invoice.getClient().getDisplayName();
+        for (LedgerEntry original : entries.findByWorkspaceIdAndVoucherTypeAndSourceId(workspaceId, VoucherType.RECEIPT, source))
+            post(invoice, VoucherType.ALLOCATION_REVERSAL, allocation.getId(), allocation.getReceipt().getReceiptNumber(), date,
+                    original.getAccount(), original.getCredit(), original.getDebit(), narration);
     }
 
     /** Reverses every entry the invoice posted. Its original entries stay in the books. */
@@ -190,10 +240,10 @@ public class LedgerService {
                 rows.add(m.row(month.toString(), month.atDay(1), month.atEndOfMonth(), balance));
             }
             currencies.add(new CurrencySummary(currency, opening.getOrDefault(currency, BigDecimal.ZERO), rows,
-                    total.row("total", year.start(), year.end(), balance), balance));
+                    total.row("total", year.start(), year.end(), balance), balance, aging(workspaceId, currency, asOf(year))));
         });
         FinanceWorkspace workspace = workspace();
-        return new YearSummary(year.label(), year.start(), year.end(), workspace == null ? null : workspace.getBooksLockedUntil(), currencies);
+        return new YearSummary(year.label(), year.start(), year.end(), workspace == null ? null : workspace.getBooksLockedUntil(), currencies, BASIS);
     }
 
     @Transactional(readOnly = true)
@@ -202,7 +252,7 @@ public class LedgerService {
         LocalDate[] range = range(year, month);
         Map<String, Row> rows = new LinkedHashMap<>();
         for (LedgerEntry entry : entries.findPeriod(scope.context().workspaceId(), range[0], range[1])) {
-            if (entry.getVoucherType() == VoucherType.RECEIPT) continue;
+            if (entry.getVoucherType() == VoucherType.RECEIPT || entry.getVoucherType() == VoucherType.ALLOCATION_REVERSAL) continue;
             rows.computeIfAbsent(entry.getVoucherType() + ":" + entry.getSourceId(), key -> new Row(entry)).add(entry);
         }
         Map<String, RegisterTotal> totals = new TreeMap<>();
@@ -263,10 +313,48 @@ public class LedgerService {
             }
             statements.add(new CurrencyStatement(currency, start, lines, debit, credit, balance));
         });
-        return new Statement(year.label(), year.start(), year.end(), client.getClientKey(), client.getDisplayName(), statements);
+        return new Statement(year.label(), year.start(), year.end(), client.getClientKey(), client.getDisplayName(), statements, BASIS,
+                unallocated(workspaceId, client, year));
     }
 
     // ---------------------------------------------------------------- helpers
+
+    private LocalDate asOf(FiscalYear year) {
+        LocalDate today = today();
+        return year.end().isBefore(today) ? year.end() : today;
+    }
+
+    /** Open invoice balances at a date, using allocations dated on or before that date. */
+    private Aging aging(UUID workspaceId, String currency, LocalDate asOf) {
+        BigDecimal[] buckets = {BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
+        Instant reversedAfter = asOf.plusDays(1).atStartOfDay(clock.getZone()).toInstant();
+        for (Invoice invoice : invoices.findIssuedOnOrBefore(workspaceId, asOf)) {
+            if (!currency.equals(invoice.getCurrency())) continue;
+            if (invoice.getVoidedAt() != null && !LocalDate.ofInstant(invoice.getVoidedAt(), clock.getZone()).isAfter(asOf)) continue;
+            BigDecimal applied = allocations.appliedAsOf(invoice.getId(), asOf, reversedAfter);
+            BigDecimal balance = invoice.getTotal().subtract(applied);
+            if (balance.signum() <= 0) continue;
+            long late = ChronoUnit.DAYS.between(invoice.getDueDate(), asOf);
+            int bucket = late <= 0 ? 0 : late <= 30 ? 1 : late <= 60 ? 2 : late <= 90 ? 3 : 4;
+            buckets[bucket] = buckets[bucket].add(balance);
+        }
+        return new Aging(buckets[0], buckets[1], buckets[2], buckets[3], buckets[4]);
+    }
+
+    private List<UnallocatedReceipt> unallocated(UUID workspaceId, BillingClient client, FiscalYear year) {
+        List<UnallocatedReceipt> rows = new ArrayList<>();
+        for (Payment receipt : payments.findByWorkspaceIdAndClientId(workspaceId, client.getId())) {
+            if (receipt.getPaymentDate().isBefore(year.start()) || receipt.getPaymentDate().isAfter(year.end())) continue;
+            BigDecimal open = receipt.getAmount().subtract(allocations.activeTotal(receipt.getId()));
+            if (open.signum() > 0)
+                rows.add(new UnallocatedReceipt(receipt.getReceiptNumber(), receipt.getPaymentDate(), receipt.getAmount(), open, receipt.getCurrency()));
+        }
+        rows.sort((left, right) -> {
+            int byDate = left.date().compareTo(right.date());
+            return byDate != 0 ? byDate : left.receiptNumber().compareTo(right.receiptNumber());
+        });
+        return rows;
+    }
 
     private FiscalYear year(String label) {
         int start = startMonth();
@@ -316,7 +404,8 @@ public class LedgerService {
                 case OUTPUT_TAX -> other = other.add(income);
                 case RECEIVABLES -> {
                     receivables = receivables.add(entry.net());
-                    if (entry.getVoucherType() == VoucherType.RECEIPT) collected = collected.add(entry.getCredit());
+                    if (entry.getVoucherType() == VoucherType.RECEIPT || entry.getVoucherType() == VoucherType.ALLOCATION_REVERSAL)
+                        collected = collected.add(entry.getCredit().subtract(entry.getDebit()));
                     else invoiced = invoiced.add(entry.net());
                     if (entry.getVoucherType() == VoucherType.INVOICE) issued.add(entry.getSourceId());
                     if (entry.getVoucherType() == VoucherType.INVOICE_VOID) voided.add(entry.getSourceId());

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ApiError, type Page as ResultPage } from "../../api/types";
 import { appPath } from "../../app/hostRouting";
@@ -9,7 +9,7 @@ import { Dropdown } from "../../components/ui/Dropdown";
 import { Empty, Notice, Page } from "../../components/ui/Page";
 import {
   getBillingSummary, getClients, getInvoice, getInvoicePayments, getInvoices, getNextNumber, getPayments, getTemplates,
-  issueInvoice, paymentMethods, recordPayment, voidInvoice,
+  allocateReceipt, createReceipt, issueInvoice, paymentMethods, recordPayment, voidInvoice,
   type BillingSummary, type Invoice, type InvoiceStatus, type InvoiceSummary, type InvoiceTemplate, type Payment, type PaymentMethod,
 } from "../../features/finance/financeApi";
 import { useOrganizationDefaults } from "../../features/organization/useOrganizationDefaults";
@@ -18,7 +18,7 @@ import { formatBillingMoney } from "../../features/finance/billingData";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { Table } from "../admin/AdminPage";
 import { Pagination } from "../workforce/WorkforcePage";
-import { InvoiceDocument } from "./InvoiceDocument";
+import { InvoiceDocument, invoiceDownloadTitle, printDocument } from "./InvoiceDocument";
 import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
@@ -79,7 +79,7 @@ function Overview() {
   if (!data) return <Page title="Finance"><p>Loading billing overview…</p></Page>;
   const [summary, overdue, drafts, templates] = data as [BillingSummary, ResultPage<InvoiceSummary>, ResultPage<InvoiceSummary>, InvoiceTemplate[]];
   const money = (value: number, currency: string) => formatBillingMoney(value, currency, defaults.locale);
-  const totals = summary.totals.length ? summary.totals : [{ currency: defaults.currency || "INR", outstanding: 0, overdue: 0, invoicedThisMonth: 0, collectedThisMonth: 0, aging: { current: 0, days1To30: 0, days31To60: 0, days61To90: 0, over90: 0 } }];
+  const totals = summary.totals.length ? summary.totals : [{ currency: defaults.currency || "INR", outstanding: 0, overdue: 0, invoicedThisMonth: 0, collectedThisMonth: 0, unallocatedThisMonth: 0, aging: { current: 0, days1To30: 0, days31To60: 0, days61To90: 0, over90: 0 } }];
   const actions = <div className="toolbar">
     <Link className="button primary" to={financePath("/invoices/new")}>New invoice</Link>
     <Link className="button secondary" to={financePath("/clients/new")}>New client</Link>
@@ -93,7 +93,8 @@ function Overview() {
         <Metric label="Outstanding" value={money(total.outstanding, total.currency)} note={`${summary.openInvoices} open invoice${summary.openInvoices === 1 ? "" : "s"}`} />
         <Metric label="Overdue" value={money(total.overdue, total.currency)} note={`${summary.overdueInvoices} past due date`} />
         <Metric label="Invoiced this month" value={money(total.invoicedThisMonth, total.currency)} note="Issued invoices dated this month" />
-        <Metric label="Collected this month" value={money(total.collectedThisMonth, total.currency)} note="Payments received this month" />
+        <Metric label="Collected this month" value={money(total.collectedThisMonth, total.currency)} note="Allocated to invoices this month, by receipt date" />
+        <Metric label="Unallocated receipts" value={money(total.unallocatedThisMonth ?? 0, total.currency)} note="Received this month and not yet applied. Not part of outstanding." />
       </div>
     </section>)}
     <div className="organization-metrics">
@@ -217,7 +218,7 @@ function InvoiceDetail() {
     </>}
     {open && mode === "view" && <Button variant="primary" disabled={busy} onClick={() => setMode("pay")}>Record payment</Button>}
     {(invoice.status === "DRAFT" || (invoice.status === "ISSUED" && invoice.amountPaid === 0)) && mode === "view" && <Button variant="destructive" disabled={busy} onClick={() => setMode("void")}>Void</Button>}
-    <Button onClick={() => window.print()}>Print / PDF</Button>
+    <Button onClick={() => printDocument(invoiceDownloadTitle(invoice.template.config.seller.legalName ?? "", invoice.clientName, invoice.invoiceNumber ?? invoice.reference))}>Print / PDF</Button>
   </div>;
   return <Page title={title} description={`${invoice.clientName} · ${humanize(invoice.status)}${invoice.overdue ? " · overdue" : ""} · ${invoice.template.name} template`} actions={actions}>
     {confirmDialog}
@@ -238,7 +239,7 @@ function InvoiceDetail() {
       <h2 id="invoice-payments-heading" className="section-heading">Payments received</h2>
       {payments.length === 0 ? <Empty>No payments recorded yet.</Empty> :
         <Table headers={["Receipt", "Date", "Method", "Reference", "Amount"]}>
-          {payments.map((payment) => <tr key={payment.receiptNumber}>
+          {payments.map((payment) => <tr key={payment.allocationId ?? payment.receiptNumber}>
             <td>{payment.receiptNumber}</td>
             <td>{formatDate(payment.paymentDate, defaults.locale)}</td>
             <td>{humanize(payment.method)}</td>
@@ -289,22 +290,73 @@ function VoidForm({ busy, onSubmit, onCancel }: { busy: boolean; onSubmit(reason
 function Payments() {
   const defaults = useOrganizationDefaults();
   const [page, setPage] = useState(0);
-  const { data, error } = useLoad(() => getPayments(page, PAGE_SIZE), [page]);
-  return <Page title="Payments" description="Every payment received against your invoices, newest first. Record new payments from an issued invoice.">
-    {error && <Notice>{error}</Notice>}
-    {!data && !error && <p>Loading payments…</p>}
-    {data && (data.content.length === 0 ? <Empty>No payments recorded yet. Open an issued invoice to record a payment.</Empty> :
-      <Table headers={["Receipt", "Date", "Client", "Invoice", "Method", "Reference", "Amount"]}>
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const { data, error: loadError, reload } = useLoad(() => getPayments(page, PAGE_SIZE), [page]);
+  const clients = useLoad(getClients);
+  const openInvoices = useLoad(() => getInvoices({ size: 100, page: 0 }), []);
+  const money = (value: number, currency: string) => formatBillingMoney(value, currency, defaults.locale);
+  const record = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const clientKey = String(values.clientKey || "");
+    const invoiceReference = String(values.invoiceReference || "");
+    const amount = Number(values.amount);
+    const paymentDate = String(values.paymentDate);
+    const method = String(values.method) as PaymentMethod;
+    if (!clientKey) return;
+    setBusy(true); setError("");
+    const done = () => { setBusy(false); reload(); (event.target as HTMLFormElement).reset(); };
+    const fail = (reason: unknown) => { setBusy(false); setError(message(reason, "Unable to record the receipt")); };
+    if (invoiceReference) {
+      void recordPayment(invoiceReference, { amount, paymentDate, method }).then(done).catch(fail);
+    } else {
+      void createReceipt({ clientKey, amount, paymentDate, method }).then(done).catch(fail);
+    }
+  };
+  const allocate = (receiptNumber: string, invoiceReference: string, amount: number) => {
+    setBusy(true); setError("");
+    void allocateReceipt(receiptNumber, { invoiceReference, amount }).then(() => { setBusy(false); reload(); })
+      .catch((reason) => { setBusy(false); setError(message(reason, "Unable to allocate the receipt")); });
+  };
+  return <Page title="Collections" description="Receipts are recorded for a client. Only the amount allocated to an invoice reduces what that client owes. Horizon does not send the money to a bank.">
+    {(loadError || error || clients.error || openInvoices.error) && <Notice>{loadError || error || clients.error || openInvoices.error}</Notice>}
+    <form className="card" aria-label="Record receipt" onSubmit={record}>
+      <h3>Record a receipt</h3>
+      <div className="form-grid">
+        <Dropdown label="Client" name="clientKey" required options={(clients.data ?? []).filter((client) => client.status === "ACTIVE").map((client) => ({ value: client.clientKey, label: client.displayName }))} />
+        <Dropdown label="Apply to invoice" name="invoiceReference" options={[{ value: "", label: "Leave unallocated" }, ...(openInvoices.data?.content ?? []).filter((invoice) => invoice.status === "ISSUED" || invoice.status === "PARTIALLY_PAID").map((invoice) => ({ value: invoice.reference, label: `${invoice.invoiceNumber ?? invoice.reference} · ${invoice.clientName}` }))]} />
+        <label>Amount<input name="amount" type="number" required min="0.01" step="0.01" /></label>
+        <label>Receipt date<input name="paymentDate" type="date" required defaultValue={localToday()} /></label>
+        <Dropdown label="Method" name="method" required defaultValue="BANK_TRANSFER" options={paymentMethods.map((method) => ({ value: method, label: humanize(method) }))} />
+      </div>
+      <div className="form-actions"><Button variant="primary" disabled={busy}>{busy ? "Saving…" : "Record receipt"}</Button></div>
+    </form>
+    {!data && !loadError && <p>Loading receipts…</p>}
+    {data && (data.content.length === 0 ? <Empty>No receipts yet. Record one above, or open an issued invoice and record a payment there.</Empty> :
+      <Table headers={["Receipt", "Date", "Client", "Invoice", "Allocated", "Unallocated", "Amount", ""]}>
         {data.content.map((payment) => <tr key={payment.receiptNumber}>
           <td><strong>{payment.receiptNumber}</strong></td>
           <td>{formatDate(payment.paymentDate, defaults.locale)}</td>
           <td>{payment.clientName}</td>
-          <td><Link to={financePath(`/invoices/${encodeURIComponent(payment.invoiceReference)}`)}>{payment.invoiceNumber ?? payment.invoiceReference}</Link></td>
-          <td>{humanize(payment.method)}</td>
-          <td>{payment.reference || "—"}</td>
-          <td className="finance-amount">{formatBillingMoney(payment.amount, payment.currency, defaults.locale)}</td>
+          <td>{payment.invoiceReference ? <Link to={financePath(`/invoices/${encodeURIComponent(payment.invoiceReference)}`)}>{payment.invoiceNumber ?? payment.invoiceReference}</Link> : payment.allocatedAmount ? "Several invoices" : "Unallocated"}</td>
+          <td className="finance-amount">{money(payment.allocatedAmount ?? payment.amount, payment.currency)}</td>
+          <td className="finance-amount">{money(payment.unallocatedAmount ?? 0, payment.currency)}</td>
+          <td className="finance-amount">{money(payment.amount, payment.currency)}</td>
+          <td>{(payment.unallocatedAmount ?? 0) > 0 && <AllocateControl invoices={(openInvoices.data?.content ?? []).filter((invoice) => invoice.clientKey === payment.clientKey && (invoice.status === "ISSUED" || invoice.status === "PARTIALLY_PAID"))} max={payment.unallocatedAmount ?? 0} disabled={busy} onAllocate={(invoiceReference, amount) => allocate(payment.receiptNumber, invoiceReference, amount)} />}</td>
         </tr>)}
       </Table>)}
     {data && <Pagination page={data.page} totalPages={data.totalPages} total={data.totalElements} size={PAGE_SIZE} onPage={setPage} />}
   </Page>;
+}
+
+function AllocateControl({ invoices, max, disabled, onAllocate }: { invoices: InvoiceSummary[]; max: number; disabled: boolean; onAllocate(invoiceReference: string, amount: number): void }) {
+  const [invoiceReference, setInvoiceReference] = useState(invoices[0]?.reference ?? "");
+  const [amount, setAmount] = useState(String(max));
+  if (!invoices.length) return null;
+  return <form className="inline-form" onSubmit={(event) => { event.preventDefault(); if (invoiceReference) onAllocate(invoiceReference, Number(amount)); }}>
+    <Dropdown label="Invoice" value={invoiceReference} onChange={setInvoiceReference} options={invoices.map((invoice) => ({ value: invoice.reference, label: invoice.invoiceNumber ?? invoice.reference }))} />
+    <label>Amount<input type="number" min="0.01" max={max} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+    <Button size="sm" disabled={disabled}>Allocate</Button>
+  </form>;
 }

@@ -1,0 +1,10 @@
+Browser: Cursor embedded Chromium (Chrome/148.0.7778.280).
+Desktop viewport: 838×845. Mobile page size used for two captures: 390×844.
+
+Sign-in page (http://127.0.0.1/login), before the QA identity existed:
+No JavaScript exception or console error. The page showed the server message "Email or password is invalid".
+
+Signed-in pages (directory, LEX-004 profile, exit, rehire, readiness, /workforce/me):
+No uncaught JavaScript exception was visible. The only application error banner was "Horizon could not complete that request. Try again." on the first rehire submit. That banner came from the HTTP 500 recorded in network-errors.txt, not from a console exception. The following rehire request succeeded and the banner was gone after reload.
+
+window.__qaErrors from the earlier directory page was not still installed after later navigations, so it is not cited as a complete console capture.

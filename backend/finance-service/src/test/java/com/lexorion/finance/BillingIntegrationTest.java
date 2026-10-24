@@ -47,6 +47,8 @@ class BillingIntegrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired LedgerEntryRepository ledger;
+    @Autowired AllocationRepository allocations;
+    @Autowired IdempotencyKeyRepository idempotencyKeys;
     @Autowired BillableItemRepository items;
     @Autowired PaymentRepository payments;
     @Autowired InvoiceRepository invoices;
@@ -59,6 +61,8 @@ class BillingIntegrationTest {
     @BeforeEach
     void setup() {
         ledger.deleteAll();
+        allocations.deleteAll();
+        idempotencyKeys.deleteAll();
         payments.deleteAll();
         invoices.deleteAll();
         items.deleteAll();

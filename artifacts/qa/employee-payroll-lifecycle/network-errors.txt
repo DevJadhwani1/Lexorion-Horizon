@@ -1,0 +1,77 @@
+Observed from the Cursor browser at http://127.0.0.1/ on 2026-10-24.
+Passwords, hashes, and access tokens are not recorded.
+
+Signed-out checks, preserved from the first pass. These are authorization results.
+
+POST /api/core/auth/login
+  status: 401
+  result: Email or password is invalid
+  note: dev@lexorion.in rejected the scratch-script password. The stored hash was not changed.
+
+GET /api/payroll/me/payslips
+  status: 403
+  body: empty
+  note: No bearer token.
+
+GET /api/payroll/me/payslips/RUN-1?employeeCode=OTHER
+  status: 403
+  body: empty
+
+GET /api/workforce/employees
+  status: 403
+  body: empty
+
+GET /api/payroll/readiness
+  status: 403
+  body: empty
+
+GET /api/payroll/employees/EMP-1/payslips
+  status: 403
+  body: empty
+
+The published gateway and nginx path returns an empty 403 for those signed-out reads. Service MockMvc tests expect 401 when a controller is called with no authentication. That difference was not changed.
+
+Signed-in checks for qa-lifecycle@lexorion.test on lexorion-client / main-hr.
+
+POST /api/workforce/employees/LEX-004/rehire
+  status: 500
+  response size: 145 bytes
+  time: 2026-10-24T17:34:05Z
+  note: First submit from the resignation form's rehire confirmation. The employee stayed Resigned. Workforce logged no exception. This was the first request after the workforce process had just finished starting. The response body was not retained.
+
+POST /api/workforce/employees/LEX-004/rehire
+  status: 200
+  time: 2026-10-24T17:35:22Z
+  note: Same joining date and employment type. Spell 2 opened. Original hire date stayed 1 Oct 2026. Spell 1 stayed closed.
+
+GET /api/payroll/employees/LEX-004
+  status: 404
+  note: Expected. Payroll enrollment was skipped, so there is no payroll employee row. The profile shows "Not set up for payroll yet."
+
+GET /api/payroll/me/payslips
+  status: 200
+  body: empty list
+
+GET /api/payroll/me/payslips?employeeCode=LEX-001
+  status: 200
+  body: empty list
+  note: Same empty result as the own request. No payslip body for LEX-001 was returned.
+
+GET /api/payroll/employees/LEX-001/payslips
+  status: 200
+  body: empty list
+  note: Admin history. No finalized slip exists for that employee, so no slip content was available.
+
+GET /api/workforce/employees/LEX-001
+  headers: a different organization and workspace than the signed-in membership
+  status: 403
+  body: empty
+
+GET /api/payroll/me/payslips
+  headers: the same foreign organization and workspace
+  status: 403
+  body: empty
+
+Nginx also recorded five 499 responses at 17:38:34Z for tenant organization, workspace, entitlement, and invitation reads. Those are client-aborted requests during navigation, not server errors.
+
+No pay run was finalized. Compensation was opened for an existing employee and was not saved.

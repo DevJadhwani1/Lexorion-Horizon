@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,8 +56,8 @@ public class InvoiceController {
     }
 
     @PostMapping("/{reference}/issue")
-    public InvoiceResponse issue(@PathVariable String reference) {
-        return service.issue(reference);
+    public InvoiceResponse issue(@PathVariable String reference, @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return service.issue(reference, idempotencyKey);
     }
 
     @PostMapping("/{reference}/void")
@@ -70,7 +71,8 @@ public class InvoiceController {
     }
 
     @PostMapping("/{reference}/payments")
-    public ResponseEntity<PaymentResponse> recordPayment(@PathVariable String reference, @Valid @RequestBody RecordPayment request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.recordPayment(reference, request));
+    public ResponseEntity<PaymentResponse> recordPayment(@PathVariable String reference, @Valid @RequestBody RecordPayment request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.recordPayment(reference, request, idempotencyKey));
     }
 }

@@ -167,8 +167,10 @@ After pulling changes, rebuild the images and hard-refresh the browser (Compose 
 `platform`, `workforce`, `payroll`, `finance`, `gateway` and `frontend`):
 
 ```sh
-docker compose up -d --build
+sh scripts/update-running-stack.sh
 ```
+
+Pushes to `main` also publish the same images to GHCR. The local stack still has to be rebuilt from the checkout; it does not pull those registry tags.
 
 The account menu in the sidebar shows when the running frontend was built; if it predates your pull, the
 frontend image was not rebuilt.

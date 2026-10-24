@@ -33,7 +33,7 @@ const payroll: readonly NavEntry[] = [
 ];
 const finance: readonly NavEntry[] = [
   ["overview", "Billing overview", "grid"], ["invoices", "Invoices", "document"],
-  ["clients", "Clients", "building"], ["items", "Items and services", "package"], ["payments", "Payments received", "card"],
+  ["clients", "Clients", "building"], ["items", "Items and services", "package"], ["payments", "Collections", "card"],
   ["books", "Books and reports", "panels"], ["templates", "Invoice templates", "layers"],
 ];
 const platformPrimary: readonly NavEntry[] = [["", "Overview", "home"], ["organizations", "Organizations", "building"], ["users", "Users", "workforce"], ["access", "Platform Access", "shield"]];
