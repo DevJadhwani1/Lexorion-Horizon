@@ -4,7 +4,7 @@ GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every p
 
 The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
 
-A push to `main` then deploys. After the images are published, the Deploy job runs on the self-hosted runner labeled `horizon` and pulls the `:main` tags onto the host that is already running the stack. Postgres and its volume are not replaced.
+When that CI run succeeds, `.github/workflows/cd.yml` deploys. The Deploy job runs on the self-hosted runner labeled `horizon` and pulls the `:main` tags onto the host that is already running the stack. Postgres and its volume are not replaced.
 
 The runner needs `HORIZON_ENV_FILE` pointing at the host `.env`. That file stays on the host and is not stored in GitHub.
 

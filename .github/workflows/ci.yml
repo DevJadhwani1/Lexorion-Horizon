@@ -93,20 +93,3 @@ jobs:
             docker push "${remote}:${sha}"
             docker push "${remote}:main"
           done
-
-  deploy:
-    name: Deploy
-    needs: images
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, horizon]
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Update the running stack
-        env:
-          HORIZON_IMAGE_TAG: main
-          GHCR_USERNAME: ${{ github.actor }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash scripts/update-running-stack.sh
