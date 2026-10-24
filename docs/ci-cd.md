@@ -1,6 +1,6 @@
 # Continuous integration
 
-GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every pull request and on `main`. It tests the six backend modules and the frontend. A push to `main` then builds the seven application images and publishes them to GHCR as `ghcr.io/<owner>/horizon-<service>:<commit>` and `:main`.
+GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every pull request and on `main`. It tests the six backend modules and the frontend. A push to `main` publishes the seven application images in parallel. Image builds skip the tests already run above and reuse cached dependency layers. Tags are `ghcr.io/<owner>/horizon-<service>:<commit>` and `:main`.
 
 The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
 

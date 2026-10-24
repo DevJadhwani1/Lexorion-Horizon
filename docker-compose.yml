@@ -189,7 +189,7 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9001/actuator/health"]
 
   frontend:
-    # Serves the bundle built inside the image (lint, typecheck, build). A local frontend/dist is
+    # Serves the bundle built inside the image. A local frontend/dist is
     # deliberately not mounted: it goes stale silently. Apply frontend changes with
     # `docker compose up -d --build frontend`.
     image: ${HORIZON_IMAGE_REGISTRY:-ghcr.io/devjadhwani1}/horizon-frontend:${HORIZON_IMAGE_TAG:-local}
