@@ -1,0 +1,27 @@
+# Ephemeral deploy used by GitHub Actions. It does not attach the host Postgres volume.
+name: lexorion-horizon-cd
+
+services:
+  eureka:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+  platform:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+  workforce:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+  payroll:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+  finance:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+  gateway:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+
+volumes:
+  postgres-data:
+    external: false
+    name: horizon-cd-postgres

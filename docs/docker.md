@@ -170,7 +170,7 @@ After pulling changes, rebuild the images and hard-refresh the browser (Compose 
 bash scripts/update-running-stack.sh
 ```
 
-A push to `main` publishes the images and the Deploy job pulls the `:main` tags onto the host runner. This command remains the local rebuild when that runner is not the machine you are using.
+A push to `main` publishes the images, and the CD workflow deploys that release on a temporary stack. This command rebuilds the containers on this machine.
 
 The account menu in the sidebar shows when the running frontend was built; if it predates your pull, the
 frontend image was not rebuilt.

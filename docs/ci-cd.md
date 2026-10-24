@@ -4,9 +4,9 @@ GitHub Actions (`.github/workflows/ci.yml`) is the pipeline that runs on every p
 
 The root `Jenkinsfile` runs the same checks and a local image build. It does not start containers or push images. Both pipelines pass `--env-file infrastructure/ci/compose.env` so Compose can interpolate required variables. That file is for image builds only. Do not start the stack with it.
 
-When that CI run succeeds, `.github/workflows/cd.yml` deploys. The Deploy job runs on the self-hosted runner labeled `horizon` and pulls the `:main` tags onto the host that is already running the stack. Postgres and its volume are not replaced.
+When that CI run succeeds, the CD workflow (`.github/workflows/cd.yml`) starts. It runs on GitHub-hosted runners, pulls the `:main` images, and brings up an ephemeral stack with `compose.cd.yml`. That stack uses its own Postgres volume, checks that the services become healthy, and then removes itself. It does not read the host `.env` and does not replace the database on this machine.
 
-The runner needs `HORIZON_ENV_FILE` pointing at the host `.env`. That file stays on the host and is not stored in GitHub.
+The host stack is still updated with `bash scripts/update-running-stack.sh`.
 
 ## Jenkins agent prerequisites
 
@@ -39,4 +39,4 @@ Any failed command fails its stage and the pipeline. Application containers are 
 
 CI does not modify or depend on a shared PostgreSQL instance. Critical migration tests start disposable PostgreSQL 16 Testcontainers, apply Flyway from an empty schema, and remove the containers after the suite. Other backend tests retain isolated test configuration. Docker images are built without launching the application stack.
 
-No deployment secrets are stored in the repository. Jenkins does not publish images or start the stack. GitHub Actions publishes the `main` images to GHCR and the Deploy job updates the running application containers from those tags. Postgres is not recreated. A checkout without the runner can still rebuild locally with `bash scripts/update-running-stack.sh`.
+No deployment secrets are stored in the repository. Jenkins does not publish images or start the stack. GitHub Actions publishes the `main` images to GHCR. The CD workflow then deploys those images to an ephemeral stack and removes it after the health check. The database on this machine is not part of that deploy. Rebuild the local containers with `bash scripts/update-running-stack.sh`.
