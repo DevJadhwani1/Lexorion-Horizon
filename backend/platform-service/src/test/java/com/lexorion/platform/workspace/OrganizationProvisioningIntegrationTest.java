@@ -88,7 +88,7 @@ class OrganizationProvisioningIntegrationTest {
 
     @Test
     void emptyProductSelectionDerivesProductsFromThePersistedPlan() throws Exception {
-        var created = organizationService.create(new CreateOrganizationRequest(
+        organizationService.create(new CreateOrganizationRequest(
                 "Empty Selection Org", null, "EMPTY", "empty-selection-org",
                 "admin@empty-selection.test", null, owner.getId(),
                 "starter", OrganizationStatus.ACTIVE));
@@ -125,7 +125,7 @@ class OrganizationProvisioningIntegrationTest {
 
     @Test
     void workspaceLimitIsEnforcedOnBackendForStarterPlan() throws Exception {
-        var created = organizationService.create(new CreateOrganizationRequest(
+        organizationService.create(new CreateOrganizationRequest(
                 "Limit Org", null, "LIMIT", "limit-org",
                 "admin@limit.test", null, owner.getId(),
                 "starter", OrganizationStatus.ACTIVE));
@@ -164,7 +164,7 @@ class OrganizationProvisioningIntegrationTest {
 
     @Test
     void missingPlanEnforcesRejectionAndDoesNotBypass() throws Exception {
-        var created = organizationService.create(new CreateOrganizationRequest(
+        organizationService.create(new CreateOrganizationRequest(
                 "NoPlan Org", null, "NOPLAN", "noplan-org",
                 "admin@noplan.test", null, owner.getId(),
                 "starter", OrganizationStatus.ACTIVE));

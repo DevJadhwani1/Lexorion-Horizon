@@ -11,3 +11,4 @@ dist/
 .qa-lifecycle-login
 *.pem
 *.key
+backups/

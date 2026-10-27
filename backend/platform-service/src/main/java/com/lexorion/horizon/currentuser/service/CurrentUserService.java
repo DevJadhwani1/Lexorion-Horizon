@@ -10,7 +10,6 @@ import com.lexorion.horizon.membership.entity.OrganizationMembership;
 import com.lexorion.horizon.membership.repository.OrganizationMembershipRepository;
 import com.lexorion.horizon.workspace.repository.OrganizationWorkspaceRepository;
 import com.lexorion.core.organization.entity.Organization;
-import com.lexorion.core.organization.entity.OrganizationStatus;
 import com.lexorion.core.platformaccess.entity.PlatformAccess;
 import com.lexorion.core.platformaccess.entity.PlatformAccessStatus;
 import com.lexorion.core.platformaccess.entity.PlatformRole;

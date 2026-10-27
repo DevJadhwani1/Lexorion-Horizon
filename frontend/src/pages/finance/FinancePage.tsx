@@ -232,7 +232,9 @@ function InvoiceDetail() {
       onSubmit={(body) => act(() => recordPayment(invoice.reference, body), "Unable to record the payment")} />}
     {mode === "void" && <VoidForm busy={busy} onCancel={() => setMode("view")} onSubmit={(reason) => act(() => voidInvoice(invoice.reference, reason), "Unable to void the invoice")} />}
     {<div className="invoice-doc-scroll invoice-print-area">
-      <InvoiceDocument template={invoice.template} fallbackSellerName={organizationName} locale={defaults.locale}
+      <InvoiceDocument template={invoice.template} fallbackSellerName={organizationName} locale={defaults.locale} viewer
+        invoicesHref={financePath("/invoices")}
+        onExport={() => printDocument(invoiceDownloadTitle(invoice.template.config.seller.legalName ?? "", invoice.clientName, invoice.invoiceNumber ?? invoice.reference))}
         data={{ ...invoice, number: invoice.invoiceNumber, lines: invoice.lines }} />
     </div>}
     {invoice.status !== "DRAFT" && invoice.status !== "VOID" && <section aria-labelledby="invoice-payments-heading">

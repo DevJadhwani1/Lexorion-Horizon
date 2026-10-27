@@ -20,13 +20,11 @@ import {
   type EffectiveEntitlements,
 } from "../../features/entitlements/entitlementApi";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
-import { useConfirm } from "../../components/ui/ConfirmDialog";
 
 export function AdminWorkspaces() {
   const { t } = useTheme();
   const navigate = useNavigate();
   const workspaceContext = useWorkspace();
-  const [ask, confirmDialog] = useConfirm();
   const [effective, setEffective] = useState<EffectiveEntitlements>([]);
   const [workspaces, setWorkspaces] = useState<OrganizationWorkspace[]>([]);
   const [key, setKey] = useState("");
@@ -100,13 +98,11 @@ export function AdminWorkspaces() {
   }
 
   /** Finance is not tied to a plan switch: an administrator attaches it to the workspaces that bill clients. */
-  async function toggleFinance(workspace: OrganizationWorkspace) {
-    const enabled = workspace.products.some((product) => product.key === "finance");
-    if (enabled && !(await ask({ title: `Remove Finance from ${workspace.displayName}?`, body: "Billing data is kept, but nobody can open it until Finance is added again.", confirmLabel: "Remove Finance", tone: "destructive" }))) return;
-    const keys = workspace.products.map((product) => product.key).filter((productKey) => productKey !== "finance");
+  async function addFinance(workspace: OrganizationWorkspace) {
+    const keys = workspace.products.map((product) => product.key);
     setBusy(workspace.key); setError(null);
     try {
-      const updated = await setOrganizationWorkspaceProducts(workspace.key, enabled ? keys : [...keys, "finance"]);
+      const updated = await setOrganizationWorkspaceProducts(workspace.key, [...keys, "finance"]);
       setWorkspaces((current) => current.map((item) => item.key === updated.key ? updated : item));
       await workspaceContext.reload();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to update workspace products"); }
@@ -121,7 +117,6 @@ export function AdminWorkspaces() {
     entitlement.valueType === "BOOLEAN" && entitlement.booleanValue === true && entitlement.key.endsWith(".enabled")));
 
   return <AdminScreen sectionKey="workspaces" title="Workspaces">
-    {confirmDialog}
     <p style={{ color: t.muted, marginTop: 0 }}>Provision products as organization workspaces. Workspace keys are stable tenant-facing identifiers.</p>
     {limit !== null && <p>{active} / {limit} active workspaces · {effective[0]?.planName}</p>}
     {!loading && effective.length === 0 && !error && (
@@ -183,10 +178,8 @@ export function AdminWorkspaces() {
                 </td>
                 <td><Badge label={workspace.status} variant={workspace.status === "ACTIVE" ? "success" : "neutral"} /></td>
                 <td className="row-actions">
-                  {workspace.status === "ACTIVE" && effective.length > 0 && (
-                    <Button size="sm" disabled={busy !== null} onClick={() => void toggleFinance(workspace)}>
-                      {workspace.products.some((product) => product.key === "finance") ? "Remove Finance" : "Add Finance"}
-                    </Button>
+                  {workspace.status === "ACTIVE" && effective.length > 0 && !workspace.products.some((product) => product.key === "finance") && (
+                    <Button size="sm" disabled={busy !== null} onClick={() => void addFinance(workspace)}>Add Finance</Button>
                   )}
                   <Button
                     size="sm"

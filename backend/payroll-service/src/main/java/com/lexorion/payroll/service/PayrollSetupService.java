@@ -174,7 +174,8 @@ public class PayrollSetupService {
     }
 
     private static Section tax(StatutoryProfile p) {
-        boolean pan = p != null && p.getPan() != null, regime = p != null && p.getTaxRegime() != null;
+        if (p == null) return section("tax", "PAN and tax regime", SectionStatus.NOT_STARTED, List.of("PAN", "Tax regime"), "PAN and regime are part of setup. Horizon does not calculate income tax, and a blank PAN does not block a pay run.");
+        boolean pan = p.getPan() != null, regime = p.getTaxRegime() != null;
         if (!pan && !regime) return section("tax", "PAN and tax regime", SectionStatus.NOT_STARTED, List.of("PAN", "Tax regime"), "PAN and regime are part of setup. Horizon does not calculate income tax, and a blank PAN does not block a pay run.");
         if (!pan || !regime) return section("tax", "PAN and tax regime", SectionStatus.IN_PROGRESS, List.of(pan ? "Tax regime" : "PAN"), "Finish the tax record that was started. This does not block a pay run.");
         return section("tax", "PAN and tax regime", p.isPanVerified() ? SectionStatus.COMPLETE : SectionStatus.PENDING_VERIFICATION, List.of(), p.isPanVerified() ? null : "PAN is saved and not verified. Verification does not block a pay run, and tax is not calculated.");

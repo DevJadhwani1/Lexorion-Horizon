@@ -99,7 +99,7 @@ class LocalQaIdentityProvisionerTest {
       Organization organization = org.mockito.Mockito.mock(Organization.class);
       when(created.getId()).thenReturn(userId);
       when(organization.getId()).thenReturn(organizationId);
-      when(users.findByEmailIgnoreCase("qa-lifecycle@lexorion.test")).thenReturn(Optional.empty(), Optional.of(created));
+      when(users.findByEmailIgnoreCase("qa-lifecycle@lexorion.test")).thenReturn(Optional.empty()).thenReturn(Optional.of(created));
       when(userService.create(any())).thenReturn(new UserResponse(userId, "qa-lifecycle@lexorion.test", "QA", "Lifecycle", com.lexorion.core.user.entity.UserStatus.ACTIVE, null, null));
       when(users.findById(userId)).thenReturn(Optional.of(created));
       when(organizations.findBySlug("lexorion-client")).thenReturn(Optional.of(organization));

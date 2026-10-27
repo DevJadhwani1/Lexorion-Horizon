@@ -17,7 +17,7 @@ import { formatDate, formatMoney } from "../../lib/format";
 import { useWorkspace } from "../../workspace/WorkspaceProvider";
 import { countryName } from "./ClientPages";
 import { addDays, localToday } from "./FinancePage";
-import { InvoiceDocument, type DocumentData } from "./InvoiceDocument";
+import { InvoiceDocument, invoiceDownloadTitle, printDocument, type DocumentData } from "./InvoiceDocument";
 import { UNITS } from "./ItemPages";
 
 const financePath = (path = "") => appPath(`/app/finance${path}`);
@@ -135,7 +135,7 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
   const continueFrom = (event: FormEvent<HTMLFormElement>, next: Step) => { event.preventDefault(); setError(""); setStep(next); };
 
   const preview: DocumentData = {
-    number: null, status: "DRAFT", currency, issueDate, dueDate: due, placeOfSupply: supply || null,
+    number: nextNumber || null, status: nextNumber ? "ISSUED" : "DRAFT", currency, issueDate, dueDate: due, placeOfSupply: supply || null,
     billTo: client ? { name: client.displayName, contactName: client.contactName, address: client.billingAddress, email: client.email, phone: client.phone, taxId: client.taxId, region: client.region, country: client.country }
       : { name: "—", contactName: null, address: null, email: null, phone: null, taxId: null, region: null },
     customFields: fields,
@@ -264,8 +264,9 @@ function InvoiceWizard({ invoice }: { invoice?: Invoice }) {
 
     </section>
     <section className="template-editor-preview" aria-label="Live preview">
-      <p>Live preview{nextNumber ? <> · numbered <strong>{nextNumber}</strong> when issued</> : ""}</p>
-      <InvoiceDocument data={preview} template={{ templateKey: selectedTemplateKey || null, name: template?.name ?? "Standard", layout: template?.layout ?? invoice?.template.layout ?? "MODERN",
+      <InvoiceDocument viewer invoicesHref={financePath("/invoices")}
+        onExport={() => printDocument(invoiceDownloadTitle(config?.seller.legalName ?? organizationName ?? "", client?.displayName ?? preview.billTo.name, nextNumber || invoice?.invoiceNumber || invoice?.reference || "Draft"))}
+        data={preview} template={{ templateKey: selectedTemplateKey || null, name: template?.name ?? "Standard", layout: template?.layout ?? invoice?.template.layout ?? "MODERN",
         config: config ?? invoice?.template.config ?? { ...previewStandard } }} fallbackSellerName={organizationName} locale={defaults.locale} />
     </section>
     </div>

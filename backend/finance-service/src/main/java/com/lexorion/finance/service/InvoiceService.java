@@ -12,10 +12,8 @@ import com.lexorion.finance.domain.Invoice;
 import com.lexorion.finance.domain.InvoiceLine;
 import com.lexorion.finance.domain.InvoiceStatus;
 import com.lexorion.finance.domain.InvoiceTemplate;
-import com.lexorion.finance.domain.Payment;
 import com.lexorion.finance.repository.AllocationRepository;
 import com.lexorion.finance.repository.InvoiceRepository;
-import com.lexorion.finance.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -48,7 +46,6 @@ public class InvoiceService {
     private final FinanceWorkspaceScope scope;
     private final BillingClientService clients;
     private final InvoiceRepository invoices;
-    private final PaymentRepository payments;
     private final InvoiceTemplateService templates;
     private final InvoiceNumbering numbering;
     private final LedgerService ledger;
@@ -59,12 +56,11 @@ public class InvoiceService {
     private final Clock clock;
 
     public InvoiceService(FinanceWorkspaceScope scope, BillingClientService clients, InvoiceRepository invoices,
-            PaymentRepository payments, InvoiceTemplateService templates, InvoiceNumbering numbering, LedgerService ledger,
+            InvoiceTemplateService templates, InvoiceNumbering numbering, LedgerService ledger,
             Idempotency idempotency, ReceiptService receipts, AllocationRepository allocations, JsonMapper json, Clock clock) {
         this.scope = scope;
         this.clients = clients;
         this.invoices = invoices;
-        this.payments = payments;
         this.templates = templates;
         this.numbering = numbering;
         this.ledger = ledger;

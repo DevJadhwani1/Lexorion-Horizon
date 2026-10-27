@@ -69,7 +69,12 @@ public class StatutoryEstimateService {
     }
 
     private void epf(LocalDate asOf, StatutoryProfile profile, BigDecimal wages, List<EstimateLine> lines, List<RuleSource> sources, List<String> warnings) {
-        StatutoryApplicability applicability = profile == null ? null : profile.getPfApplicability();
+        if (profile == null) {
+            lines.add(new EstimateLine("EPF", "Provident fund", Party.EMPLOYEE, null, EstimateStatus.NEEDS_DECISION,
+                    "Decide whether EPF applies to this employee in Payroll setup."));
+            return;
+        }
+        StatutoryApplicability applicability = profile.getPfApplicability();
         if (applicability != StatutoryApplicability.APPLICABLE) {
             boolean decided = applicability == StatutoryApplicability.NOT_APPLICABLE;
             lines.add(new EstimateLine("EPF", "Provident fund", Party.EMPLOYEE, null, decided ? EstimateStatus.NOT_APPLICABLE : EstimateStatus.NEEDS_DECISION,

@@ -15,7 +15,10 @@ function belowThousand(value: number): string {
   const hundred = Math.floor(value / 100), rest = value % 100;
   const parts: string[] = [];
   if (hundred) parts.push(`${ones[hundred]} Hundred`);
-  if (rest) parts.push(rest < 20 ? ones[rest] : `${tens[Math.floor(rest / 10)]}${rest % 10 ? ` ${ones[rest % 10]}` : ""}`);
+  if (rest) {
+    const restWords = rest < 20 ? ones[rest] : `${tens[Math.floor(rest / 10)]}${rest % 10 ? ` ${ones[rest % 10]}` : ""}`;
+    parts.push(hundred ? `and ${restWords}` : restWords);
+  }
   return parts.join(" ");
 }
 

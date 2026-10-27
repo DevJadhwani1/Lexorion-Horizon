@@ -107,7 +107,8 @@ describe("Invoice document", () => {
     }} template={{ ...draft.template, config }} />);
     const bill = screen.getByRole("article", { name: "Invoice OH/26-27/0014" });
     const text = bill.textContent ?? "";
-    expect(within(bill).getByRole("heading", { level: 2 }).textContent).toBe("Invoice");
+    expect(bill.querySelector(".sov-doctype .title")?.textContent).toBe("Invoice");
+    expect(bill.querySelector(".sov-doctype .label")?.textContent).toMatch(/tax invoice/i);
     expect(text).toContain("Tax invoice");
     expect(text).toContain("02 Sept 2026");
     expect(text).toContain("02 Oct 2026");
@@ -115,10 +116,12 @@ describe("Invoice document", () => {
     expect(text).toContain("PAN / CIN");
     expect(text).toContain("AAECO6722G · U70200MH2025PTC444379");
     expect(text).not.toContain("HSN/SAC");
-    expect(text).toContain("+91 98987 41457");
+    expect(text).toContain("+91 9898741457");
+    expect(text).toContain("Ramya Chandran · Accounts Payable");
+    expect(text).toContain("CGST (½)");
     expect(text).toContain("www.omegahires.com");
     expect(text).not.toContain("https://");
-    expect(bill.querySelector(".invoice-doc-logo")?.getAttribute("src")).toBe("/omega-hires-logo.png");
+    expect(bill.querySelector(".sov-brand img")?.getAttribute("src")).toBe("/omega-invoice/omega_hires_logo.png");
   });
 
   it("sets the print title to the source file name before the browser saves the PDF", () => {
@@ -149,13 +152,13 @@ describe("Finance billing workspace", () => {
     fireEvent.change(screen.getByLabelText("Invoice date"), { target: { value: "2026-05-30" } });
     expect(screen.getByText(/29 Jun 2026 from Net 30/)).toBeTruthy();
     expect(screen.getByText("Same state as yours: CGST + SGST.")).toBeTruthy();
-    const bill = screen.getByRole("article", { name: "Invoice draft" });
+    const bill = screen.getByRole("article", { name: /Invoice/ });
     expect(screen.getByRole("region", { name: "Live preview" }).contains(bill)).toBe(true);
     expect(bill.textContent).toContain("Omega Hires India Private Limited");
     fireEvent.change(screen.getByLabelText("Candidate"), { target: { value: "Saksham Jain" } });
     expect(bill.textContent).toContain("Saksham Jain");
     fireEvent.change(screen.getByLabelText("Joining date"), { target: { value: "2026-04-10" } });
-    expect(await screen.findByText("OH/26-27/0001")).toBeTruthy();
+    expect(await screen.findByRole("article", { name: "Invoice OH/26-27/0001" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Continue to line items" }));
     fireEvent.change(screen.getByLabelText("Line 1 Code"), { target: { value: "REC-001" } });
     fireEvent.change(screen.getByLabelText("Line 1 description"), { target: { value: "Recruitment fee" } });
@@ -164,7 +167,7 @@ describe("Finance billing workspace", () => {
     const totals = screen.getByLabelText("Invoice totals");
     expect(totals.textContent).toContain("CGST");
     expect(totals.textContent).toContain("2,12,400.00");
-    const updated = screen.getByRole("article", { name: "Invoice draft" });
+    const updated = screen.getByRole("article", { name: /Invoice/ });
     expect(updated.textContent).toContain("REC-001");
     expect(updated.textContent).toContain("Rupees Two Lakh Twelve Thousand Four Hundred Only");
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
@@ -437,7 +440,7 @@ describe("Books, items and templates", () => {
     expect((screen.getByLabelText("Line 1 HSN/SAC") as HTMLInputElement).value).toBe("998512");
     expect((screen.getByLabelText("Line 1 unit") as HTMLInputElement).value).toBe("Placement");
     expect((screen.getByLabelText("Line 1 unit price") as HTMLInputElement).value).toBe("180000");
-    const bill = screen.getByRole("article", { name: "Invoice draft" });
+    const bill = screen.getByRole("article", { name: /Invoice/ });
     expect(bill.textContent).toContain("998512");
     expect(bill.textContent).toContain("₹2,12,400.00");
   });
