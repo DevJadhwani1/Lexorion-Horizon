@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface OrganizationMembershipRepository extends JpaRepository<OrganizationMembership, UUID> {
    boolean existsByOrganizationIdAndUserId(UUID organizationId, UUID userId);
 
+   Optional<OrganizationMembership> findByOrganizationIdAndUserId(UUID organizationId, UUID userId);
+
    List<OrganizationMembership> findByOrganizationIdOrderByCreatedAtAsc(UUID organizationId);
 
    List<OrganizationMembership> findByUserIdOrderByCreatedAtAsc(UUID userId);

@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { AdminWorkspaces } from "./AdminWorkspaces";
 import {
   createOrganizationWorkspace,
+  getOrganizationWorkspaces,
   setOrganizationWorkspaceStatus,
 } from "../../features/admin/workspaceApi";
 import { getEffectiveEntitlements, type EffectiveEntitlements } from "../../features/entitlements/entitlementApi";
@@ -151,10 +152,41 @@ it("shows useful list with capabilities and permitted management actions", async
   // Status badge
   expect(screen.getByText("ACTIVE")).toBeTruthy();
 
+  expect(screen.getByRole("button", { name: "Add Finance" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Remove Finance" })).toBeNull();
+
   // Permitted management action: Deactivate
   const actionButton = screen.getByRole("button", { name: "Deactivate" });
   fireEvent.click(actionButton);
   await waitFor(() => expect(setOrganizationWorkspaceStatus).toHaveBeenCalledWith("main", "INACTIVE"));
+});
+
+it("does not offer to remove Finance once it is attached", async () => {
+  vi.mocked(getOrganizationWorkspaces).mockResolvedValue([
+    {
+      key: "main",
+      displayName: "Main HR",
+      status: "ACTIVE",
+      productKey: "workforce",
+      productName: "Workforce",
+      products: [
+        { key: "workforce", displayName: "Workforce" },
+        { key: "finance", displayName: "Finance" },
+      ],
+    },
+  ]);
+
+  render(
+    <StrictMode>
+      <MemoryRouter>
+        <AdminWorkspaces />
+      </MemoryRouter>
+    </StrictMode>
+  );
+
+  await screen.findByText("Finance");
+  expect(screen.queryByRole("button", { name: "Remove Finance" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Add Finance" })).toBeNull();
 });
 
 it("explains when no active plan is available and offers safe retry recovery path", async () => {
